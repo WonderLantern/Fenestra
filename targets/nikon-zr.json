@@ -1,0 +1,11 @@
+{
+  "model": "Nikon ZR",
+  "reference_update_package": {
+    "version": "C 1.10",
+    "bytes": 117159984,
+    "sha256": "43bf4f5f1278fa6b0a551ceb6fa4ee749dc74bbc8a5ef4fba19b30062184e546"
+  },
+  "disallowed_target_versions": [
+    "C 1.11"
+  ]
+}

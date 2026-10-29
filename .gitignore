@@ -1,0 +1,9 @@
+build/
+private/
+inputs/
+__pycache__/
+*.pyc
+*.bin
+*.wlm
+*.fxpatch
+.venv/

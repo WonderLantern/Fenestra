@@ -1,0 +1,2 @@
+comtypes==1.4.13; sys_platform == "win32"
+pyusb>=1.2,<2; sys_platform == "linux"

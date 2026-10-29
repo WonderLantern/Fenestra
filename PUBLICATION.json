@@ -1,0 +1,8 @@
+{
+  "schema": "fenestra.publication/v1",
+  "license": "CC-BY-NC-SA-4.0",
+  "firmware_included": false,
+  "keys_included": false,
+  "generated_private_outputs_included": false,
+  "additional_permission": "EXCEPTIONS.md"
+}

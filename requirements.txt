@@ -1,0 +1,3 @@
+cryptography>=43,<47
+unicorn>=2.1,<3
+pyusb>=1.2,<2

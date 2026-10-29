@@ -1,0 +1,19 @@
+{
+  "zr-c110": {
+    "runtime_identity": "d73a216eaa4e6ecadc42917350f02fade82a5aaba407b55621eb10c7d48737bd",
+    "application_sha256": "87bbffccd7e519e79d5dbff388ac3f928cc8675c140112166195d964d8fed891",
+    "package_sha256": "977dd94b2da04a08fa0a2e0fe9334428c893321a722e0938fdee5df670166b2e",
+    "package_filename": "ZR__0110.bin",
+    "reference": "Fenestra-C110-core-20261029-r3",
+    "envelope_padding": "6e104c4adadadef70bd6fb6facacf661ce71258a86945793b6fe1df70774cf5dd7859a60244551e1437a295043d3d90ac0c82fb95f1b742427691427cce30274f787ceb1038f151f7bdf4f3d2accea38a95d39ba648ff3a2c7e14a4e6469f97343e764cbcdf184c8aa3e5d4dc0ec07d553b2715ddc6dee79fb5ef8e03620db5fa4c806c714a7c044bf80d9f73e5bd4fc96407c4628e258c4914239db98b5fbbab311db227a63fae851c8043edb18e202260ec863f06c0a52dc42eeab9ccd8f9edc58471289875d21f77a2687a2",
+    "envelope_sha256": "32c86115b4d04a514a8c9d2018ff8a6745157ce470fac6f4a0d816c36b3062fe",
+    "public_modulus_sha256": "31512256787f982d8c9085a820f85d5df045ce71c78ab5cf4bcf9a4f699896e1"
+  },
+  "z9-c532": {
+    "runtime_identity": "2e1ccbe9c2b77f14df986c7aaf5bc3ca7f506836fbfd8e83504f981f2577a077",
+    "application_sha256": "d64af52d974ac57161913b1797421fe5c42669d1cf23eaee265c2636df107a05",
+    "package_sha256": "b52499a2b7a83bf5f39c809563ef649705468c709371daa8633e4da4112fef9d",
+    "package_filename": "Z_9_0532.bin",
+    "reference": "Fenestra-C532-core-20261029-r3"
+  }
+}
