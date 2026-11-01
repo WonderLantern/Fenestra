@@ -11,7 +11,7 @@ def main():
     build = commands.add_parser('build', help='build/independently verify a core from an original application component')
     make = commands.add_parser('make-patch', help='decode, build, verify, re-encode and produce ciphertext replacements')
     for c in (build, make):
-        c.add_argument('--target', choices=('zr-c110', 'z9-c532'), required=True)
+        c.add_argument('--target', choices=('zr-c110', 'z9-c532', 'z8-c311'), required=True)
         c.add_argument('--firmware', type=Path, required=True)
     build.add_argument('--output', type=Path, required=True)
     make.add_argument('--key', type=Path, required=True, help='private local body key/mask file; never printed')

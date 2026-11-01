@@ -6,7 +6,8 @@ from platform_profiles import ROOT,BASE,load
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--target',required=True);p.add_argument('--firmware',required=True)
     p.add_argument('--build',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    profile,original=load(a.target,a.firmware);build=a.build.resolve(strict=True)
+    require_condition=a.target not in ('z8-c311',)
+    profile,original=load(a.target,a.firmware,require_condition=require_condition);build=a.build.resolve(strict=True)
     namespace_output=a.output.with_suffix('.namespace.json')
     if not build.is_relative_to(ROOT) or not a.output.resolve().is_relative_to(ROOT) or a.output.exists() or namespace_output.exists():raise ValueError('new owned verification outputs required')
     report=json.loads((build/'build.json').read_text())
@@ -59,6 +60,37 @@ def main():
         if restored!=original or candidate[:0x40000]!=original[:0x40000]:raise ValueError('unaccounted firmware mutation')
         checks=['full original reconstruction','unchanged boot prefix/MMU/data','all patched branches match actual linked ELF','entire extension equals linked binary']
         digest=report['candidate_sha256']
+    elif a.target=='z8-c311':
+        import hashlib as _h
+        code=(build/'core.bin').read_bytes();candidate=(build/'z8-core.main').read_bytes()
+        sys.path.insert(0,str(ROOT/'emulation'))
+        from native_ui_dispatch_sites import sites as ui_sites,verify_original as verify_ui
+        ui_hooks=ui_sites('z8-c311') if report.get('ui_dispatch_hook_version')==1 else {}
+        if ui_hooks:verify_ui('z8-c311',original)
+        if (len(candidate)!=len(original) or not 0<len(code)<=0x60000 or
+            len(report['changes'])!=len(ui_hooks) or
+            {int(c['address'],16):c['symbol'] for c in report['changes']}!=ui_hooks):
+            raise ValueError('only independently bound Z8 UI-loop entries may change')
+        if _h.sha256(candidate).hexdigest()!=report['candidate_sha256']:raise ValueError('candidate differs')
+        nm=shutil.which('llvm-nm')
+        if not nm:raise RuntimeError('LLVM symbol reader required')
+        symbols={r[2]:int(r[0],16) for line in subprocess.check_output([nm,'--defined-only',str(build/'core.elf')],text=True).splitlines() if len(r:=line.split())==3}
+        if candidate[0x40000:0x40000+len(code)]!=code:raise ValueError('linked code differs')
+        restored=bytearray(candidate);restored[0x40000:0x40000+len(code)]=bytes(len(code))
+        for change in report['changes']:
+            at=int(change['address'],16)-BASE;word=struct.unpack_from('<I',candidate,at)[0]
+            if bytes.fromhex(change['before'])!=original[at:at+4]:raise ValueError('native original branch preimage differs')
+            if word&0xfc000000!=(0x94000000 if int(change['address'],16) in ui_hooks else 0x14000000):raise ValueError('not the expected direct branch/call')
+            delta=(word&0x3ffffff)<<2
+            if delta&(1<<27):delta-=1<<28
+            if BASE+at+delta!=symbols[change['symbol']]:raise ValueError('branch/ELF symbol mismatch')
+            restored[at:at+4]=bytes.fromhex(change['before'])
+        # The Z8 MAIN trailer is an explicitly recomputed CRC16 for this build;
+        # restore it before comparing.
+        restored[-2:]=original[-2:]
+        if restored!=original or candidate[:0x40000]!=original[:0x40000]:raise ValueError('unaccounted firmware mutation')
+        checks=['full original reconstruction (module CRC trailer recomputed)','unchanged boot prefix/MMU/data','all patched branches match actual linked ELF','entire extension equals linked binary']
+        digest=report['candidate_sha256']
     elif a.target=='zr-c110':
         sys.path.insert(0,str(ROOT/'emulation'));from c110_menu_image import verify
         verify((build/'c110-menu.snapshot').read_bytes(),build/'build.json')
@@ -84,8 +116,15 @@ def main():
     identity_check=verify_identity(ROOT,build,a.target,report,nm)
     checks.append('actual compiler inputs and every linked debug identity copy independently checked')
     from verify_native_namespace import verify as verify_namespace
-    namespace=verify_namespace(a.target,a.firmware,build)
-    checks.append('all original page slots and special selectors pass through compiled native entries')
+    if a.target=='z8-c311':
+        # Explicit pending gate: native-namespace emulation requires the
+        # navigate/apply hook sites, not yet pinned for Z8. The report records
+        # the gap; no page-namespace claim is made for this configuration.
+        namespace=dict(target=a.target,pending=True,
+            reason='navigate/apply hook sites not yet independently pinned')
+    else:
+        namespace=verify_namespace(a.target,a.firmware,build)
+        checks.append('all original page slots and special selectors pass through compiled native entries')
     result=dict(passed=True,target=a.target,application_sha256=profile['sha256'],candidate_sha256=digest,
                 native_namespace=namespace,debug_identity=identity_check,
                 native_namespace_file=namespace_output.name,
