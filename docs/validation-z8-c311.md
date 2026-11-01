@@ -89,13 +89,32 @@
   navigate/apply not pinned).
 - Debug identity linked copy at 0x401AA3C8.
 
+### 10. hello module load round trip (emulation, after the port fixes)
+- Full chain, three consecutive runs (123/123 probe checks each in the
+  independent re-verification of this branch): install → activate → arm (the
+  camera itself writes the FXBOOT1 flag to the exFAT card and creates
+  DCIM/NIKON/Z_8) → discovery (FW_LIST callback enumeration) → staging with
+  digest check → session load → activate mapped → `user_call` into the hello
+  module entry at EL0; invoke/heartbeat/exec_live keep running. Sustained
+  operation was demonstrated for the full 420 s window in one run; in the
+  other two, the sustained segment was truncated after ~25 s by a read of
+  the unmodeled ISP register 0x1508001c (an emulator model boundary, not
+  payload behaviour — the chain and all flag counts were complete and
+  identical).
+- Card contract: exFAT with `FENESTRA/startup-z8.0` (FXCONF1: identity
+  0x00090538, generation 1, desired=3) and `FENESTRA/hello-z8.wlm`; the
+  `boot-z8.flag` file must be absent (its presence selects the abnormal-
+  shutdown path and suppresses activation).
+- Filesystem error semantics observed: `0x80001003` = drive not registered,
+  `0x80000010` = not found, `0x80000030` = directory end sentinel.
+
 ## Unverified / not enabled (explicit boundaries)
 
 | Item | State | Notes |
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | Native menu registration (menu reachability) | not enabled | menu.c is ported but the Z8 reverse engineering of SETUP pages/events/GUI object ids is not complete; v0 platform state stays uninitialised |
-| hello `.wlm` load round trip | not verified | depends on menu-driven activation (module management entry) |
+| hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation (module management entry) still pending |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
 | task.create/resume/delay addresses | Z9 reference values | prologue probes exist; create/resume are not exercised by the validated configuration; the delay binding runs on the loader's yield path and is tolerated (all runs) |

@@ -73,6 +73,10 @@ typedef struct {
     uint32_t skipped;
     FxStartupService startup;
     FxStartupFiles startup_files;
+    /* FW_LIST callback-enumeration staging: Z8 has no Z9-style find-first API,
+     * and the staging buffer must live in the state heap because the module
+     * region is not writable on this target. */
+    struct { FxModuleDirectoryEntry entries[8]; uint32_t count, next; } dir;
     FxNativeMenu auto_menu,guard_menu;
     FxPtp ptp;
     FxRtos rtos;
@@ -512,47 +516,66 @@ typedef struct {
     int32_t fd;
     FxFileObserver observer;
 } Directory;
-static FxResult dir_open(void *context) {
-    Directory *d = context;
-    d->fd = -1;
-    uint32_t r = FN(0x402dd0d4, uint32_t (*)(const char *, int32_t *))("A:\\FENESTRA", &d->fd);
-    return r == UINT32_C(0x80000010) ? FX_EMPTY : r || d->fd < 0 ? FX_IO : FX_OK;
-}
+/* Z8 C3.11 directory enumeration is a callback API (FW_LIST at 0x402db09c);
+ * the Z9 find-first entries (0x402dd0d4/184/1d4) are not function entries in
+ * the Z8 image. Entry layout: long UTF-16 name at +0x0E, u64 size at +0x218,
+ * attributes at +0x20E; the end sentinel is 0x80000030. */
 static uint32_t u32(const uint8_t *p) {
     return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
 }
-static FxResult dir_next(void *context, FxModuleDirectoryEntry *out) {
-    Directory *d = context;
-    uint8_t data[0x220] __attribute__((aligned(8))) = {0};
-    uint32_t r = FN(0x402dd184, uint32_t (*)(int32_t, void *))(d->fd, data);
-    if (r == UINT32_C(0x80000030))
-        return FX_EMPTY;
-    if (r)
-        return FX_IO;
-    memset(out, 0, sizeof(*out));
-    out->attributes = data[0x20e];
-    out->bytes = (uint64_t)u32(data + 0x218) | (uint64_t)u32(data + 0x21c) << 32;
+static int fw_list_entry(const void *entry) {
+    State *s = state();
+    const uint8_t *b = entry;
+    if (!s || s->dir.count >= 8u)
+        return 1;
+    FxModuleDirectoryEntry *e = &s->dir.entries[s->dir.count];
+    memset(e, 0, sizeof(*e));
+    e->attributes = b[0x20e];
+    e->bytes = (uint64_t)u32(b + 0x218) | (uint64_t)u32(b + 0x21c) << 32;
     uint32_t i = 0;
     for (; i < 256u; ++i) {
-        uint32_t ch = (uint32_t)data[14u + i * 2u] | (uint32_t)data[15u + i * 2u] << 8;
+        uint32_t ch = (uint32_t)b[14u + i * 2u] | (uint32_t)b[15u + i * 2u] << 8;
         if (!ch)
             break;
         if (i >= 31u || ch > 127u) {
-            out->name[0] = 0;
-            return FX_OK;
+            e->name[0] = 0;
+            break;
         }
-        out->name[i] = (char)(ch >= 'A' && ch <= 'Z' ? ch + 32u : ch);
+        e->name[i] = (char)(ch >= 'A' && ch <= 'Z' ? ch + 32u : ch);
     }
     if (!i)
-        for (i = 0; i < 13u && data[i]; ++i)
-            out->name[i] = (char)(data[i] >= 'A' && data[i] <= 'Z' ? data[i] + 32u : data[i]);
+        for (i = 0; i < 13u && b[i]; ++i)
+            e->name[i] = (char)(b[i] >= 'A' && b[i] <= 'Z' ? b[i] + 32u : b[i]);
+    ++s->dir.count;
+    return 0;
+}
+static FxResult dir_open(void *context) {
+    Directory *d = context;
+    State *s = state();
+    if (!s)
+        return FX_STATE;
+    s->dir.count = 0;
+    s->dir.next = 0;
+    uint32_t r = FN(0x402db09c, uint32_t (*)(const char *, uint32_t, int (*)(const void *)))
+        ("A:\\FENESTRA", 0x27u, fw_list_entry);
+    if (r != 0u && r != UINT32_C(0x80000030))
+        return FX_IO;
+    d->fd = s->dir.count ? 0 : -1;
+    return s->dir.count ? FX_OK : FX_EMPTY;
+}
+static FxResult dir_next(void *context, FxModuleDirectoryEntry *out) {
+    Directory *d = context;
+    State *s = state();
+    if (!s || d->fd < 0)
+        return FX_STATE;
+    if (s->dir.next >= s->dir.count)
+        return FX_EMPTY;
+    *out = s->dir.entries[s->dir.next++];
     return FX_OK;
 }
 static FxResult dir_close(void *context) {
-    Directory *d = context;
-    uint32_t r = FN(0x402dd1d4, uint32_t (*)(int32_t))(d->fd);
-    d->fd = -1;
-    return r ? FX_CLOSE : FX_OK;
+    ((Directory *)context)->fd = -1;
+    return FX_OK;
 }
 static FxResult module_read(void *context, const char *file, uint8_t *out, uint32_t capacity,
                             uint32_t *bytes) {
