@@ -3,8 +3,8 @@
   "files": [
     {
       "path": ".github/workflows/source-tests.yml",
-      "bytes": 461,
-      "sha256": "691d3c91fd17cde211b466a7433a9f7a36e40bdc22fb98d86fed771493ab1156",
+      "bytes": 675,
+      "sha256": "c257e54539f9dbcbd85f977d3fd0c07ffa94541077706a5aea468003db3436e6",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
@@ -4588,8 +4588,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 3610,
-      "sha256": "3597938b4f1e80ccec15972a3cce62571e6043a72771cb63fa3ab61512592a3f"
+      "bytes": 3590,
+      "sha256": "3008c11a0de6e40c87311b7339393973eba83672258722f7b6cf55657c0ea294"
     },
     {
       "path": "tests/test_zf_core_compile.py",

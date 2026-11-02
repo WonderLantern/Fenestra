@@ -14,7 +14,7 @@ class ZfCardTests(unittest.TestCase):
                 subprocess.run([sys.executable,str(ROOT/'host/build_sdk_module.py'),
                     str(ROOT/'modules/demo/sdk.c'),
                     '--id','demo-zf','--target','zf-c301','--output-dir',str(build)],
-                    check=True,capture_output=True,timeout=60)
+                    check=True,timeout=60)
                 package=Path(d)/'demo-zf.wlm';package.write_bytes((build/'demo-zf.wlm').read_bytes())
             finally:
                 if build.exists():shutil.rmtree(build)
