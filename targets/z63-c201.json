@@ -3,7 +3,7 @@
   "target": "z63-c201",
   "model": "Nikon Z6III",
   "version": "C 2.01",
-  "status": "card-adapter-only",
+  "status": "experimental-native-menu-and-headless-module",
   "image_base": 1075183616,
   "application_bytes": 88830367,
   "application_sha256": "d78e4d0358f550d9f3a3a9da3a8beee314a3b90de8bcc13117e029f7821cf252",
@@ -26,6 +26,69 @@
       "address": 1076770516,
       "bytes": 76,
       "sha256": "17e5268fef3e13a5bde03e446aa548f6ff1d42e7328b1e48918370c056c24a9c"
+    },
+    {
+      "name": "rtos.task.create",
+      "address": 1075359672,
+      "bytes": 980,
+      "sha256": "ec941af0f14d83d0030e9ede2a154239e72a48f0a60c55c1a6eebe2b9cb1427d"
+    },
+    {
+      "name": "rtos.task.resume",
+      "address": 1075361084,
+      "bytes": 408,
+      "sha256": "1ac1450f665179633d8b7c67a0eeca531e294987200c356f0142ac148b257cc5"
+    },
+    {
+      "name": "rtos.memory.allocate",
+      "address": 1087581440,
+      "bytes": 64,
+      "sha256": "bb5458f5e15aacc100b0378cf0ba1bbf83f52e91053eecd3ff0d410d899d43be"
+    },
+    {
+      "name": "rtos.memory.release",
+      "address": 1087581504,
+      "bytes": 104,
+      "sha256": "5d70e2a8c805d89ac80f24a19f9c73db5367de373269613e91238838343ecbf9"
     }
-  ]
+  ],
+  "sysctl": {
+    "dispatcher": 1087794928,
+    "event_table": 1141419112,
+    "event_stride": 88,
+    "message_event_offset": 32,
+    "events": {
+      "startup_sync_hook": 19,
+      "startup_complete": 20,
+      "shutdown": 8,
+      "card_remove": 24,
+      "card_mount": 25
+    },
+    "hook_bytes": 16,
+    "hook_sha256": "305e1a78a035b8a30156b6c821947e2f9f11b2b92e205cce9dbe6f7998840714"
+  },
+  "probe_code_region": {
+    "begin": 1083244544,
+    "end": 1086324736,
+    "original_fill": 0
+  },
+  "menu_hooks": {
+    "page": {
+      "address": 1077861144,
+      "bytes": 52,
+      "sha256": "00bc14103c5f91003185846a0eaaafa473b32de86fe2948b4707f8b833532204"
+    },
+    "text": {
+      "address": 1077124912,
+      "bytes": 108,
+      "sha256": "366c1a304e32e745c6f2641d084d2c334960f26e895eb9b35d98a02f863af2ce"
+    },
+    "navigate": {
+      "address": 1077675108,
+      "bytes": 16,
+      "sha256": "f6cefc70ffdb159bac2c5e629dd86637f8fb701a59dc51f827ffd429a3ba3d31"
+    }
+  },
+  "capabilities": 0,
+  "filename_contract": "lowercase 8.3 .wlm only"
 }

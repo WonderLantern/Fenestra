@@ -23,7 +23,18 @@ def main():
     adapter = commands.add_parser('build-z63-adapter', help='build C2.01 card adapter object only')
     adapter.add_argument('--application', type=Path, required=True)
     adapter.add_argument('--output-dir', type=Path, required=True)
+    probe = commands.add_parser('build-z63-probe', help='build an emulator-only C2.01 SYSCTL probe')
+    probe.add_argument('--application', type=Path, required=True)
+    probe.add_argument('--output-dir', type=Path, required=True)
+    probe.add_argument('--linker', type=Path, required=True)
+    probe.add_argument('--llvm-bin', type=Path, required=True)
+    probe.add_argument('--menu', action='store_true', help='install the experimental manual test menu')
+    probe.add_argument('--module', type=Path, help='optional pinned headless module experiment')
     args = p.parse_args()
+    if args.command == 'build-z63-probe':
+        from build_z63_probe import build as build_probe
+        print(json.dumps(build_probe(args.application, args.output_dir, args.linker, args.llvm_bin, args.module, args.menu), indent=2))
+        return
     if args.command == 'build-z63-adapter':
         from build_z63_adapter import build as build_adapter
         print(json.dumps(build_adapter(args.application, args.output_dir), indent=2))

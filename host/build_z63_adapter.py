@@ -11,17 +11,27 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def verify(application):
+def load_application(application):
     profile = json.loads((ROOT / 'targets/z63-c201.json').read_text())
+    if (profile.get('schema'), profile.get('target'), profile.get('application_bytes'), profile.get('application_sha256')) != (
+            'fenestra.port-bindings/v1', 'z63-c201', 88830367,
+            'd78e4d0358f550d9f3a3a9da3a8beee314a3b90de8bcc13117e029f7821cf252'):
+        raise ValueError('not the pinned Z6III C2.01 profile')
     data = Path(application).read_bytes()
     if len(data) != profile['application_bytes'] or hashlib.sha256(data).hexdigest() != profile['application_sha256']:
         raise ValueError('wrong Z6III C2.01 original application')
+    if hashlib.sha256(data[:-2]).hexdigest() != profile['payload_sha256']:
+        raise ValueError('Z6III module payload identity differs')
     for binding in profile['bindings']:
         at = binding['address'] - profile['image_base']
         span = data[at:at + binding['bytes']]
         if hashlib.sha256(span).hexdigest() != binding['sha256']:
             raise ValueError('original binding differs: ' + binding['name'])
-    return profile
+    return profile, data
+
+
+def verify(application):
+    return load_application(application)[0]
 
 
 def build(application, output):

@@ -16,7 +16,7 @@ static int module_path(const char *p) {
     p+=sizeof(prefix)-1u;
     uint32_t n=0;
     while(n<32u && p[n])++n;
-    if(n<5u || n>=32u || p[n-4u]!='.' || p[n-3u]!='w' || p[n-2u]!='l' || p[n-1u]!='m')return 0;
+    if(n<5u || n>12u || p[n-4u]!='.' || p[n-3u]!='w' || p[n-2u]!='l' || p[n-1u]!='m')return 0;
     for(uint32_t i=0;i<n-4u;++i)
         if(!((p[i]>='a' && p[i]<='z') || (p[i]>='0' && p[i]<='9') || p[i]=='_' || p[i]=='-'))return 0;
     return 1;
@@ -33,6 +33,7 @@ static uint32_t read_file(void *context,int32_t fd,void *data,uint32_t bytes,uin
     FxZ63CardScope *s=context;
     if(done)*done=0;
     if(!s || s->magic!=MAGIC || s->uncertain || fd<0 || fd!=s->fd || !data || !done || !bytes || bytes>65536u)return DENIED;
+    *done=UINT32_MAX; /* Require a native actual-count output, including EOF. */
     uint32_t result=FN(UINT64_C(0x402e3774),uint32_t (*)(int32_t,void *,uint32_t,uint32_t *))(fd,data,bytes>511u?511u:bytes,done);
     if(result)s->native_error=result;
     if(*done>(bytes>511u?511u:bytes)){s->uncertain=1u;return DENIED;}

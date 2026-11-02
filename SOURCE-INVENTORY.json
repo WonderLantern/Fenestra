@@ -63,8 +63,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6762,
-      "sha256": "eedb00db2976aa73a417dbf22e48bfcd847d16288145c21a8deaea5b4430a3c1",
+      "bytes": 6988,
+      "sha256": "02c6677b3d7113910e7e75fa7aacf2d3f0d055f01f333b9715f59a1750bc9ca3",
       "origin": "project-source",
       "snapshot_sha256": "ccee77bf6619d5747c065433c0ec84bc3524e690f1db8a5bc8d7a030a171fc29",
       "transformed": true,
@@ -233,8 +233,8 @@
     },
     {
       "path": "fenestra.py",
-      "bytes": 2362,
-      "sha256": "57aed93b41e6ec2c8b8ea03ff6642af0ec88a604e3ad0ca34a957f01c2efbb60",
+      "bytes": 3169,
+      "sha256": "f5d310b43d1d18eb3bda55efc108b8877d142be3de844010f33f32e3e79ab8e3",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
@@ -263,8 +263,8 @@
     },
     {
       "path": "host/build_sdk_module.py",
-      "bytes": 5990,
-      "sha256": "b42e7689ae395994449f268d43add051d9af413785c6f5d2fc805bbf88dc0f8c",
+      "bytes": 6641,
+      "sha256": "475e376a347d002aefa4e75518995b34359968979142a75808c0e378bbf060f5",
       "origin": "project-source",
       "snapshot_sha256": "b42e7689ae395994449f268d43add051d9af413785c6f5d2fc805bbf88dc0f8c",
       "transformed": false,
@@ -3548,8 +3548,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 3097,
-      "sha256": "b5ee39d67cbd006634c345065dc50cacdceac258d42f10b2653ad9fcae1df4a2"
+      "bytes": 6781,
+      "sha256": "4b6e600704a49dd2a83720f5ce8e954d7e481c88fa41e406734dd214dda88a1f"
     },
     {
       "path": "host/build_z63_adapter.py",
@@ -3558,18 +3558,20 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2194,
-      "sha256": "e1f0a4b3ae3343f7233659274b67353d42d2747c0607504054ac594374b9a26f"
+      "bytes": 2757,
+      "sha256": "324590dba40c3a7e4b1b76244927279f552f828749db2cdb572abdafa801d018"
     },
     {
       "path": "src/platform/z63_c201/card.c",
-      "origin": "authored-for-public-distribution",
-      "snapshot_sha256": null,
-      "transformed": false,
+      "origin": "project-source-port",
+      "snapshot_sha256": "f6c539aadb4e50e66df398d9a7e9c71bf8bba6306add5ecb96702fe7a1967e6e",
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2525,
-      "sha256": "bfeca8f84f060957cedb6406f72aeb45c127ca43f682f04a78d8e9e2000e9e73"
+      "bytes": 2605,
+      "sha256": "8f497b85f11fd2bd28b408d97bdac231bf3d085c30cf65e091f36fd06a652c09",
+      "source_path": "src/platform/z9_c532/card.c",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
     {
       "path": "src/platform/z63_c201/card.h",
@@ -3588,8 +3590,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 947,
-      "sha256": "38574ca74532e01b13a6bb5b403ea0e2d8e81063e9dc8b2e4b0bb17e53901ba0"
+      "bytes": 2748,
+      "sha256": "67016d8120c92556d6e3859231344dc7662038853c254e5c164029a2778dda8f"
     },
     {
       "path": "tests/test_z63_card.py",
@@ -3598,8 +3600,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 1367,
-      "sha256": "8880aa7cd329fd4acaafe9972dce5042e65a8738f6edf42ec47159683c19dba9"
+      "bytes": 3333,
+      "sha256": "552f98d6084e42876d32bd6f20f76b4bba84987dfd5dbf95a40920820a7bf427"
     },
     {
       "path": "tests/z63_card_fixture.c",
@@ -3608,8 +3610,304 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 1973,
-      "sha256": "fc30196e469b1d04fe3821c8709dc788ab9c364a3f934e908e42c57e57f92640"
+      "bytes": 2221,
+      "sha256": "137a49517ff2c734261acb30d13ac3dea87b7ed90797472d25800733554f1b50"
+    },
+    {
+      "path": "emulation/z63_probe.ld",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 448,
+      "sha256": "2d304138761bc9abb464a9dd2bd2b1677c924bc7c972ea56f541647cbe6b0e44"
+    },
+    {
+      "path": "examples/z63_probe/fault.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 328,
+      "sha256": "60f83bfaa69c631a061a8f2d721008849306f05b5251272d40e1e702a7896d1d"
+    },
+    {
+      "path": "examples/z63_probe/module.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 596,
+      "sha256": "be8cada494c5336ae943659f208828043fe1adf7a0653b09b2b5daf4e35c8fc7"
+    },
+    {
+      "path": "host/build_z63_probe.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 8132,
+      "sha256": "0eb720ac63910319d6732ca5c6fae1fd941ac5608ebc1407c6d31e7c1ad1d75d"
+    },
+    {
+      "path": "host/z63_emulator_smoke.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 15340,
+      "sha256": "ee878d682656b919fe55ce9dc1f65cb4f539cecfb3d9371d5a18a598279350be"
+    },
+    {
+      "path": "src/platform/z63_c201/address_space.c",
+      "origin": "project-source-port",
+      "snapshot_sha256": "b19e09733d8bf85c99ba1189774219bbd7cd1d643e641c736d5e045327f2a9ed",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3560,
+      "sha256": "2ca2518df4ae7cde56511e723f61c7df28cbe0d67fd1bebe9e95aefad9eba7fe",
+      "source_path": "src/platform/z9_c532/address_space.c",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/address_space.h",
+      "origin": "project-source-port",
+      "snapshot_sha256": "f06c1ae5072ed96aff5daa987a590744fcc2d5e1f41a192382d936d211c511d2",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1064,
+      "sha256": "3f341e2d2cffcd22d2f8c289d0bec17cbb0367c23c6ae9ab0a4e093a64cda347",
+      "source_path": "src/platform/z9_c532/address_space.h",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/exec_context.c",
+      "origin": "project-source-port",
+      "snapshot_sha256": "5e5529b8f26297e0e49011aa76e7bb2783501b4f82e7c3acaa6a96565510211e",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2020,
+      "sha256": "b189a4aa0e7fda7b6556d87d61e414b4a8a89e9d2ac56484166c166592ecd464",
+      "source_path": "src/platform/z9_c532/exec_context.c",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/exec_context.h",
+      "origin": "project-source-port",
+      "snapshot_sha256": "f514c3ea65b1dc30f8fe4b64ba74bb5bd01dc273e02e5ab961117b28c6592f22",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2152,
+      "sha256": "7a746ecb0e365a9086e92e91733d80b1f9b8b5453b6d92e7d37cddc36969446f",
+      "source_path": "src/platform/z9_c532/exec_context.h",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/lifecycle.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1214,
+      "sha256": "5639f561af075a56722fc47e3c7e7b892b93d8147d0b64f411e88b2698ed68e9"
+    },
+    {
+      "path": "src/platform/z63_c201/lifecycle.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 686,
+      "sha256": "18f53e096da873bb564c013c765f67ed006dec49c2bcfe76a5fd16c018935a3e"
+    },
+    {
+      "path": "src/platform/z63_c201/menu.c",
+      "origin": "project-source-port",
+      "snapshot_sha256": "e86bb1f01bd56c08fba4b8ca3fff265a7dcde06af7efcf7877090fcac3edebc2",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 5966,
+      "sha256": "579744f5cc3d25d340b420974b88c4113ddfd8c1db175d47bfc2fa7943fb88f2",
+      "source_path": "src/platform/z9_c532/menu.c",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/menu_trampoline.S",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 203,
+      "sha256": "7433eac3719abb4c26f54e2e6c2b2a997d922a1462edd3e18ce63c2640d6ca8c"
+    },
+    {
+      "path": "src/platform/z63_c201/module_probe.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2988,
+      "sha256": "3c96ecefa8750c330b2f961c07949a3654c2ade22b01acd3672969a7c4233187"
+    },
+    {
+      "path": "src/platform/z63_c201/module_session.c",
+      "origin": "project-source-port",
+      "snapshot_sha256": "67cfc60a4da9eaf00efce64b3081e50542d2b7f749ec4cef06883955364a0c7e",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 14683,
+      "sha256": "7a26bdb364df8e0cbca860c2930169e3989c7b89c97a54394e7a5f0c26105067",
+      "source_path": "src/platform/z9_c532/module_session.c",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/module_session.h",
+      "origin": "project-source-port",
+      "snapshot_sha256": "342714504f6b76cbbe33bcfb2875b5718d9a4f68782a05b217d976e59fb1c55a",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3105,
+      "sha256": "76a333ad935f3abc28025d1f653b82fb2c9a85c0aa3328a6180e05a0e50ffc33",
+      "source_path": "src/platform/z9_c532/module_session.h",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/module_stage.c",
+      "origin": "project-source-port",
+      "snapshot_sha256": "2c574f112a4a1b3b394eb0652264eedaf14bbc17dd6b319d24fadf777b87f5c4",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3424,
+      "sha256": "0ec541eed7a72ac8706438257788e904739b5ef55d195099a55b1d4d20d3ae00",
+      "source_path": "src/platform/z9_c532/module_stage.c",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/module_stage.h",
+      "origin": "project-source-port",
+      "snapshot_sha256": "f15e38772e8dae36901d60f6d066778a4fbdf7272c2b2fb529181007ec577a91",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1146,
+      "sha256": "216928d262b1cddb05c4ff12e48c3119b346bdaf478046b880b6abe586d53eb1",
+      "source_path": "src/platform/z9_c532/module_stage.h",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/private_call.S",
+      "origin": "project-source-port",
+      "snapshot_sha256": "bb483d91efb5c556099b6f1bc387648c25c772fec04c6c26c6e97a7abfba1060",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 5628,
+      "sha256": "86fd2aa26e43be68dbac7df24591c1847192b5c4d10a658eb8964dc8c04ef6af",
+      "source_path": "src/platform/z9_c532/private_call.S",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/sysctl_probe.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2448,
+      "sha256": "29588bfd12484f3f99a83393f345ace7606503e742ec2490dc4de911485a3347"
+    },
+    {
+      "path": "src/platform/z63_c201/sysctl_trampoline.S",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 195,
+      "sha256": "6d7bc31a532fc4b9d26575d6344fcaa572402f90f48d8b924059263470ada890"
+    },
+    {
+      "path": "src/platform/z63_c201/task.c",
+      "origin": "project-source-port",
+      "snapshot_sha256": "811a09d3c5b8eead15257bcea0423dfc50cf7e35738955962ba6539435cebd42",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1596,
+      "sha256": "52b15f1fd777475a49c123edbce13c8d6a38e54f1e60f9eeeaf6e50d340fd74a",
+      "source_path": "src/platform/z9_c532/task.c",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/task.h",
+      "origin": "project-source-port",
+      "snapshot_sha256": "f276519b9e04db5be0050237c7597d914ba0fe4875ec78d554d6d1a10a999464",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 601,
+      "sha256": "9f6c18f88314d4cdf35c698af08c2d9a0adaf9435d7be0e1d3839777a4b9b85a",
+      "source_path": "src/platform/z9_c532/task.h",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "src/platform/z63_c201/user_call.S",
+      "origin": "project-source-port",
+      "snapshot_sha256": "8ff34cfb69217d075d7a5d3f5a701e042d908ac73e2825bcdabbc894610fbf14",
+      "transformed": true,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2692,
+      "sha256": "1bf498e1d16ef2c0f389e47fd5d1226084ae000354a4f9171cd8d60fb7db1c3f",
+      "source_path": "src/platform/z9_c532/user_call.S",
+      "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
+    },
+    {
+      "path": "tests/z63_address_space_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1405,
+      "sha256": "1f91b3880e9cab8d2dbb0a2ed3ff2e1730267a69a8cc4958bf1241f7c8f3c780"
+    },
+    {
+      "path": "tests/z63_lifecycle_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1253,
+      "sha256": "245aec039802f86792aa318cb2e976f14f7701fdc8dda0b205180bb0638d5f0e"
+    },
+    {
+      "path": "tests/z63_task_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1654,
+      "sha256": "88dfe1d420b8f72ebd51e4afdd96972bd9bcebb9440f187abc570eecb5db3fd9"
     }
   ]
 }

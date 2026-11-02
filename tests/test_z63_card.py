@@ -23,6 +23,41 @@ class Z63CardTests(unittest.TestCase):
                             str(ROOT / 'tests/z63_card_fixture.c'), '-o', str(binary)], check=True)
             subprocess.run([str(binary)], check=True)
 
+    def test_lifecycle_and_terminal_stop(self):
+        cc = shutil.which('clang') or shutil.which('cc')
+        if not cc:
+            self.skipTest('C compiler unavailable')
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / 'lifecycle-test'
+            subprocess.run([cc, '-std=c11', '-pthread', '-Wall', '-Wextra', '-Werror',
+                            str(ROOT / 'tests/z63_lifecycle_fixture.c'),
+                            str(ROOT / 'src/platform/z63_c201/lifecycle.c'),
+                            '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
+    def test_task_create_resume_and_retention(self):
+        cc = shutil.which('clang') or shutil.which('cc')
+        if not cc:
+            self.skipTest('C compiler unavailable')
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / 'task-test'
+            subprocess.run([cc, '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            '-Wconversion', '-Wshadow', '-I', str(ROOT / 'include'),
+                            str(ROOT / 'tests/z63_task_fixture.c'), '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
+    def test_translated_resident_code_mapping(self):
+        cc = shutil.which('clang') or shutil.which('cc')
+        if not cc:
+            self.skipTest('C compiler unavailable')
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / 'mapping-test'
+            subprocess.run([cc, *(['-no-pie'] if sys.platform.startswith('linux') else []), '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            '-I', str(ROOT / 'include'), str(ROOT / 'tests/z63_address_space_fixture.c'),
+                            str(ROOT / 'src/platform/z63_c201/address_space.c'), str(ROOT / 'src/memory.c'),
+                            '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
     def test_reject_wrong_application(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / 'application'

@@ -1,60 +1,129 @@
-# Nikon Z6III C2.01 port development
+# Nikon Z6III C2.01 experimental port
 
-The local Z6III port currently supplies a read-only native card adapter and an
-original-input verifier. It builds a relocatable AArch64 object. A resident
-Fenestra core, module SDK target and update package are not available yet.
+This development port boots an emulator-only SYSCTL integration, adds Fenestra
+at the top of Nikon's native Setup menu, and manually loads one pinned headless
+`.wlm` from the card. The original scheduler starts the worker, Fenestra's loader
+checks the package, and its private EL1/EL0 gates execute INIT, TICK and STOP.
+Full-system tests observe successful returns and restored native context.
 
-## Implemented boundary
+The current port supplies no camera SDK service capabilities. Module discovery,
+the module manager, ordinary demo drawing, PTP/Linux debugging and update-package
+production remain unfinished. It is not equivalent to the hardware-tested Zf
+port. All candidate EGs are **emulator-only; DO_NOT_FLASH**. No physical camera
+or updater was tested.
 
-The input is the complete original C2.01 EG member including its two CRC bytes:
-88,830,367 bytes, SHA-256
-`d78e4d0358f550d9f3a3a9da3a8beee314a3b90de8bcc13117e029f7821cf252`.
-The target metadata independently fingerprints the native open, read and close
-wrapper extents at mapped MAIN addresses `0x402e3674`, `0x402e3774` and
-`0x402e36d4` (image base `0x40160000`). These are function entries.
+## Inputs and bindings
 
-The adapter accepts lowercase module paths under `A:\FENESTRA\`, read-only.
-Its scope owns one native file descriptor. Reads preserve native errors, short
-reads and EOF and reject transfer counts exceeding the native request. An
-impossible count or failed close makes the scope uncertain; it cannot be
-reinitialized or used to issue more calls. The owner must retain the scope and
-associated storage until retirement is established. There is no timeout-based
-cancellation of a native call.
+Supply the complete original C2.01 EG including its CRC locally:
 
-Each native request is capped at 511 bytes. This keeps requests below a sector
-while bringing up the port. Zf's reported cache/DMA failure motivated the bound;
-physical Z6III DMA/cache behavior has not been tested, and the bound alone does
-not prove buffer coherency. The caller must continue reading after a short
-read when appropriate, using the actual returned count.
+| Input | Bytes | SHA-256 |
+| --- | ---: | --- |
+| Original EG | 88,830,367 | `d78e4d0358f550d9f3a3a9da3a8beee314a3b90de8bcc13117e029f7821cf252` |
 
-## Build and tests
+`targets/z63-c201.json` separately records its payload identity, native card
+wrapper fingerprints, SYSCTL table and menu-hook fingerprints. Firmware bytes,
+loader/SNOR/NAND inputs, generated displaced instructions and build outputs are
+not source-distribution files.
 
-Supply the original EG locally and select a new output directory:
+SYSCTL event 19 is the startup **sync hook**; event 20 is startup-complete.
+Shutdown, card removal and card mount are 8, 24 and 25. The lifecycle inbox
+coalesces notices, requires startup and media before activation, and makes STOP
+terminal. A notice does not prove native work has retired.
+
+The card scope owns one descriptor. It preserves native errors, short reads and
+EOF, requires an actual-count output and retains uncertain ownership after an
+impossible count or failed close. Each request is at most 511 bytes. This bound
+does not establish physical DMA/cache coherency. Use lowercase 8.3 filenames;
+the native test opened `demo-z63.wlm`, while `probe-z63.wlm` returned
+`0x80001001`. The adapter and SDK builder reject longer base names for now.
+
+## Build the test module
+
+Use Python 3.11+, Clang and an ELF-capable `ld.lld` on PATH:
 
 ```sh
-python -B fenestra.py build-z63-adapter \
-  --application /local/inputs/eg2010_0201i0.bi \
-  --output-dir build/z63-adapter
-python -B -m unittest discover -s tests -p test_z63_card.py -v
+python -B host/build_sdk_module.py examples/z63_probe/module.c \
+  --id demo-z63 --target z63-c201 --required 0 \
+  --output-dir build/demo-z63
 ```
 
-Clang must support `--target=aarch64-none-elf`. Output consists of `card.o` and
-`adapter.json`; neither is an installable firmware image. Set `FENESTRA_Z63_EG`
-to additionally verify the complete original and binding fingerprints in tests.
-The host fixture substitutes native IO and checks path admission, actual-count
-handling, request bounds, errors, close retention and scope reuse rejection.
-It does not execute Nikon's lower storage implementation.
+Copy `demo-z63.wlm` to `FENESTRA/demo-z63.wlm` on a disposable virtual FAT card.
+The builder below pins that exact package's digest and size. `module.json` is a
+host receipt and is not copied to the card. This headless module publishes event
+sequences 1, 2 and 5; it does not draw or call native camera services.
 
-## Remaining integration and acceptance
+## Build an emulator candidate
 
-Before exposing `z63-c201` through the normal core builder or SDK, independently
-establish startup/shutdown/card event IDs and their owner context; executable
-space and displaced hook instructions; allocator/MMU/cache/IRQ and native task
-contracts; module execution and retirement; menu/text/page/input/display
-bindings; and PTP/bridge capability availability. Wire only qualified services
-into the retained owner, with unsupported capabilities absent.
+Choose a new output directory and supply explicit LLVM/linker locations:
 
-Full-system acceptance must begin with stock boot, then inactive patched boot
-and shutdown, manual activation, discovery, module entry/return/drawing, card
-removal, faults and restart. Original-instruction replay and host tests are
-separate from those full-system checks and from physical-camera qualification.
+```sh
+python -B fenestra.py build-z63-probe \
+  --application /local/inputs/eg2010_0201i0.bi \
+  --llvm-bin /local/toolchain/bin \
+  --linker /local/toolchain/bin/ld.lld \
+  --module build/demo-z63/demo-z63.wlm --menu \
+  --output-dir build/z63-menu
+```
+
+The builder verifies the original image and native hook spans, checks the full
+zero-filled mapped image reservation, extracts displaced register-save
+instructions locally, compiles and links the candidate, checks branch ranges,
+and proves byte-for-byte original reconstruction after reversing declared edits.
+`probe.json` identifies the candidate and its symbols. The candidate retains the
+original member CRC bytes unchanged and has no updater envelope. It is consumed
+directly by the emulator, not by the camera updater.
+
+Without `--menu`, `--module` enables an automatic card-mount experiment. Without
+both, the image only observes original SYSCTL entry/return and starts a bounded
+leaf task at startup. These are distinct experiments, not release modes.
+
+## Full-system acceptance so far
+
+The tested environment uses a matching `nikon-z63` model, original C2.01 EG,
+retained loader and SNOR inputs, cloned NAND/FAT storage, and synthetic Bayer
+and IMU inputs. Neither inputs nor the emulator are bundled here. `host/z63_emulator_smoke.py`
+accepts explicit external input paths, clones its NAND/card, controls QMP/MCU
+keys, captures frames and checks module markers from a matching external
+`z63log` plugin. Use its `--help` for the input list. Its automated result
+checks execution markers and guest state; screenshots still require review.
+It never mounts or modifies the input card and closes only its own QEMU process.
+
+Observed results include stock live view; patched native live view; startup and
+virtual card event forwarding; native task creation/resume/entry; the Fenestra
+Setup entry and page; manual activation; native card loading; INIT/TICK/STOP
+returns; zero recorded faults/context-restoration errors; and a later native
+shutdown event followed by the model's power-hold shutdown. The negative-control
+module in `examples/z63_probe/fault.c` deliberately writes an unmapped EL0 page.
+Its run records `FX_INTEGRITY`, one fault and zero context-restoration errors;
+the guest continues. This is bounded fault evidence, not arbitrary-code or
+hardware fault containment.
+
+The current owner retains session/task state until reboot and permits one
+activation attempt per boot. There is no unload/retry contract. The native menu test covers activation, Back to Setup and return to live view
+using MCU buttons. With `--repeat-activation`, pressing Run twice produces one
+worker and one INIT/TICK/STOP sequence. Media loss during IO and shutdown under
+load need separate acceptance before broader runtime claims.
+
+The final source passes 69 host tests with three platform skips, 43 original
+FILESRV cases, and seven adapted original-kernel fixture cases. A clean explicit
+source export builds byte-identical test module and resident candidate. These
+checks are separate from the full-system success and deliberate-fault runs.
+Use `--expect fault` for a candidate pinned to `examples/z63_probe/fault.c`; use
+`--expect rejected` with the success candidate and a different on-card package
+to check rejection before module entry. Full-system controls reject both a
+different package size (`FX_BOUNDS`) and a same-size one-byte mutation
+(`FX_INTEGRITY`), without invoking the module; native menu return still works. Each run uses a fresh output directory.
+
+## Host checks
+
+```sh
+python -B -m unittest discover -s tests -v
+python -B verify_source.py
+```
+
+Set `FENESTRA_Z63_EG` to the original EG path to enable its optional binding test.
+Host fixtures cover actual-count failures, native errors, close uncertainty,
+task create/resume retention, lifecycle STOP races and translated resident-code
+mapping. They substitute native IO/tasks and remain separate from full-system
+results. `build-z63-adapter` also builds the standalone card object after original
+input verification; it emits no resident core or firmware package.
