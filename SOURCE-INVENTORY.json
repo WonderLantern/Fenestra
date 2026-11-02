@@ -4528,8 +4528,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 11238,
-      "sha256": "09f8c9576e00c33ba6ff3be6f455dbc171bf58667fbcb3c4bb42688ad7d60ee5"
+      "bytes": 11248,
+      "sha256": "77193ac33a203d8dc843cee87ce1b3c112e480ab8aa663563cf76fd07728758b"
     },
     {
       "path": "tests/test_zf_c301_bindings.py",
@@ -4588,8 +4588,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 3590,
-      "sha256": "3008c11a0de6e40c87311b7339393973eba83672258722f7b6cf55657c0ea294"
+      "bytes": 3600,
+      "sha256": "f4d9be285ab35d7c06671ed138a1dd74adab3812486514ba278a9cf10978866f"
     },
     {
       "path": "tests/test_zf_core_compile.py",
@@ -4838,8 +4838,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2869,
-      "sha256": "05235f46de33f16cc8360b6bdc7addfe7b4a590a13e9222d3be2f89abd3fc178"
+      "bytes": 2889,
+      "sha256": "b9cffedd6f3cf27fadf8a20c294a82c2e35b77bf7271c85c5845fdfa9380e83e"
     },
     {
       "path": "tests/test_zf_sdk.py",
@@ -4858,8 +4858,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 5749,
-      "sha256": "fb34953fa52bfa832362b16197c7609d394ecb974a0bc1b011f07c323992baf3"
+      "bytes": 5759,
+      "sha256": "cb5b0328f9b41692cb0efe199e95a444c67c8fceea3a26f49a293eb5e46e9559"
     },
     {
       "path": "tests/test_zf_sysctl_gate.c",
@@ -4878,8 +4878,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 3129,
-      "sha256": "98b2423143369e9d8107fcfacbc62a1e7f0f0f74ebb90077886864f977d84fea"
+      "bytes": 3149,
+      "sha256": "540c5f239d973aa7e3ae9877a1f4f7ddd5d399ab48bb27724485e71e566c7a53"
     },
     {
       "path": "tests/zf_address_space_fixture.c",

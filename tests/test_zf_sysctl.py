@@ -17,7 +17,7 @@ class ZfSysctlTests(unittest.TestCase):
     def test_checked_displaced_window_and_no_overwrite(self):
         image = bytes(range(256)) + bytes(range(44))
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             original = root / 'input'
             original.write_bytes(image)
             kwargs = dict(ROOT=root, EG_SIZE=len(image) + 2,

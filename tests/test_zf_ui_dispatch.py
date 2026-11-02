@@ -17,7 +17,7 @@ class ZfUiDispatchTests(unittest.TestCase):
         payload = bytes((i * 17) & 0xff for i in range(4096))
         image = payload + binascii.crc_hqx(payload, 0).to_bytes(2, 'big')
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             original = root / 'application'
             original.write_bytes(image)
             candidates = (
@@ -41,7 +41,7 @@ class ZfUiDispatchTests(unittest.TestCase):
         payload = bytes(range(256))
         image = payload + binascii.crc_hqx(payload, 0).to_bytes(2, 'big')
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             original = root / 'application'
             original.write_bytes(image)
             candidate = dict(ui.UI_CANDIDATES[0], start=ui.BASE, end=ui.BASE + 16,

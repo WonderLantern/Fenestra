@@ -37,7 +37,7 @@ class ZfCardTests(unittest.TestCase):
             self.assertNotEqual(bad.returncode,0)
     def test_profile_guard_before_any_output(self):
         with tempfile.TemporaryDirectory() as d:
-            root=Path(d);data=bytes(range(16));spec={'open':(0x40160000,16,hashlib.sha256(data).hexdigest())}
+            root=Path(d).resolve();data=bytes(range(16));spec={'open':(0x40160000,16,hashlib.sha256(data).hexdigest())}
             with patch.multiple(profile,ROOT=root,PREIMAGES=spec),patch.object(profile,'_payload',return_value=data):
                 result=profile.prepare('fixture',root/'build/valid')
                 self.assertFalse(result['runtime_qualified'])

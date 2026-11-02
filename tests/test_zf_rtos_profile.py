@@ -14,7 +14,7 @@ class RtosProfileTests(unittest.TestCase):
     def test_checked_headers_and_rejection_before_output(self):
         data=bytes(range(64));helpers={'command':(0x40160000,16,hashlib.sha256(data[:16]).hexdigest())}
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory)
+            root=Path(directory).resolve()
             with patch.multiple(profile,ROOT=root,PREIMAGES=helpers),patch.object(profile,'_payload',return_value=data):
                 result=profile.prepare('synthetic',root/'build/valid')
                 self.assertFalse(result['runtime_qualified'])
@@ -29,7 +29,7 @@ class RtosProfileTests(unittest.TestCase):
         data=bytes(range(64))
         helpers={'receive':(0x40160000,32,hashlib.sha256(data[:32]).hexdigest())}
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory)
+            root=Path(directory).resolve()
             with patch.multiple(linux,ROOT=root,PREIMAGES=helpers),patch.object(linux,'_payload',return_value=data):
                 result=linux.prepare('synthetic',root/'build/valid')
                 self.assertFalse(result['runtime_qualified'])

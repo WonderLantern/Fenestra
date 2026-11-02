@@ -159,7 +159,7 @@ class ZfPortTests(unittest.TestCase):
             repack.produce('zf-c301', 'unused', 'unused', None, 'unused', 'unused')
 
     def test_existing_core_targets_keep_their_builders(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.object(repack, 'ROOT', Path(tmp)), \
+        with tempfile.TemporaryDirectory() as tmp, patch.object(repack, 'ROOT', Path(tmp).resolve()), \
                 patch.object(repack.subprocess, 'run') as run:
             for target, script in (('zr-c110', 'build_c110_menu.py'), ('z9-c532', 'build_z9_core.py')):
                 run.reset_mock()
