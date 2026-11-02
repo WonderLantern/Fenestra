@@ -1,0 +1,31 @@
+{
+  "schema": "fenestra.port-bindings/v1",
+  "target": "z63-c201",
+  "model": "Nikon Z6III",
+  "version": "C 2.01",
+  "status": "card-adapter-only",
+  "image_base": 1075183616,
+  "application_bytes": 88830367,
+  "application_sha256": "d78e4d0358f550d9f3a3a9da3a8beee314a3b90de8bcc13117e029f7821cf252",
+  "payload_sha256": "236bbd874e0942fd91fb54a99af456f4ebcc0fd966af930753c43efd1839fe87",
+  "bindings": [
+    {
+      "name": "camera.card.open",
+      "address": 1076770420,
+      "bytes": 96,
+      "sha256": "a06921944206e714eec637b7e697852e152841aceab1e39b476bc123db37b407"
+    },
+    {
+      "name": "camera.card.read",
+      "address": 1076770676,
+      "bytes": 108,
+      "sha256": "ac8b8dbecf2f21b95c6d94b72c57c0b274e98690c45baac9fb50546ab81d632f"
+    },
+    {
+      "name": "camera.card.close",
+      "address": 1076770516,
+      "bytes": 76,
+      "sha256": "17e5268fef3e13a5bde03e446aa548f6ff1d42e7328b1e48918370c056c24a9c"
+    }
+  ]
+}

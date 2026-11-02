@@ -20,7 +20,14 @@ def main():
     make.add_argument('--release', choices=('r3', 'custom'), default='r3', help='r3 requires exact reference bytes; custom builds a different, unqualified result')
     make.add_argument('--work', type=Path, required=True)
     make.add_argument('--output', type=Path, required=True)
+    adapter = commands.add_parser('build-z63-adapter', help='build C2.01 card adapter object only')
+    adapter.add_argument('--application', type=Path, required=True)
+    adapter.add_argument('--output-dir', type=Path, required=True)
     args = p.parse_args()
+    if args.command == 'build-z63-adapter':
+        from build_z63_adapter import build as build_adapter
+        print(json.dumps(build_adapter(args.application, args.output_dir), indent=2))
+        return
     from repack import build_core, produce
     if args.command == 'build':
         result = build_core(args.target, args.firmware.resolve(), args.output)

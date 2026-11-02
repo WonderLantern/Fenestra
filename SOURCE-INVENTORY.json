@@ -233,8 +233,8 @@
     },
     {
       "path": "fenestra.py",
-      "bytes": 1921,
-      "sha256": "78ede63dce950ac241134235ab498004c7b108ae0408a88754bcf7b0e23bddf9",
+      "bytes": 2362,
+      "sha256": "57aed93b41e6ec2c8b8ea03ff6642af0ec88a604e3ad0ca34a957f01c2efbb60",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
@@ -3540,6 +3540,76 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "docs/z63-c201-port.md",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3097,
+      "sha256": "b5ee39d67cbd006634c345065dc50cacdceac258d42f10b2653ad9fcae1df4a2"
+    },
+    {
+      "path": "host/build_z63_adapter.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2194,
+      "sha256": "e1f0a4b3ae3343f7233659274b67353d42d2747c0607504054ac594374b9a26f"
+    },
+    {
+      "path": "src/platform/z63_c201/card.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2525,
+      "sha256": "bfeca8f84f060957cedb6406f72aeb45c127ca43f682f04a78d8e9e2000e9e73"
+    },
+    {
+      "path": "src/platform/z63_c201/card.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 328,
+      "sha256": "988f2b5c4aec79b6d2c965064d1468936ad1b7aae970a29f0bacc150972a16af"
+    },
+    {
+      "path": "targets/z63-c201.json",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 947,
+      "sha256": "38574ca74532e01b13a6bb5b403ea0e2d8e81063e9dc8b2e4b0bb17e53901ba0"
+    },
+    {
+      "path": "tests/test_z63_card.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1367,
+      "sha256": "8880aa7cd329fd4acaafe9972dce5042e65a8738f6edf42ec47159683c19dba9"
+    },
+    {
+      "path": "tests/z63_card_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1973,
+      "sha256": "fc30196e469b1d04fe3821c8709dc788ab9c364a3f934e908e42c57e57f92640"
     }
   ]
 }
