@@ -16,7 +16,10 @@ static void map_release(void *context,void *memory) {
     (void)context;((void (*)(void *))(uintptr_t)0x40d318d8u)(memory);
 }
 static uint32_t noop(void *p){(void)p;return 1u;}
-static uint32_t opened(void *p){return fx_native_ui_page_open(p);}
+/* The first open must perform the same native row visibility/reflow pass as
+ * later UI flushes. Calling only fx_native_ui_page_open leaves the reserved
+ * root/empty/retry rows in the initial viewport. */
+static uint32_t opened(void *p){return fx_zf_menu_opened_native((FxNativePage *)p);}
 
 FxResult fx_zf_menu_ensure_text(FxZfMenu *menu,uint32_t required) {
     if(!menu || !menu->bank)return FX_STATE;

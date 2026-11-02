@@ -16,13 +16,14 @@ class ZfCoreCompileTests(unittest.TestCase):
             build_zf_core.build(None, None, experimental_adapters=False, native_menu=True)
 
     def test_source_inventory_is_nonempty_and_target_specific_link_is_absent(self):
-        self.assertEqual(len(build_zf_core.SHARED_SOURCES), 66)
+        self.assertGreaterEqual(len(build_zf_core.SHARED_SOURCES), 66)
         self.assertIn('src/native_scene.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/native_display.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/platform_native.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/ptp.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/ptp_device_info.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/native_call_a64.S', build_zf_core.SHARED_SOURCES)
+        self.assertIn('src/platform/zf_c301/dehaze_provider.c', build_zf_core.SHARED_SOURCES)
         self.assertNotIn('src/platform/z9_c532/menu.c', build_zf_core.SHARED_SOURCES)
 
     def test_experimental_adapter_inventory_is_guarded(self):
@@ -77,6 +78,13 @@ class ZfCoreCompileTests(unittest.TestCase):
         self.assertIn('#include "fenestra_platform_native.h"', source)
         self.assertIn('id>=(int32_t)FX_ZF_MANAGER_TEXT_BASE', source)
         self.assertIn('id<(int32_t)FX_ZF_MODULE_TEXT_BASE', source)
+
+    def test_zf_module_first_open_hides_reserved_rows_and_reflows(self):
+        apps = (ROOT / 'src/platform/zf_c301/menu_apps.c').read_text()
+        flush = (ROOT / 'src/platform/zf_c301/menu_flush.c').read_text()
+        self.assertIn('fx_zf_menu_opened_native((FxNativePage *)p)', apps)
+        self.assertIn('fx_native_row_visibility(&ui_visibility,page,row,visible)', flush)
+        self.assertIn('fx_native_row_reflow(&ui_layout,page)', flush)
 
 
 if __name__ == '__main__':

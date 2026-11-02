@@ -76,11 +76,42 @@ static const FxNativeTitleProfile ui_title = {
     FX_ZF_TITLE_MODAL_DESTRUCTOR,
     FX_ZF_MODAL_ID};
 
+/* Apply the initial module-page state before Nikon's first paint. The normal
+ * owner flush already does this when a revision changes, but the first open
+ * has no prior revision and therefore must hide reserved rows explicitly. */
+static uint32_t open_module_page(FxNativePage *page) {
+    if(!page || !page->descriptor)return 0u;
+    uint32_t id=page->identity>>16;
+    FxNativeUi *ui=fx_native_ui_find_page(id);
+    if(!ui || !fx_native_ui_page_matches(ui,page))return 1u;
+    /* Preserve the existing open/refresh lifecycle; the extra work below is
+     * the missing first-paint visibility and layout pass. */
+    (void)fx_native_ui_page_open(page);
+    const FxNativeDescriptor *d=(const void *)page->descriptor;
+    const FxNativeRow *rows=(const void *)d->rows;
+    for(uint32_t i=0;i<d->count;++i) {
+        uint32_t row=rows[i].word[6];
+        int visible=fx_native_ui_row_visible(ui,id,row);
+        (void)fx_native_row_visibility(&ui_visibility,page,row,visible);
+        (void)fx_native_row_arrow(&ui_visibility,page,row,
+            visible && fx_native_ui_row_submenu(ui,row));
+        int enabled=1;uint32_t value=fx_native_ui_value(ui,row,&enabled);
+        (void)fx_native_row_value_visibility(&ui_visibility,page,row,visible && value);
+        /* Resolve text/value children for hidden slots during construction;
+         * otherwise the native renderer can expose a reserved row on its
+         * first pass before the next owner flush repairs it. */
+        (void)fx_native_text_prepare(&ui_text_profile,page,row,rows[i].word[0],value,enabled,ui);
+    }
+    (void)fx_native_row_reflow(&ui_layout,page);
+    return 1u;
+}
+
 /* Same stock-row value/enabled policy as the Z9 front end, using Zf's
  * checked text/bounds/visibility functions and the retained owner service. */
 uint32_t fx_zf_menu_opened_native(FxNativePage *page) {
     FxZfLifecycle *life=fx_zf_runtime_lifecycle();
     if(!life || !page || !page->descriptor)return 0u;
+    if(fx_native_ui_find_page(page->identity>>16))return open_module_page(page);
     FxZfOwnerStorage *o=(void *)((uint8_t *)life-offsetof(FxZfOwnerStorage,lifecycle));
     const FxNativeDescriptor *d=(const void *)page->descriptor;
     const FxNativeRow *rows=(const void *)d->rows;

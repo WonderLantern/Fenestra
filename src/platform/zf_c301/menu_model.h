@@ -34,6 +34,9 @@ FxNativePage *fx_zf_menu_page(uint32_t,uint32_t);
 void fx_zf_menu_text(int32_t,int32_t,const uint16_t **,uint32_t *);
 uint64_t fx_zf_menu_navigate(uint32_t);
 void fx_zf_menu_refresh_core(void);
+/* Native page-open path shared by the root menu and module-owned pages.
+ * Module pages need their hidden reserved rows applied before first paint. */
+uint32_t fx_zf_menu_opened_native(FxNativePage *);
 FxResult fx_zf_menu_ensure_text(FxZfMenu *,uint32_t);
 /* Original GUI task, before activation admits module service owners. */
 struct FxZfOwnerStorage;
