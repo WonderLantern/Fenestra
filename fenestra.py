@@ -20,7 +20,22 @@ def main():
     make.add_argument('--release', choices=('r3', 'custom'), default='r3', help='r3 requires exact reference bytes; custom builds a different, unqualified result')
     make.add_argument('--work', type=Path, required=True)
     make.add_argument('--output', type=Path, required=True)
+    zf_build = commands.add_parser('build-zf', help='reproduce the hardware-tested Zf C3.01 link81 EG')
+    zf_build.add_argument('--application', type=Path, required=True)
+    zf_build.add_argument('--output-dir', type=Path, required=True)
+    zf_make = commands.add_parser('make-zf-package', help='repack Zf C3.01 using external local material')
+    for flag in ('firmware', 'body', 'application', 'k8', 'stream', 'output-dir'):
+        zf_make.add_argument('--' + flag, type=Path, required=True)
     args = p.parse_args()
+    if args.command == 'build-zf':
+        from build_zf_link81 import build as build_link81
+        print(json.dumps(build_link81(args.application, args.output_dir), indent=2))
+        return
+    if args.command == 'make-zf-package':
+        from zf_c301_repack import repack
+        print(json.dumps(repack(args.firmware, args.body, args.application, args.k8,
+                                args.stream, args.output_dir), indent=2))
+        return
     from repack import build_core, produce
     if args.command == 'build':
         result = build_core(args.target, args.firmware.resolve(), args.output)

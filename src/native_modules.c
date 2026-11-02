@@ -142,3 +142,8 @@ const uint32_t fx_native_modules_metadata[]={0x46584d47u,2u,sizeof(FxNativeModul
     offsetof(FxManagedModule,current),offsetof(FxManagedModule,valid),offsetof(FxManagedModule,file),
     offsetof(FxPlatformOwner,control_count),offsetof(FxPlatformOwner,controls),offsetof(FxPlatformOwner,owner),
     sizeof(FxUiControl),offsetof(FxUiControl,label),offsetof(FxUiControl,text),offsetof(FxUiControl,kind)};
+
+FxResult fx_native_modules_selected(FxNativeModules *m,FxManagedModule *out) {
+    if(!m || !out)return FX_ARGUMENT;
+    return fx_module_manager_selected(&m->manager,out);
+}

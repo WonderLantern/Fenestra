@@ -265,7 +265,13 @@ static FxResult enable_locked(FxModuleManager *m,uint32_t slot,uint32_t enabled)
             if(enabled) {
                 uint32_t selected=0u;
                 for(uint32_t i=0u;i<m->count;++i)selected+=m->entries[i].present && m->entries[i].enabled;
+                /* Zf's current owner has one retained execution arena. Keep
+                 * that target's UI honest until a multi-owner backend exists. */
+#if defined(FX_MODULE_SINGLE_OWNER) && FX_MODULE_SINGLE_OWNER == 1
+                if(selected>=FX_MODULE_OWNER_LIMIT || selected>=1u)r=FX_BUDGET;
+#else
                 if(selected>=FX_MODULE_OWNER_LIMIT)r=FX_BUDGET;
+#endif
                 else r=inspect(m,e,e->bytes); /* Re-read after scan; changed files are not trusted. */
                 if(r!=FX_OK) {
                     if(r!=FX_BUDGET){e->valid=0u;e->error=(uint32_t)r;}
@@ -296,6 +302,20 @@ FxResult fx_module_manager_freeze(FxModuleManager *m) {
     if(!acquire(m))return FX_BUSY;
     if(atomic_load(&m->shutdown)){release(m);return FX_STATE;}
     if(!m->activated){m->activated=1u;m->loading=1u;}publish(m);release(m);return FX_OK;
+}
+FxResult fx_module_manager_selected(FxModuleManager *m,FxManagedModule *out) {
+    if(!m || !out || atomic_load(&m->shutdown))return FX_ARGUMENT;
+    if(!acquire(m))return FX_BUSY;
+    FxResult result=FX_EMPTY;
+    if(m->activated && !m->uncertain) {
+        for(uint32_t i=0;i<m->count;++i) {
+            FxManagedModule *e=&m->entries[i];
+            if(e->present && e->enabled && e->valid && !e->error) {
+                *out=*e;result=FX_OK;break;
+            }
+        }
+    }
+    release(m);return result;
 }
 static void ready_locked(FxModuleManager *m) {
     if(atomic_exchange(&m->ready_requested,0u) && m->loading) {

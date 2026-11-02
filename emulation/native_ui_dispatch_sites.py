@@ -2,6 +2,12 @@
 import hashlib,struct
 BASE=0x40160000
 PROFILES={
+ 'zf-c301':dict(sha256='6891edd22d9a40042e4718480d29082682bbd12aea172c51f4f164b97f74fe08',
+  experimental=True,
+  poll=0x403dfec8,wait=0x403dfff8,event_wait=0x403e4690,event_group=0x403e45a4,current_task=0x401865d8,
+  event_set=0x403e4670,event_set_native=0x40d3111c,wake_reference=0x403e58f4,wake_mask=0x200000,
+  loops=[(0x404093e8,0x4040943c),(0x4040c664,0x4040c6ac),(0x40511508,0x40511548),
+         (0x4062385c,0x4062391c),(0x40625da8,0x40625e00)]),
  'zr-c110':dict(sha256='606d6116dc8e1560fb1608743a18840e0f7ab2617d11bcf02af025405aca1542',
   poll=0x403e429c,wait=0x403e4418,event_wait=0x403e8b48,event_group=0x403e8a5c,current_task=0x401865f0,
   event_set=0x403e8b28,event_set_native=0x40f40908,wake_reference=0x403e9dd0,wake_mask=0x200000,

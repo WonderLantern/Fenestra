@@ -1,0 +1,123 @@
+{
+  "schema": "fenestra.platform-profile/v1",
+  "model": "Nikon Zf",
+  "firmware": "C 3.01",
+  "original_update_package": {
+    "bytes": 107820261,
+    "sha256": "bfc1ef4ec1588ef10c85e06bf1bf5bcaa7456e49bb2b7160dd4043ab8934d1a6"
+  },
+  "original_eg_module": {
+    "bytes_with_crc": 79144343,
+    "sha256_with_crc": "0b53631396314e17e5b5a46a6758a35ae521c1e8bddc2fb59b61bcf72e4889f8",
+    "payload_bytes": 79144341,
+    "payload_sha256": "6891edd22d9a40042e4718480d29082682bbd12aea172c51f4f164b97f74fe08",
+    "analysis_base": "0x40160000"
+  },
+  "sysctl_events": {
+    "start_task_2nd": 7,
+    "bs_shutdown": 8,
+    "app_first_start_sync_hook": 19,
+    "app_first_start_complete": 20,
+    "card_remove": 24,
+    "card_mount_complete": 25,
+    "dispatcher": "0x40d64e7c"
+  },
+  "support_state": "link81-hardware-tested",
+  "package_layout": {
+    "plaintext_body_package_offset": "0x260",
+    "eg_package_offset": "0x8e334",
+    "preserved_version": "3.01",
+    "external_private_inputs": [
+      "digest_suffix",
+      "body_xor_stream"
+    ]
+  },
+  "native_menu": {
+    "page_array_module_offset": "0x48684b8",
+    "page_stop_exclusive": "0x6c6",
+    "page_slots": 1733,
+    "setup_page": 672,
+    "setup_stock_rows": 47,
+    "setup_extra_rows_required": 2,
+    "text_count": 2898,
+    "languages": 29,
+    "navigation_template_page": 1292,
+    "hooks": {
+      "page": {
+        "address": "0x403e42b4",
+        "bytes": 52,
+        "sha256": "68be22c5652b421b46d72b94b19f6cb704e594746d54c5db0f14278fb0ea82ae"
+      },
+      "text": {
+        "address": "0x40338ee8",
+        "bytes": 108,
+        "sha256": "50ff2fd31090e88500febc986926c8551299ee2eb235f62506caf32ec4fcbc08"
+      },
+      "navigate": {
+        "address": "0x403b8024",
+        "bytes": 340,
+        "sha256": "6619380fc60ddc80304e988574a6df7284b91ddaaa100d3b8f7646b584250e14"
+      }
+    },
+    "entry_contracts": {
+      "page": {
+        "complete_function": true,
+        "table": "0xa03401b88",
+        "row_bytes": 96
+      },
+      "text": {
+        "complete_function": true,
+        "offsets_table": "0x431a2a48",
+        "pool_table": "0x437c3e40",
+        "attributes_table": "0x437d8778"
+      },
+      "navigate": {
+        "complete_function": false
+      }
+    },
+    "ui_dispatch": {
+      "profile_available": true,
+      "main_loop_call_sites": 10,
+      "visible_viewport_for_module_pages": true
+    }
+  },
+  "ptp": {
+    "lookup": "0x407f5000",
+    "session": "0x407f39b8",
+    "payload": "0x407f55dc",
+    "capacity": "0x407f5618",
+    "incoming": "0x407f56c0",
+    "response": "0x407f56cc",
+    "send": "0x407f59bc",
+    "operations_array": "0xa0498c7c8",
+    "operations_capacity": "0x200",
+    "usb_debug_default": false
+  },
+  "core_bindings": {
+    "rtos_functions": {
+      "same_address_from_z9": 58,
+      "zf_specific_rebindings": 2,
+      "memory_allocate": "0x40d31898",
+      "memory_release": "0x40d318d8"
+    },
+    "rtos_tables": {
+      "mmu_context": "0xa04d53580",
+      "irq_controller": "0xa04d4c0a0",
+      "memory_pools": "0xa033504f0"
+    }
+  },
+  "link81": {
+    "core_address": "0x401a0000",
+    "core_capacity": 393216,
+    "card_read_max_bytes": 511,
+    "ascii_directory_casefold": true,
+    "module_identity": "original-eg-payload-sha256-without-crc",
+    "eg_sha256": "acfb28499112f73f75f31f82f2a442ea603e3e19affda54a0656204a13cdd7f8",
+    "package_sha256": "3e9fdbfac7647589cd5c68f7d7b7510903042f07eefa56434387b041b560da55",
+    "hardware_validation": [
+      "package accepted and installed on Zf C3.01",
+      "Fenestra active",
+      "demo module loaded and running"
+    ]
+  }
+}

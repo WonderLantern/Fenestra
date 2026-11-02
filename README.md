@@ -12,8 +12,11 @@ This repository contains the core, module SDK, host debugging tools, firmware pa
 | --- | --- | --- | --- |
 | `zr-c110` | Nikon ZR C1.10 | Core, SDK, native menus, and PTP debugging | Not available |
 | `z9-c532` | Nikon Z9 C5.32 | Core, SDK, native menus, and PTP debugging | Available |
+| `zf-c301` | Nikon Zf C3.01 | Core, SDK, native menus, and PTP debugging; link81 hardware tested | Build locally |
 
 Other firmware versions require their own validated profiles. Fenestra is experimental and has not completed full hardware qualification. Auto activate defaults to off; existing card settings remain effective.
+
+The [Zf C3.01 guide](docs/zf-c301-port.md) includes the reproducible link81 build, local package generation, and `demo-zf.wlm` setup.
 
 ## Getting started
 
