@@ -113,8 +113,8 @@
     },
     {
       "path": "docs/module-development.md",
-      "bytes": 5981,
-      "sha256": "eac7330a00279cb5b1ee6553f31afc868d0d360c268697e87896742d920ac726",
+      "bytes": 6242,
+      "sha256": "ba21195cffd483654e3cad02d8851080c425fe2b9a574f92cc51cd4670bf31c4",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": true,
@@ -3548,8 +3548,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 11313,
-      "sha256": "21cadd338d69ee2293b396456fb167c4644e5a6e67eff3bbdb9697a564a2d7d0"
+      "bytes": 11731,
+      "sha256": "70de5aa30fe6b26fa970c37b21fec49af0794a3b0198d8848ac9f0f317e6e9d0"
     },
     {
       "path": "host/build_z63_adapter.py",
@@ -3660,8 +3660,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 65573,
-      "sha256": "6c3652f544be379d836e3233732c05f1ff2527ec9e7ea1146435755f06aaf594"
+      "bytes": 69473,
+      "sha256": "e3d1d941d4909913ac6a213ae13ac365a716720578766aa2d07f45aa16526052"
     },
     {
       "path": "src/platform/z63_c201/address_space.c",

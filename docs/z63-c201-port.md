@@ -42,6 +42,9 @@ page's physical address is checked. These tables are never installed on a CPU.
 Stock selected-root mutation, original-writer exclusion and DMA aliases require
 separate qualification.
 
+The bundled character-rain SDK demo also passes sustained rendering through
+445 native frames, Back/reopen and acknowledged power-switch shutdown.
+
 The retained native panic display reports a deliberate EL0 data abort and
 reacquires a foreground target masked by a native transition. Both error text
 and CPU diagnostics are checked separately from the recorded renderer frames.
@@ -100,9 +103,14 @@ python -B host/build_sdk_module.py examples/z63_probe/module.c \
 ```
 
 Copy `demo-z63.wlm` to `FENESTRA/demo-z63.wlm` on a disposable virtual FAT card.
-The builder below pins that exact package's digest and size. `module.json` is a
+The explicit pinned probe builder can pin that package's digest and size;
+the normal discovered runtime does not. `module.json` is a
 host receipt and is not copied to the card. This headless module publishes event
 sequences 1, 2 and 5; it does not draw or call native camera services.
+
+The standard `examples/hello/module.c` and `modules/demo/sdk.c` also build
+with `--target z63-c201 --required 0x310000`; use IDs `hello` and `demo`.
+See [Module development](module-development.md) for both commands.
 
 ## Build an emulator candidate
 

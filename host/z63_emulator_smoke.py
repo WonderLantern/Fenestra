@@ -143,6 +143,7 @@ def main():
     parser.add_argument('--ui-test', action='store_true')
     parser.add_argument('--dialog-test', action='store_true')
     parser.add_argument('--reader-test', action='store_true')
+    parser.add_argument('--demo-test',action='store_true',help='exercise the bundled character-rain module, native Back/blur and reopen')
     parser.add_argument('--expect', choices=('success', 'fault', 'rejected', 'sdk', 'services', 'runtime', 'ui', 'timeout', 'files', 'mapping', 'global'), default='success')
     args = parser.parse_args()
     if args.panic_test and (not args.native_menu_test or args.expect!='fault'):
@@ -150,6 +151,8 @@ def main():
     if args.panic_peer_test and (not args.panic_test or args.module_count!=2):
         parser.error('--panic-peer-test requires --panic-test --module-count 2')
     if args.linux_agent and not args.linux_test:parser.error('--linux-agent requires --linux-test')
+    if args.demo_test and (not args.ui_test or args.expect!='ui' or args.dialog_test or args.reader_test):
+        parser.error('--demo-test requires --ui-test --expect ui without another modal control')
     if not 10 <= args.seconds <= 300:
         parser.error('seconds must be 10..300')
     if not 1<=args.module_count<=32 or (args.module_count!=1 and ((args.expect!='runtime' and not args.panic_peer_test) or args.manager_test)):
@@ -354,6 +357,7 @@ def main():
                 reader_result = None
                 startup_result = None
                 panic_result = None
+                demo_result = None
                 menu_completed = False
                 menu_exit_presses = 0
                 scanout_matches = None
@@ -378,7 +382,7 @@ def main():
                         raise RuntimeError('native Fenestra page not reached')
                     qmp('screendump', {'filename': str(out / 'fenestra.ppm')})
                     if args.startup_test:
-                        if not receipt.get('runtime') or args.ptp_client or not args.native_menu_test or args.expect!='runtime':
+                        if not receipt.get('runtime') or args.ptp_client or not args.native_menu_test or (args.expect!='runtime' and not args.demo_test):
                             raise ValueError('startup control requires the normal discovered runtime test')
                         image=application.read_bytes();base=0x40160000
                         boot_layout=struct.unpack_from('<7I',image,symbols['fx_z63_startup_layout']-base)
@@ -490,6 +494,45 @@ def main():
                         keypress('ok');time.sleep(2)
                         if view()>>16!=0x7100:raise RuntimeError('Module root page not reached')
                         qmp('screendump',{'filename':str(out/'application.ppm')})
+                        if args.demo_test:
+                            image=application.read_bytes();base=0x40160000
+                            menu_offset=struct.unpack_from('<I',image,symbols['fx_z63_menu_runtime_offset']-base)[0]
+                            runtime_meta=struct.unpack_from('<3I',image,symbols['fx_z63_runtime_layout']-base)
+                            scene_meta=struct.unpack_from('<17I',image,symbols['fx_native_scene_metadata']-base)
+                            display_meta=struct.unpack_from('<12I',image,symbols['fx_z63_scene_layout']-base)
+                            runtime=read64(read64(0xa02912e10+80)+menu_offset)
+                            owner=read64(read64(runtime+runtime_meta[2]));provider=read64(owner+scene_meta[2])
+                            for _ in range(32):
+                                if not provider:raise RuntimeError('Demo scene provider absent')
+                                name=read64(provider+scene_meta[4])
+                                value=b''.join(read64(name+i).to_bytes(8,'little') for i in range(0,24,8))
+                                if value.split(b'\0',1)[0]==b'camera.display.scenes':break
+                                provider=read64(provider+scene_meta[3])
+                            else:raise RuntimeError('Demo provider chain differs')
+                            budget=read64(provider+scene_meta[5]);scene=read64(budget+scene_meta[6]);display=scene+display_meta[2]
+                            def demo_frames(minimum):
+                                deadline=time.monotonic()+120
+                                while time.monotonic()<deadline:
+                                    frames=read64(display+display_meta[10])&0xffffffff
+                                    error=read64(display+display_meta[11])&0xffffffff
+                                    if error:raise RuntimeError('Demo renderer error: '+str(error))
+                                    if frames>=minimum:return frames
+                                    time.sleep(.1)
+                                raise RuntimeError('Demo did not publish enough frames')
+                            first=demo_frames(3)
+                            qmp('screendump',{'filename':str(out/'demo-rain.ppm')})
+                            word=demo_frames(211)
+                            qmp('screendump',{'filename':str(out/'demo-word.ppm')})
+                            released=demo_frames(421)
+                            qmp('screendump',{'filename':str(out/'demo-released.ppm')})
+                            keypress('left')
+                            if view()>>16!=0x7001:raise RuntimeError('Demo Back did not return to applications')
+                            keypress('ok')
+                            if view()>>16!=0x7100:raise RuntimeError('Demo reopen did not return to its page')
+                            second=demo_frames(released+3)
+                            qmp('screendump',{'filename':str(out/'demo-reopened.ppm')})
+                            demo_result=dict(first_frames=first,word_frames=word,released_frames=released,
+                                reopened_frames=second,back_and_reopen=True,passed=True)
                         if args.tasks_test:
                             image=application.read_bytes();code=0x40910000;image_base=0x40160000
                             menu_offset=struct.unpack_from('<I',image,symbols['fx_z63_menu_ui_offset']-image_base)[0]
@@ -502,7 +545,7 @@ def main():
                             if not native_ui_task or queued_call_task!=native_ui_task:raise RuntimeError('Copied call did not run on captured original UI task')
                             task_result=dict(original_ui_task=hex(native_ui_task),queued_call_task=hex(queued_call_task),passed=True)
 
-                        keypress('ok');time.sleep(2)
+                        if not args.demo_test:keypress('ok');time.sleep(2)
                         if args.dialog_test:
                             if view()>>16!=0x7111:raise RuntimeError('Native modal dialog not reached')
                             qmp('screendump',{'filename':str(out/'dialog.ppm')})
@@ -836,7 +879,11 @@ def main():
         passed = observed_stages == required and not any(stage == 40 for stage, _, _ in stages)
     elif args.expect == 'ui':
         requests=[(result,detail) for stage,result,detail in stages if stage==51]
-        passed=((60,0,1) in stages and (61,0,0) in stages and args.ui_test and
+        if args.demo_test:
+            passed=((60,0,1) in stages and (61,0,0) in stages and demo_result is not None and
+                len(requests)>=10 and all(r in (0,2,4,12) for r,_ in requests) and
+                not any(stage in (40,52) for stage,_,_ in stages))
+        else:passed=((60,0,1) in stages and (61,0,0) in stages and args.ui_test and
                 0x71000002 in views and len(requests)>4 and requests[-1]==(0,24) and
                 all(r in (0,12) for r,_ in requests) and not any(stage==40 for stage,_,_ in stages))
     elif args.expect == 'timeout':
@@ -898,7 +945,7 @@ def main():
             passed = passed and len(starts) == 1 and starts[0][0] == 0 and starts[0][1] > 0
     if args.tasks_test:
         passed=passed and task_result is not None and any(stage==54 and result==0 and detail==int(task_result['original_ui_task'],16) for stage,result,detail in stages)
-    result = dict(panic=panic_result,startup=startup_result,manager=manager_result,reader=reader_result,tasks=task_result,passed=passed, target='z63-c201', expected=args.expect, status=status,
+    result = dict(demo=demo_result,panic=panic_result,startup=startup_result,manager=manager_result,reader=reader_result,tasks=task_result,passed=passed, target='z63-c201', expected=args.expect, status=status,
         stages=stages, seconds=time.monotonic() - start, candidate_sha256=receipt['candidate_sha256'],
         qemu_sha256=hashlib.sha256(args.qemu.read_bytes()).hexdigest(),
         plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
