@@ -3548,8 +3548,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 13952,
-      "sha256": "098a1f7e2caecd2eef8d3b9efe7e01ae40c88618a136f9a1870d84d0d95021c5"
+      "bytes": 13640,
+      "sha256": "9c7b5459b56738505bc4bf65c038dab6f0306b2a8d2fef979d11d09f04b8d023"
     },
     {
       "path": "host/build_z63_adapter.py",

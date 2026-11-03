@@ -204,7 +204,7 @@ mapping. They substitute native IO/tasks and remain separate from full-system
 results. `build-z63-adapter` also builds the standalone card object after original
 input verification; it emits no resident core or firmware package.
 
-## Zf comparison and first camera-test boundary
+## Related ports and validation
 
 The [Zf C3.01 PR](https://github.com/WonderLantern/Fenestra/pull/3), reviewed
 at head `d3a00a59ae09c63fb27655225bf8981271e514f4`, is a useful EXPEED7
@@ -227,14 +227,12 @@ This follows the Zf repacker's header-preservation approach; it does not create
 a new vendor signature or establish updater admission. Neither suffix nor
 firmware bytes belong in the source archive.
 
-The intended first physical body is stock C2.01. Ordinary updater admission of
-a same-version package and restoration after installation remain unverified.
-Do not invent a newer version or assume a downgrade/reinstall is available.
-Local test preparation must record the exact package digest, leave autostart
-off and USB debugging disabled, and begin with updater recognition before any
-programming decision. After an independently reviewed installation/recovery
-route, the first runtime checks are stock boot without modules, manual menu
-activation, a single reviewed module, Back/return to live view, and clean
-power-switch shutdown. Capture, removal during IO and stress tests are later
-gates. Current artifacts retain `DO_NOT_FLASH` until that installation and
-recovery route is established. No physical-camera test has been performed.
+This is the first Z6III C2.01 support change. The existing ZR C1.10 target and
+the Zf C3.01 PR supply shared-core and packaging references. The implementation
+follows the upstream [porting guide](porting.md), with target-specific bindings
+and independent build checks.
+
+Current validation covers local host tests and full-system emulator controls.
+Physical-camera installation and runtime testing remain pending; generated
+firmware artifacts retain `DO_NOT_FLASH`. No firmware, local material or
+device logs are included in this source change.
