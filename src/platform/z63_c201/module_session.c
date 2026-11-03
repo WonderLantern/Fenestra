@@ -19,7 +19,7 @@ struct FxZ63ModuleSession {
     FxModuleLoadBuffer load_buffer;
     uint64_t (*private_tables)[512],(*user_tables)[512];volatile uint64_t *image_leaf;
     FxExecLayout layout;
-    uint64_t deadline;uint32_t phase,operation,busy,closed,retained,reserved;
+    uint32_t phase,operation,busy,closed,retained,reserved;
     int module_result;
 };
 _Static_assert(offsetof(FxZ63ModuleSession,exec)==0,"trusted architecture context prefix");
@@ -145,11 +145,13 @@ static int operation(FxZ63ExecContext *context) {
         if(r==FX_OK)r=fx_execution_idle(&s->stage.loader.runtime,now());
         return (int)r;
     }
-    uint64_t clock=now();if(clock==UINT64_MAX || clock>=s->deadline)return FX_TIMEOUT;
+    uint64_t clock=now();if(clock==UINT64_MAX)return FX_CAPABILITY;
+    if(s->exec.active_ticks>=s->exec.active_limit)return FX_TIMEOUT;
     r=fx_exec_live(&s->arena);if(r!=FX_OK)return (int)r;
     r=fx_heartbeat(&s->stage.loader.runtime,clock);if(r!=FX_OK)return (int)r;
     s->module_result=fx_z63_user_call((uintptr_t)s->image+s->stage.loader.module.entry_offset,
         s->api,s->user_root,(uintptr_t)s->user_stack+s->layout.user_stack_bytes,&s->exec);
+    if(s->exec.active_ticks>=s->exec.active_limit)return FX_TIMEOUT;
     if(s->exec.continuation[34])return FX_INTERRUPTED;
     clock=now();
     r=fx_release(&s->stage.loader.runtime,s->lease,clock);
@@ -207,7 +209,11 @@ FxResult fx_z63_session_invoke(FxZ63ModuleSession *s,uint32_t budget,int *result
     if(!s->exec.continuation[34]) {
         r=fx_execution_resume(&s->stage.loader.runtime,clock);
         if(r==FX_OK)r=fx_acquire(&s->stage.loader.runtime,s->stage.loader.runtime.generation,clock,&s->lease);
-        s->deadline=clock+budget;
+        uint64_t frequency;__asm__ volatile("mrs %0,cntfrq_el0":"=r"(frequency));
+        if(!frequency || frequency>UINT32_MAX)r=FX_CAPABILITY;
+        s->exec.active_limit=frequency*budget/1000u;
+        if(!s->exec.active_limit)s->exec.active_limit=1u;
+        s->exec.active_ticks=0u;
     }
     s->operation=1u;
     if(r==FX_OK)r=fx_z63_exec_call(&s->exec,s->private_root,operation);

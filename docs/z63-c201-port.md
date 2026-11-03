@@ -1,16 +1,53 @@
 # Nikon Z6III C2.01 experimental port
 
-This development port boots an emulator-only SYSCTL integration, adds Fenestra
-at the top of Nikon's native Setup menu, and manually loads one pinned headless
-`.wlm` from the card. The original scheduler starts the worker, Fenestra's loader
-checks the package, and its private EL1/EL0 gates execute INIT, TICK and STOP.
-Full-system tests observe successful returns and restored native context.
+This development port adds Fenestra to the native Setup menu, discovers WLM
+packages from the card, and starts SDK workers on original Nikon tasks. Modules
+execute at EL0 with private views; copied requests execute on original tables.
+Native application pages and queued UI calls use the original input task.
 
-The current port supplies no camera SDK service capabilities. Module discovery,
-the module manager, ordinary demo drawing, PTP/Linux debugging and update-package
-production remain unfinished. It is not equivalent to the hardware-tested Zf
-port. All candidate EGs are **emulator-only; DO_NOT_FLASH**. No physical camera
-or updater was tested.
+Full-system emulator controls cover memory, event flags, caller context,
+resource snapshots, queued native calls, page paths and RGBA images, native
+input, file create/write/seek/readback, and same-request critical calls. Capability
+grants are restricted to each package's required and optional declarations.
+The native manager supports 8.3 module names, Off/On switching and native
+keyboard search. Full-system controls cover cancellation, submitted text,
+filter clearing and a subsequent activation. Native mutex/semaphore lifetimes
+and read-only IRQ queries pass separately through the dedicated debug task.
+The base mapping provider's query and translation pass through the copied SDK.
+
+Ordinary modal dialogs and measured document pagination now pass native input,
+finish and live-view restoration. Global drawing passes three visible paced
+frames and clean close in two runs after publishing through the original
+graphics owner and reacquiring a masked target on explicit resubmission. A
+twelve-package control starts and finishes twelve workers with 120 successful
+copied requests.
+
+Startup controls now include default-off autostart, two configuration slots,
+a retained boot guard and explicit clearing of a previous guard. Manual start,
+guard blocking/clearing, autostart, repeated configuration changes and native
+power-switch shutdown pass in the model. Readback verifies both slots' CRCs,
+generations and target identity, and confirms guard removal after clean stop.
+Loaded workers remain retained until reboot; guard clearing does not unload or
+restart a faulted worker.
+
+USB/IP status/echo/identity, the RTOS monitor, native calls/printf, synchronization,
+IRQ queries, original Linux shell IPC and the Linux RAM agent pass with a
+separate virtual USB startup-setting input. The supplied baseline USB startup
+path remains unqualified. The RAM-agent control verifies the exact uploaded ELF, argv jobs,
+owned-job cancellation, RAM-file readback, self-memory access and stop acknowledgement.
+Raw SDK function/table names match the Z9 profile; original editor operations
+still require the native UI task and a live singleton session. MMU context
+map/translate/protect/unmap pass on owned, unpublished tables after every pool
+page's physical address is checked. These tables are never installed on a CPU.
+Stock selected-root mutation, original-writer exclusion and DMA aliases require
+separate qualification.
+
+The retained native panic display reports a deliberate EL0 data abort and
+reacquires a foreground target masked by a native transition. Both error text
+and CPU diagnostics are checked separately from the recorded renderer frames.
+Live titles and measured label/value fitting have separate visual acceptance.
+All candidates remain **emulator-only; DO_NOT_FLASH**. No physical camera or
+updater was tested.
 
 ## Inputs and bindings
 
@@ -32,10 +69,25 @@ terminal. A notice does not prove native work has retired.
 
 The card scope owns one descriptor. It preserves native errors, short reads and
 EOF, requires an actual-count output and retains uncertain ownership after an
-impossible count or failed close. Each request is at most 511 bytes. This bound
+impossible count or failed close. Native reads are aggregated in chunks of at most 511 bytes into bounded public
+reads of at most 65536 bytes. This bound
 does not establish physical DMA/cache coherency. Use lowercase 8.3 filenames;
 the native test opened `demo-z63.wlm`, while `probe-z63.wlm` returned
 `0x80001001`. The adapter and SDK builder reject longer base names for now.
+
+The manager maps logical `id.wlm.disabled` names to physical `id.off` files.
+Discovery skips `.off`. Rename never replaces an existing destination, checks
+both resulting names and closes further manager IO after uncertain completion.
+An enabled filename must have the same ID before its suffix; renaming does not
+change a package's internal identity. Loaded code remains retained until reboot.
+Search changes the copied inventory view and does not rename or reread packages.
+
+The optional debug build exposes original native mutex, semaphore and IRQ
+bindings. These retain their original ABI and lifetime requirements. A raw
+native ID, pointer or IRQ descriptor has no automatic owner retirement.
+The mapping provider similarly requires a caller-owned unused virtual address,
+physical resource and exclusion of original writers before mutation. Its tested
+query/translation path does not establish those mutation prerequisites.
 
 ## Build the test module
 
@@ -57,25 +109,40 @@ sequences 1, 2 and 5; it does not draw or call native camera services.
 Choose a new output directory and supply explicit LLVM/linker locations:
 
 ```sh
-python -B fenestra.py build-z63-probe \
-  --application /local/inputs/eg2010_0201i0.bi \
+python -B fenestra.py build --target z63-c201 \
+  --firmware /local/inputs/eg2010_0201i0.bi \
   --llvm-bin /local/toolchain/bin \
   --linker /local/toolchain/bin/ld.lld \
-  --module build/demo-z63/demo-z63.wlm --menu \
-  --output-dir build/z63-menu
+  --output build/z63-runtime
 ```
 
-The builder verifies the original image and native hook spans, checks the full
-zero-filled mapped image reservation, extracts displaced register-save
-instructions locally, compiles and links the candidate, checks branch ranges,
-and proves byte-for-byte original reconstruction after reversing declared edits.
-`probe.json` identifies the candidate and its symbols. The candidate retains the
-original member CRC bytes unchanged and has no updater envelope. It is consumed
-directly by the emulator, not by the camera updater.
+Run the native Fenestra action to discover packages in `FENESTRA/`, then open
+Applications for modules with visible controls. This path does not pin a test
+package's filename, size or digest at compile time. The earlier headless sample
+has no SDK capabilities; examples `sdk.c`, `services.c`, `tasks.c`, `image.c`,
+`files.c`, `critical.c`, `text.c`, `mapping.c`, `dialog.c`, `document.c` and
+`global.c`, `simd.c`, `mmu.c` and `bindings.c` provide separate SDK controls. The dialog, document and global
+controls have native presentation/close acceptance in the model. Reader touch
+pagination remains unqualified; its native buttons pass exact offset checks. Declare
+only the capabilities each example needs when building its WLM.
 
-Without `--menu`, `--module` enables an automatic card-mount experiment. Without
-both, the image only observes original SYSCTL entry/return and starts a bounded
-leaf task at startup. These are distinct experiments, not release modes.
+The builder checks the complete original image, native binding fingerprints,
+hook spans and zero-filled reservation before compiling. `verified.json` is an
+independent check of linked code, exact hook destinations, displaced original
+instructions, compiler dependencies and byte-for-byte original reconstruction.
+`probe.json` and `identity.json` retain the matching build identities. The EG
+retains its original member CRC bytes and is intended for direct emulator input.
+
+`--experimental-ptp` includes the native debugging experiment; it does not
+qualify USB transport. `build-z63-probe` remains available for explicit pinned,
+discovery, drawing and headless negative controls.
+
+`package-z63` accepts the matching complete original ciphertext/plaintext twins
+and a candidate receipt. It repairs the MAIN and body CRCs and emits fixed-layout
+plaintext and encoded-body research artifacts. The other four members must stay
+identical. A complete envelope additionally requires local authentication
+material that first validates the exact original package; that C2.01 path is
+unqualified. Body reconstruction is not updater acceptance.
 
 ## Full-system acceptance so far
 
@@ -100,13 +167,14 @@ hardware fault containment.
 
 The current owner retains session/task state until reboot and permits one
 activation attempt per boot. There is no unload/retry contract. The native menu test covers activation, Back to Setup and return to live view
-using MCU buttons. With `--repeat-activation`, pressing Run twice produces one
+using MCU buttons. With `--repeat-activation`, pressing Start twice produces one
 worker and one INIT/TICK/STOP sequence. Media loss during IO and shutdown under
 load need separate acceptance before broader runtime claims.
 
-The final source passes 69 host tests with three platform skips, 43 original
-FILESRV cases, and seven adapted original-kernel fixture cases. A clean explicit
-source export builds byte-identical test module and resident candidate. These
+The current host suite passes 80 tests with three platform skips. Earlier
+bring-up checks covered 43 original
+FILESRV cases, and seven adapted original-kernel fixture cases. The source export is verified independently against its inventory; build
+outputs and private firmware inputs stay outside it. These
 checks are separate from the full-system success and deliberate-fault runs.
 Use `--expect fault` for a candidate pinned to `examples/z63_probe/fault.c`; use
 `--expect rejected` with the success candidate and a different on-card package

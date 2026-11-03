@@ -1,6 +1,7 @@
 /* EL0 component gate. Kernel stack, call frames, tables and Loader state
  * remain EL1-only. Normal return uses a dedicated read-only SVC page. */
 #include "fenestra_simd.h"
+#include "exec_time.h"
 .text
 .global fx_z63_user_call
 .type fx_z63_user_call,%function
@@ -33,6 +34,8 @@ fx_z63_user_call:
     ldr x9,[x4,#544]
     cbnz x9,4f
     fx_simd_clear /* Fresh invocation cannot observe Nikon/another owner Q state. */
+    mrs x8,cntpct_el0
+    str x8,[x4,#FX_Z63_ACTIVE_START]
     mov x8,#0x340 /* EL0t, IRQ enabled; FIQ/SError/debug stay masked. */
     msr spsr_el1,x8
     mov x0,x1
@@ -70,6 +73,8 @@ fx_z63_user_call:
     eret
 4:  add x30,x4,#272
     fx_simd_restore x30,(FX_MODULE_SIMD_OFFSET-272)
+    mrs x8,cntpct_el0
+    str x8,[x4,#FX_Z63_ACTIVE_START]
     ldr x8,[x30,#248]
     msr sp_el0,x8
     ldr x8,[x30,#256]

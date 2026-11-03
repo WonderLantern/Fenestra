@@ -12,6 +12,30 @@ from build_z63_adapter import verify
 
 
 class Z63CardTests(unittest.TestCase):
+    def test_startup_short_reads_and_uncertain_close(self):
+        cc = shutil.which('clang') or shutil.which('cc')
+        if not cc:
+            self.skipTest('C compiler unavailable')
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / 'startup-test'
+            subprocess.run([cc, '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            '-Wconversion', '-Wshadow', '-I', str(ROOT / 'include'),
+                            str(ROOT / 'tests/z63_startup_fixture.c'), str(ROOT / 'src/startup_files.c'),
+                            '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
+    def test_manager_short_names_and_uncertain_rename(self):
+        cc = shutil.which('clang') or shutil.which('cc')
+        if not cc:
+            self.skipTest('C compiler unavailable')
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / 'manager-test'
+            subprocess.run([cc, '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            '-Wconversion', '-Wshadow', '-I', str(ROOT / 'include'),
+                            str(ROOT / 'tests/z63_manager_fixture.c'), str(ROOT / 'src/memory.c'),
+                            '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
     def test_card_errors_counts_and_retention(self):
         cc = shutil.which('clang') or shutil.which('cc')
         if not cc:
@@ -21,6 +45,17 @@ class Z63CardTests(unittest.TestCase):
             subprocess.run([cc, '-std=c11', '-Wall', '-Wextra', '-Werror',
                             '-Wconversion', '-Wshadow', '-I', str(ROOT / 'include'),
                             str(ROOT / 'tests/z63_card_fixture.c'), '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
+    def test_native_directory_records_and_retention(self):
+        cc = shutil.which('clang') or shutil.which('cc')
+        if not cc:
+            self.skipTest('C compiler unavailable')
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / 'directory-test'
+            subprocess.run([cc, '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            '-Wconversion', '-Wshadow', '-I', str(ROOT / 'include'),
+                            str(ROOT / 'tests/z63_discovery_fixture.c'), str(ROOT / 'src/memory.c'), '-o', str(binary)], check=True)
             subprocess.run([str(binary)], check=True)
 
     def test_lifecycle_and_terminal_stop(self):

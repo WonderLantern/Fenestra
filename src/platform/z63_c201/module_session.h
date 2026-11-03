@@ -35,7 +35,9 @@ FxResult fx_z63_session_load(FxZ63ModuleSession *,const char *native_path,const 
 /* Caller writes the fixed read-only API page only before a NEW invocation.
  * Pointers inside it may address the fixed exchange page; other user pointers
  * fault. INTERRUPTED means retain API/exchange and yield on ORIGINAL tables,
- * then invoke again. A native monotonic deadline applies across IRQ resumes.
+ * then invoke again. The native counter charges EL0 residence across IRQ
+ * resumes; time spent descheduled on original tables does not consume that
+ * execution budget. Counter totals saturate at the invocation limit.
  * Backend services/rendering run only after a completed return, on original
  * tables, after validating/copying fixed exchange storage. */
 FxResult fx_z63_session_invoke(FxZ63ModuleSession *,uint32_t budget_ms,int *module_result);

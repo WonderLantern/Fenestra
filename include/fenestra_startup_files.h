@@ -18,6 +18,7 @@ typedef struct {
     const FxStartupFileProfile *profile;
     const _Atomic uint32_t *shutdown,*cleanup_window;
     _Atomic uint32_t native_error;
+    _Atomic uint32_t uncertain;
     FxFileObserver observer;
 } FxStartupFiles;
 FxResult fx_startup_files(FxStartupIO *,FxStartupFiles *);

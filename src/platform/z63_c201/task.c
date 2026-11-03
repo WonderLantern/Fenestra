@@ -25,3 +25,8 @@ FxResult fx_z63_task_start(FxZ63TaskScope *s,void (*entry)(void *),void *context
     if(result){s->native_error=(uint32_t)result;s->phase=FX_Z63_TASK_FAILED;return FX_IO;}
     s->phase=FX_Z63_TASK_RUNNING;return FX_OK;
 }
+
+FxResult fx_z63_task_delay_ticks(uint32_t ticks) {
+    if(!ticks || ticks>1000u)return FX_ARGUMENT;
+    return FN(UINT64_C(0x4018ddc8),int32_t (*)(uint32_t))(ticks)?FX_IO:FX_OK;
+}

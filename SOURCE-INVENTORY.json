@@ -63,8 +63,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6988,
-      "sha256": "02c6677b3d7113910e7e75fa7aacf2d3f0d055f01f333b9715f59a1750bc9ca3",
+      "bytes": 7344,
+      "sha256": "9fdeacead22e32d0249fd3d78d2c2d08fab430cfd03cee6dfe6422534762dc95",
       "origin": "project-source",
       "snapshot_sha256": "ccee77bf6619d5747c065433c0ec84bc3524e690f1db8a5bc8d7a030a171fc29",
       "transformed": true,
@@ -233,8 +233,8 @@
     },
     {
       "path": "fenestra.py",
-      "bytes": 3169,
-      "sha256": "f5d310b43d1d18eb3bda55efc108b8877d142be3de844010f33f32e3e79ab8e3",
+      "bytes": 6155,
+      "sha256": "16b5bafc1162d9d4e2a57e859d5269bf33360b70a0f2b441efb5690901dc0cc0",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
@@ -253,8 +253,8 @@
     },
     {
       "path": "host/build_linux_agent.py",
-      "bytes": 1699,
-      "sha256": "429d1c1abef0adfdeb9e8eed9a2c383948b7d77af78c3948dba9282caf845e68",
+      "bytes": 1868,
+      "sha256": "2ae75b82c7f7014e162de4188274fd0f6bcefe2701d27257095957e893124e1d",
       "origin": "project-source",
       "snapshot_sha256": "73994bf4347cd5d5e8569559e70ddd92fcc090dabd9373b7beceed913109ecf3",
       "transformed": true,
@@ -1273,8 +1273,8 @@
     },
     {
       "path": "include/fenestra_native_display.h",
-      "bytes": 4528,
-      "sha256": "47e7bac4dc36af4b6e365900f1cb5425ac9a5650041117fda6fd5a84a1906ee9",
+      "bytes": 4592,
+      "sha256": "ed5ebee59626274890f93abbb195fde6022df135b70d3efabc337ff31bad2ea7",
       "origin": "project-source",
       "snapshot_sha256": "cefbfb61cb829437c159e7144dee8d651467960c635dd541e06931562c5965ca",
       "transformed": true,
@@ -1333,8 +1333,8 @@
     },
     {
       "path": "include/fenestra_native_modules.h",
-      "bytes": 908,
-      "sha256": "9cf8de7e3c65ce2bb9dda6767cfc4058ad6004fd1a0b3e882dd275d942491708",
+      "bytes": 1297,
+      "sha256": "5e993bc1e987a37cdc819dc98c95172c25ca64e8eb9753cbcede1fb0d2292a56",
       "origin": "project-source",
       "snapshot_sha256": "9cf8de7e3c65ce2bb9dda6767cfc4058ad6004fd1a0b3e882dd275d942491708",
       "transformed": false,
@@ -1733,8 +1733,8 @@
     },
     {
       "path": "include/fenestra_startup_files.h",
-      "bytes": 916,
-      "sha256": "28ac2e28e7e0d760571096c1b59c6e8fc6c72169c151c6be854ce3087c490b67",
+      "bytes": 948,
+      "sha256": "25a97f512d31003d3cb84994b1f2a4b4856b0b2f079f1399571c88810db8a7f9",
       "origin": "project-source",
       "snapshot_sha256": "28ac2e28e7e0d760571096c1b59c6e8fc6c72169c151c6be854ce3087c490b67",
       "transformed": false,
@@ -2163,8 +2163,8 @@
     },
     {
       "path": "src/native_display.c",
-      "bytes": 36666,
-      "sha256": "8067c6d8b0323ad0cad1d9a91d98be08133b33e823ddd73dfef4275a44afbd2a",
+      "bytes": 38754,
+      "sha256": "4ba509b573b2d5eda21a634dae74358fcad8f2c4092dc8e8800b28cb7be20b61",
       "origin": "project-source",
       "snapshot_sha256": "575ebfc60524eb22aaf2b213f405f0d330e105c19559504a82d1abf9394e336c",
       "transformed": true,
@@ -2253,8 +2253,8 @@
     },
     {
       "path": "src/native_modules.c",
-      "bytes": 8365,
-      "sha256": "ee1ca432f0774047c0519f70e79e673acb3d39d9a010f4a4f2a554f70ce5fbbf",
+      "bytes": 8852,
+      "sha256": "7ad4e6ef6e28b9c3d7425f93e143fa5fcd824700742f5aa53c3f8f22d321e988",
       "origin": "project-source",
       "snapshot_sha256": "ee1ca432f0774047c0519f70e79e673acb3d39d9a010f4a4f2a554f70ce5fbbf",
       "transformed": false,
@@ -2264,7 +2264,7 @@
     {
       "path": "src/native_panic.c",
       "bytes": 1663,
-      "sha256": "762fc011c9727e92211cb85d834e91c510d90261e265fc1ab10dc378c8fba235",
+      "sha256": "8ee4386419485b40fb40bbb7d30281319fa27187c8c792c8e6978be9fbdbc2fe",
       "origin": "project-source",
       "snapshot_sha256": "762fc011c9727e92211cb85d834e91c510d90261e265fc1ab10dc378c8fba235",
       "transformed": false,
@@ -3303,8 +3303,8 @@
     },
     {
       "path": "src/startup_files.c",
-      "bytes": 2682,
-      "sha256": "0e3daaf0e1e837f50781ef535f55e31a65c5e9242d030846efdf9c7cc0cb35ad",
+      "bytes": 2927,
+      "sha256": "e54196f7a0101e244c3d4ec771f16f4d37601a547ba6160302271b6d05683c2f",
       "origin": "project-source",
       "snapshot_sha256": "0e3daaf0e1e837f50781ef535f55e31a65c5e9242d030846efdf9c7cc0cb35ad",
       "transformed": false,
@@ -3548,8 +3548,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 6781,
-      "sha256": "4b6e600704a49dd2a83720f5ce8e954d7e481c88fa41e406734dd214dda88a1f"
+      "bytes": 11313,
+      "sha256": "21cadd338d69ee2293b396456fb167c4644e5a6e67eff3bbdb9697a564a2d7d0"
     },
     {
       "path": "host/build_z63_adapter.py",
@@ -3558,8 +3558,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2757,
-      "sha256": "324590dba40c3a7e4b1b76244927279f552f828749db2cdb572abdafa801d018"
+      "bytes": 3484,
+      "sha256": "0471ebe4fe5211599cc4c50660374c7b999249845238c0bd7464af73dbd602cf"
     },
     {
       "path": "src/platform/z63_c201/card.c",
@@ -3568,8 +3568,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2605,
-      "sha256": "8f497b85f11fd2bd28b408d97bdac231bf3d085c30cf65e091f36fd06a652c09",
+      "bytes": 3039,
+      "sha256": "e4953284ef2effe1fdd572c7d45a92a3fe27542ba789ac1e8f39c4cbe3d38c1d",
       "source_path": "src/platform/z9_c532/card.c",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3590,8 +3590,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2748,
-      "sha256": "67016d8120c92556d6e3859231344dc7662038853c254e5c164029a2778dda8f"
+      "bytes": 53381,
+      "sha256": "93432cc670c57df8c5717041be7b0150ec4c03fcddf154b8567032c69217180b"
     },
     {
       "path": "tests/test_z63_card.py",
@@ -3600,8 +3600,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 3333,
-      "sha256": "552f98d6084e42876d32bd6f20f76b4bba84987dfd5dbf95a40920820a7bf427"
+      "bytes": 5299,
+      "sha256": "672e8de361aa23a1c0521600464a5b7e50027f0a82947d5f42956e2d49fc75eb"
     },
     {
       "path": "tests/z63_card_fixture.c",
@@ -3610,8 +3610,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2221,
-      "sha256": "137a49517ff2c734261acb30d13ac3dea87b7ed90797472d25800733554f1b50"
+      "bytes": 2383,
+      "sha256": "fa674130c702b54f9b70f87c91d9d0e8b7dc40ecb69d87d882dbba9bf014f767"
     },
     {
       "path": "emulation/z63_probe.ld",
@@ -3650,8 +3650,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 8132,
-      "sha256": "0eb720ac63910319d6732ca5c6fae1fd941ac5608ebc1407c6d31e7c1ad1d75d"
+      "bytes": 16364,
+      "sha256": "e2721e331118a188529712a7488a9da8ff3ef157abbb966b31e6fc510a81c2c8"
     },
     {
       "path": "host/z63_emulator_smoke.py",
@@ -3660,8 +3660,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 15340,
-      "sha256": "ee878d682656b919fe55ce9dc1f65cb4f539cecfb3d9371d5a18a598279350be"
+      "bytes": 65573,
+      "sha256": "6c3652f544be379d836e3233732c05f1ff2527ec9e7ea1146435755f06aaf594"
     },
     {
       "path": "src/platform/z63_c201/address_space.c",
@@ -3706,8 +3706,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2152,
-      "sha256": "7a746ecb0e365a9086e92e91733d80b1f9b8b5453b6d92e7d37cddc36969446f",
+      "bytes": 2475,
+      "sha256": "50440e0150e83b396f556bb54fd7fa27479ef265826b14c6a06161ccb619baee",
       "source_path": "src/platform/z9_c532/exec_context.h",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3738,8 +3738,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 5966,
-      "sha256": "579744f5cc3d25d340b420974b88c4113ddfd8c1db175d47bfc2fa7943fb88f2",
+      "bytes": 16908,
+      "sha256": "2df8ff2cda21890e4641f7d4e3bae2bbaa2bb507790739154f061e70b580c7f3",
       "source_path": "src/platform/z9_c532/menu.c",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3760,8 +3760,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2988,
-      "sha256": "3c96ecefa8750c330b2f961c07949a3654c2ade22b01acd3672969a7c4233187"
+      "bytes": 6553,
+      "sha256": "f0cddadc7433209283e235949e5d8e4be960d272a6c983b230a66b5203a2a50d"
     },
     {
       "path": "src/platform/z63_c201/module_session.c",
@@ -3770,8 +3770,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 14683,
-      "sha256": "7a26bdb364df8e0cbca860c2930169e3989c7b89c97a54394e7a5f0c26105067",
+      "bytes": 15039,
+      "sha256": "417da30c186f62ece1ba2f4364dcb01074cea8413649e13ca09ab87b8b5417f9",
       "source_path": "src/platform/z9_c532/module_session.c",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3782,8 +3782,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 3105,
-      "sha256": "76a333ad935f3abc28025d1f653b82fb2c9a85c0aa3328a6180e05a0e50ffc33",
+      "bytes": 3247,
+      "sha256": "bca98e29d6637f054319c4a8f26442ef472a8bceb4a3336ec4dd39cbec16fc53",
       "source_path": "src/platform/z9_c532/module_session.h",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3818,8 +3818,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 5628,
-      "sha256": "86fd2aa26e43be68dbac7df24591c1847192b5c4d10a658eb8964dc8c04ef6af",
+      "bytes": 5693,
+      "sha256": "8d7334d203eb5b1c1390f8626578cc332fd197c67da496b8dee6acaf992c878a",
       "source_path": "src/platform/z9_c532/private_call.S",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3850,8 +3850,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 1596,
-      "sha256": "52b15f1fd777475a49c123edbce13c8d6a38e54f1e60f9eeeaf6e50d340fd74a",
+      "bytes": 1777,
+      "sha256": "52a8475b534df6f8ccadec6008fa3cd7b42321d5984205083bbb4a590f65e77c",
       "source_path": "src/platform/z9_c532/task.c",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3862,8 +3862,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 601,
-      "sha256": "9f6c18f88314d4cdf35c698af08c2d9a0adaf9435d7be0e1d3839777a4b9b85a",
+      "bytes": 651,
+      "sha256": "c6ea32c6c5e0a59f4c481768fcedc55db5d97763b46d3901c0eb1809e3d70877",
       "source_path": "src/platform/z9_c532/task.h",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3874,8 +3874,8 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 2692,
-      "sha256": "1bf498e1d16ef2c0f389e47fd5d1226084ae000354a4f9171cd8d60fb7db1c3f",
+      "bytes": 2833,
+      "sha256": "87b58d2ef2f09471debf62314d97c6d241030258b3e4e0965995e21946978a29",
       "source_path": "src/platform/z9_c532/user_call.S",
       "source_revision": "67774849c9dd97cc7127066190528e245ee25650"
     },
@@ -3908,6 +3908,526 @@
       "additional_permission": "EXCEPTIONS.md",
       "bytes": 1654,
       "sha256": "88dfe1d420b8f72ebd51e4afdd96972bd9bcebb9440f187abc570eecb5db3fd9"
+    },
+    {
+      "path": "examples/z63_probe/bindings.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1869,
+      "sha256": "dca4017e74a2cb52cb25ce1cd3ec2f3c733aa625461df89dcc5730515ea3c22b"
+    },
+    {
+      "path": "examples/z63_probe/cohort_fault.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 643,
+      "sha256": "4503cc56357a3f0ed37259a226b30f3aa4ba00e1ceb365e5cab15b8cc271fa61"
+    },
+    {
+      "path": "examples/z63_probe/critical.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2549,
+      "sha256": "746ac7a640972a7989d65924fef21cf85737567bdd5c54979c9b40e718e39e21"
+    },
+    {
+      "path": "examples/z63_probe/dialog.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1832,
+      "sha256": "080bd96ae09259e52e56f307a92df0bd478067806d6c1b387695e86998cb78e1"
+    },
+    {
+      "path": "examples/z63_probe/document.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2422,
+      "sha256": "e26b1ce760ae36b95a1a129ba27629106c70ed1be68ff0966d569c3b268964dc"
+    },
+    {
+      "path": "examples/z63_probe/files.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2523,
+      "sha256": "2d7e6ce5fdeb36992e2c2bcec7c4dbb9fbd525d1280ff544702e4fa1cbf57e49"
+    },
+    {
+      "path": "examples/z63_probe/global.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2112,
+      "sha256": "f5f2c314f16f972e0c7b447d71502f289b66e6024698ffb17f81889a7aa4ffc5"
+    },
+    {
+      "path": "examples/z63_probe/idle.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 550,
+      "sha256": "88ad8d3401b1bc2148248effbe72bb30988713d5269271fa20fedc156c4548a0"
+    },
+    {
+      "path": "examples/z63_probe/image.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3038,
+      "sha256": "0936558fa5d080582dc1221ec7436b128a6afae3457947cfe67e2cb8a9ceb1c6"
+    },
+    {
+      "path": "examples/z63_probe/large.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 558,
+      "sha256": "e07a3b778f4b09687ab99f00b36913db3dcf51354df12fa23e442f60d3e8fa44"
+    },
+    {
+      "path": "examples/z63_probe/mapping.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1666,
+      "sha256": "ff209c0d8f07659ce9ca1f7e6048bbe2767de0976982864a0bdcc016108fa784"
+    },
+    {
+      "path": "examples/z63_probe/mmu.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4189,
+      "sha256": "f48d2953d63517f14eccf399adfe7ce708762c3147b4cabcb76e51ed4165afc1"
+    },
+    {
+      "path": "examples/z63_probe/scene.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2451,
+      "sha256": "235077328caabe480497ae894afcaddfb90ae843a0d2cbb25945b2434a7a4c6c"
+    },
+    {
+      "path": "examples/z63_probe/sdk.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2293,
+      "sha256": "e77039b5b74de5e01b310eefa4ba64625c0851236251e14351e08abced0f1d3e"
+    },
+    {
+      "path": "examples/z63_probe/services.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3225,
+      "sha256": "3908523f6264e406201ea964ccf2b9a1560d552648c0016e7b108829babcd1e1"
+    },
+    {
+      "path": "examples/z63_probe/simd.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2649,
+      "sha256": "8171ac341b335a20fdae359934686dbe4671467f0700b5d7a8bb2400c107d661"
+    },
+    {
+      "path": "examples/z63_probe/tasks.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3003,
+      "sha256": "f30dfdd7458716a50e44b901b8fdd6d113f881734548064e907d83a6a20476b6"
+    },
+    {
+      "path": "examples/z63_probe/text.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1648,
+      "sha256": "f44719fdac2525e6b36d40ab6067e7e03dd8a8f6b1addcb2551c31d7164c9077"
+    },
+    {
+      "path": "examples/z63_probe/timeout.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 215,
+      "sha256": "53a524a12ef265227969589c05b2b452f649e2dea1af92dac3f1e95cc540194e"
+    },
+    {
+      "path": "examples/z63_probe/title.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1711,
+      "sha256": "99c1a8066a2dc8d3bd844ea5325e6337a4f4c069762d9fe1696fe5a706e91053"
+    },
+    {
+      "path": "examples/z63_probe/ui.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1495,
+      "sha256": "262b950bbf69959fd14dc48951fd749d957ea3a29b8dd4fbd70b2bfb602f0049"
+    },
+    {
+      "path": "host/verify_z63_build.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4803,
+      "sha256": "68b29037b86fc906eba37712ca5899b309490ec84c2fd8e08125f0d066981517"
+    },
+    {
+      "path": "host/z63_bindings.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4347,
+      "sha256": "03d6d8be17cc1ae2d46bf5cadb98fd48fa9ce1725fe902fb9395ee0162f5fe53"
+    },
+    {
+      "path": "host/z63_package.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 8178,
+      "sha256": "b6c2e8c8074bddd24f96f56b5d1d0fa5c4c5a09d46b00f54072e163a8c3405c4"
+    },
+    {
+      "path": "src/platform/z63_c201/discovery.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3923,
+      "sha256": "2e459e98ef46ebe8562504a93791f280a67163d94e412c4865060099d5c7f80a"
+    },
+    {
+      "path": "src/platform/z63_c201/discovery.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 394,
+      "sha256": "9be3bfd3955ed0c4fa9e1b4770da0e3031520c3ec23c8d38443a45fa26ac40f5"
+    },
+    {
+      "path": "src/platform/z63_c201/display_profile.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3562,
+      "sha256": "8cc4b9ce8c159afb96c9ae272547feb8bca58e9315a55373f16cae7e342e5950"
+    },
+    {
+      "path": "src/platform/z63_c201/draw_probe.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1780,
+      "sha256": "9769f35d790dc3a0b4a61d16f6997d2422d813433f151d717f023dc1309f2932"
+    },
+    {
+      "path": "src/platform/z63_c201/exec_time.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 741,
+      "sha256": "30761d465aac318a9655783703c1d36eecbd3a495a5f7bfabf94bf9aaa8e7ba6"
+    },
+    {
+      "path": "src/platform/z63_c201/manager.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4727,
+      "sha256": "852f070db9929440ffb3907c40c6f5f277f2e223aa7e6beff88dc46d2de64091"
+    },
+    {
+      "path": "src/platform/z63_c201/manager.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 375,
+      "sha256": "b3effe79ce0226815dd6a2803980c8ce50e122556c1578da7df6117191dc44c2"
+    },
+    {
+      "path": "src/platform/z63_c201/module_worker.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 14240,
+      "sha256": "474e030e7e481b8dd1101224008a75768ace3f2416df117fd58e2840bc8f017b"
+    },
+    {
+      "path": "src/platform/z63_c201/module_worker.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1952,
+      "sha256": "0fb1b99143f37924bc4e5332a034d07e7fa2081f232755178666ee6f6e7cde48"
+    },
+    {
+      "path": "src/platform/z63_c201/ptp.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2770,
+      "sha256": "fe2c63161d974dc7a59ba5aaa409e642f87cea367e7855217ed978b069df7e92"
+    },
+    {
+      "path": "src/platform/z63_c201/ptp.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 217,
+      "sha256": "5dec7636cca65e12a411be548b486fbeb006342084b7901ba9cdb58eb7bc1d50"
+    },
+    {
+      "path": "src/platform/z63_c201/ptp_trampoline.S",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 721,
+      "sha256": "fea65ecb0c34f821f240caa1c202df88c8e0aadb48b7fd433e6a45329277fb5b"
+    },
+    {
+      "path": "src/platform/z63_c201/rtos.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 550,
+      "sha256": "c15c35b96cd593c6f765c76f417326bc471333410bc5a9ac14639cc0e79fe5b0"
+    },
+    {
+      "path": "src/platform/z63_c201/rtos_printf.S",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 360,
+      "sha256": "521f2234b9e3f3aea60ac8645417ec9f10d623f4884a047a03bb1319ba9bc676"
+    },
+    {
+      "path": "src/platform/z63_c201/runtime.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 8229,
+      "sha256": "ac22b30cb96949172d1dbb49f68f4a29560528feefbb0e9f3dbda4e232c720f3"
+    },
+    {
+      "path": "src/platform/z63_c201/runtime.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 523,
+      "sha256": "47556c46ccb4133ef153036606b095d4f2d21966980506c6f56d2f7a8baa4403"
+    },
+    {
+      "path": "src/platform/z63_c201/services.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2779,
+      "sha256": "b50ce1d469adfb1c93453a6691d529ea62e96c6cd5d1582f1138daa39a77d430"
+    },
+    {
+      "path": "src/platform/z63_c201/services.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 478,
+      "sha256": "e51cc5929ae7d5eea5bfa552705089f254c3b3b46eb44fe0a5b59cad9b137bfe"
+    },
+    {
+      "path": "src/platform/z63_c201/startup.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4982,
+      "sha256": "c709318e896615e2e3759f6bf69cefd4c3e6f4da3c78bbe6c9fb24a90185a609"
+    },
+    {
+      "path": "src/platform/z63_c201/startup.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 832,
+      "sha256": "0585762eda331d6ee9cf5c201f214cda36663178ec99413ceb2896aa9c41fa8b"
+    },
+    {
+      "path": "src/platform/z63_c201/ui.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 16712,
+      "sha256": "adffc151517a9b5076d7543f5e494352972b85383fed58ea7e781b266839106d"
+    },
+    {
+      "path": "src/platform/z63_c201/ui.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 550,
+      "sha256": "7e3877d6b34b612b4416445ab85f9b5227126a31a9c262344e2f9804b6f14bf7"
+    },
+    {
+      "path": "src/platform/z63_c201/usb_debug.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1047,
+      "sha256": "6262bb74d94bc51b00824d9388d7e876ef4fdd03a8d79d10df489af7f9a5dfc7"
+    },
+    {
+      "path": "tests/test_z63_cli.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2578,
+      "sha256": "e0ec8d552dffbc24c31df638673f3c2be225931b434fefd374a2208890e1b65c"
+    },
+    {
+      "path": "tests/test_z63_package.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2346,
+      "sha256": "8fd0665d67327494db5ed961af19aec1f5d1c1b26bffe49b31e8b75f7bbf53b5"
+    },
+    {
+      "path": "tests/z63_discovery_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2061,
+      "sha256": "8345dc109b3f7aceea40de644ed24adf513d44e8190af1b0f02c841a6b908bfb"
+    },
+    {
+      "path": "tests/z63_manager_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2932,
+      "sha256": "c71ee4f9a7c2f742276bb93712457ecc1bffa943d3e8f62679d1b5c279e8645f"
+    },
+    {
+      "path": "tests/z63_startup_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1913,
+      "sha256": "7ea6431ae5859b409c256435ab0448f56d1fa1b3c3daedf2b07337b3cd469f74"
     }
   ]
 }

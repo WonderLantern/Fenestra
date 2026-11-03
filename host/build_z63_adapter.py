@@ -27,6 +27,17 @@ def load_application(application):
         span = data[at:at + binding['bytes']]
         if hashlib.sha256(span).hexdigest() != binding['sha256']:
             raise ValueError('original binding differs: ' + binding['name'])
+    layout=profile['native_pages'];start=layout['first_file'];rows=data[start:start+layout['bytes']]
+    if len(rows)!=(layout['stop']-1)*96 or hashlib.sha256(rows).hexdigest()!=layout['sha256']:
+        raise ValueError('original native page namespace differs')
+    import struct, collections
+    kinds=collections.Counter()
+    for page in range(1,layout['stop']):
+        identity=struct.unpack_from('<I',rows,(page-1)*96)[0]
+        kinds[str(identity&65535)]+=1
+        if identity and (identity>>16!=page or identity&65535 not in (2,3,5)):
+            raise ValueError('native page identity differs')
+    if dict(kinds)!=layout['kinds'] or layout['stop']>=0x7000:raise ValueError('native page range overlaps extensions')
     return profile, data
 
 

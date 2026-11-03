@@ -3,6 +3,7 @@
  * No kernel task frame, PC register or firmware translation table is patched.
  */
 #include "fenestra_simd.h"
+#include "exec_time.h"
 .text
 .global fx_z63_private_call
 .type fx_z63_private_call,%function
@@ -167,6 +168,7 @@ fx_z63_private_irq:
     add x1,x1,#1
     str x1,[x0,#280]
     sub x0,x0,#272
+    fx_z63_charge x0
     ldr x1,[x0,#232]
     mov sp,x1
     mov x0,#13 /* FX_INTERRUPTED; no CPU fault was asserted. */
@@ -174,6 +176,7 @@ fx_z63_private_irq:
 fx_z63_private_exception:
     mov x4,x0 /* SVC argument, ignored for other exception classes. */
     mrs x0,tpidrro_el0
+    fx_z63_charge x0
     mrs x1,esr_el1
     mrs x2,elr_el1
     mrs x3,far_el1
