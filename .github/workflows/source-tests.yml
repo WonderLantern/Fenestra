@@ -22,3 +22,6 @@ jobs:
       - run: python -B -m unittest discover -s tests -v
         env:
           FX_QEMU: /usr/bin/qemu-system-aarch64
+      - name: Z8 session runner legs
+        if: runner.os == 'Linux'
+        run: python tests/run_z8_session.py --output build/ci-session --qemu /usr/bin/qemu-system-aarch64
