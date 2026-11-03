@@ -11,6 +11,9 @@ static FxZ8ModuleSession *session;
 static FxZ8SessionBuffers buffers;
 static uint8_t digest[32];
 static uint32_t position,allocations,releases;
+#ifdef FX_SESSION_READ_ERROR
+static uint32_t reads;
+#endif
 extern const uint8_t fixture_package_begin[],fixture_package_end[];
 void fixture_owner_stack(uintptr_t);
 static void output(const char *p) {
@@ -52,6 +55,15 @@ uint32_t fixture_read_file(int32_t fd,void *p,uint32_t bytes,uint32_t *done) {
     /* Corrupt one byte inside the copied package; the load digest check must
      * reject the staged bytes and the fixture must report FAIL. */
     if(start<0x81u && start+bytes>0x81u)((uint8_t *)p)[0x81u-start]^=0xffu;
+#endif
+#ifdef FX_SESSION_DONE_OVERSIZED
+    /* Oversized done report: the wrapper must flag uncertainty and deny. */
+    position+=bytes;*done=bytes+1u;return 0;
+#endif
+#ifdef FX_SESSION_READ_ERROR
+    /* Native read error on the second call: the wrapper records it and the
+     * load must fail through the file-card error path. */
+    if(++reads==2u){position+=bytes;*done=bytes;return 5u;}
 #endif
     position+=bytes;*done=bytes;return 0;
 }

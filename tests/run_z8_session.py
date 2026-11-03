@@ -5,8 +5,15 @@ supplied QEMU binary (z8-qemu/.local/build/qemu-system-aarch64). Every
 invocation requires a fresh --output folder. Builds the real hello WLM with
 the Z8 module identity, compiles the freestanding fixture that links the
 production session/stage/card sources (firmware entry points served by
-address-placed branch stubs), runs the positive session and a corrupted-
-package control that must FAIL, proving the load path verifies bytes.
+address-placed branch stubs) and runs four legs:
+
+  session                positive: load + INIT/TICK/STOP EL0 round trip
+  session-corrupt        one byte corrupted in the copied package -> FX_INTEGRITY
+  session-read-error     native read error on the second card read -> FX_IO
+  session-done-oversized done>bytes report -> uncertainty denial
+
+The three failure legs prove the load path verifies bytes and propagates
+native IO errors instead of faking success.
 
 Machine fidelity: -cpu cortex-a53 matches the z8-qemu nikon-z8-lab machine's
 default CPU (the z9 lab uses the same), and the pc-dimm at 0xa00000000
@@ -30,8 +37,21 @@ SOURCES = ['tests/z8_session_boot.S', 'tests/z8_session_package.S', 'tests/z8_se
            'src/exec.c', 'src/runtime.c', 'src/memory.c', 'src/loader.c', 'src/file_card.c',
            'src/module_load_buffer.c', 'src/accounting.c', 'src/panic.c']
 
+# leg name -> fixture define; the required failure evidence lives in LEGS_EXPECT
+LEGS = {
+    'session-corrupt': 'FX_SESSION_CORRUPT',
+    'session-read-error': 'FX_SESSION_READ_ERROR',
+    'session-done-oversized': 'FX_SESSION_DONE_OVERSIZED',
+}
+# Pinned failure evidence per leg (16-digit zero-padded number() output).
+LEGS_EXPECT = {
+    'session-corrupt': 'load result 000000000000000a',      # FX_INTEGRITY
+    'session-read-error': 'load result 0000000000000008',   # FX_IO
+    'session-done-oversized': 'load result 0000000000000009',  # FX_BOUNDS (observed: done>bytes denial)
+}
 
-def build(out, corrupt=False):
+
+def build(out, name, define=None):
     # Mirror the production build shape (host/build_z8_core.py): C sources are
     # compiled with -mgeneral-regs-only so no FP/NEON reaches EL1 (the camera
     # OS environment does not guarantee CPACR FPEN for the core), while
@@ -44,8 +64,8 @@ def build(out, corrupt=False):
     # The SDK builder only accepts repository-owned output directories; build/
     # is gitignored and every invocation uses a fresh folder below it.
     module = ROOT / 'build' / ('z8-session-' + out.name) / 'module'
-    if not corrupt:
-        # The WLM is target-identical for both builds; create it once (the SDK
+    if name == 'session':
+        # The WLM is target-identical for all legs; create it once (the SDK
         # builder only accepts fresh output directories).
         command = [sys.executable, str(ROOT / 'host/build_sdk_module.py'),
                    str(ROOT / 'examples/hello/module.c'), '--id', 'hello',
@@ -61,20 +81,19 @@ def build(out, corrupt=False):
                '-Isrc/platform/z8_c311']
     s_flags = ['--target=aarch64-none-elf', '-Iinclude', '-Isrc/platform/z8_c311']
     objects = []
-    for name in SOURCES:
-        obj = out / (name.replace('/', '__') + ('.corrupt.o' if corrupt else '.o'))
+    for source in SOURCES:
+        obj = out / (source.replace('/', '__') + ('.' + name + '.o'))
         defines = []
-        if name.endswith('z8_session_package.S'):
+        if source.endswith('z8_session_package.S'):
             defines = ['-DFX_GATE_PACKAGE="' + str(module / 'hello.wlm') + '"']
-        elif corrupt and name.endswith('z8_session_fixture.c'):
-            defines = ['-DFX_SESSION_CORRUPT=1']
-        command = [clang, *(s_flags if name.endswith('.S') else c_flags), *defines,
-                   '-c', name, '-o', str(obj)]
+        elif define and source.endswith('z8_session_fixture.c'):
+            defines = ['-D' + define + '=1']
+        command = [clang, *(s_flags if source.endswith('.S') else c_flags), *defines,
+                   '-c', source, '-o', str(obj)]
         with (obj.with_suffix('.log')).open('w') as log:
             subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
                            check=True, timeout=120)
         objects.append(str(obj))
-    name = 'session-corrupt' if corrupt else 'session'
     command = [lld, '-m', 'aarch64elf', '-T', 'tests/z8_session_fixture.ld',
                '--gc-sections', *objects, '-o', str(out / (name + '.elf'))]
     (out / (name + '-build-command.json')).write_text(json.dumps(command, indent=2) + '\n')
@@ -109,19 +128,28 @@ def main():
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
-    build(out, False)
-    build(out, True)
-    rc_ok, ok_log = run(args.qemu, out, 'session')
-    rc_bad, bad_log = run(args.qemu, out, 'session-corrupt')
-    passed = (rc_ok == 0 and 'PASS production Z8 session' in ok_log
-              and rc_bad != 0 and 'load result 000000000000000a' in bad_log  # FX_INTEGRITY, 16-digit zero-pad
-              and 'FAIL ' in bad_log and 'PASS' not in bad_log)
+    summary = {}
+    passed = True
+    legs = {'session': None, **LEGS}
+    for name, define in legs.items():
+        build(out, name, define)
+        rc, log = run(args.qemu, out, name)
+        lines = log.strip().splitlines()
+        if name == 'session':
+            evidence = 'PASS production Z8 session'
+            ok = rc == 0 and evidence in log
+        else:
+            evidence = next((l for l in lines if l.startswith('load result ')),
+                            lines[-1] if lines else '?')
+            expected = LEGS_EXPECT[name]
+            ok = (rc != 0 and 'FAIL ' in log and 'PASS' not in log and expected in log)
+        summary[name] = dict(passed=ok, returncode=rc, evidence=evidence)
+        passed = passed and ok
     (out / 'result.json').write_text(json.dumps(dict(
-        passed=passed, positive_returncode=rc_ok, negative_returncode=rc_bad,
-        scope='production session/card/loader/staging digest/private arena/EL0/context restore',
+        passed=passed, legs=summary,
+        scope='production session/card/loader/staging+IO error admission/private arena/EL0/context restore',
         camera_operations=0), indent=2) + '\n')
-    print(ok_log, end='')
-    print(bad_log[-160:], end='')
+    print(json.dumps(summary, indent=2))
     if not passed:
         raise RuntimeError('session fixture failed')
 
