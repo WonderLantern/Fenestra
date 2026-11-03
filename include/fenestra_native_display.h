@@ -65,6 +65,7 @@ typedef struct {
     uintptr_t vgCreateImage,vgDestroyImage,vgImageSubData,vgDrawImage;
     uintptr_t vgLoadMatrix,vgGetMatrix;
     uintptr_t vgGetPixels,vgSetPixels;
+    uint32_t page_visible_viewport;
 } FxNativeDisplayProfile;
 /* Owned modal page only, on the original GUI task. Capture precedes first
  * native paint; restore does not redraw a hidden logical parent. */

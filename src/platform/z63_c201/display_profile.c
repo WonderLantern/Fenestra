@@ -19,6 +19,7 @@ static void enable_target(uint32_t device,uint32_t kind,uint32_t target,uint32_t
     ((void (*)(uint32_t))(uintptr_t)0x40404718u)(device);
 }
 const FxNativeDisplayProfile fx_native_display_profile={
+    .page_visible_viewport=1u,
     .ram_begin=FN(0xa00000000),.ram_end=FN(0xa40000000),
     .current_view_pointer=FN(0xa03393110),
     .native_global_surface=FN(0x403a9418),.global_surface_index=4u,.shooting_view_id=3u,

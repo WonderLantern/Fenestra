@@ -553,7 +553,7 @@ FxResult fx_native_display_attach(FxNativeDisplay *d,void *page,const FxDemoScen
     }
     d->viewport[0]=d->viewport[1]=0u;
     d->viewport[2]=(uint16_t)d->width;d->viewport[3]=(uint16_t)d->height;
-    if(d->global_overlay) {
+    if(d->global_overlay || fx_native_display_profile.page_visible_viewport) {
         const uint32_t *target=(const uint32_t *)((const uint8_t *)surface+0x108u);
         memcpy(d->target,target,sizeof(d->target));
         /* Native composition rectangle within the backing allocation.

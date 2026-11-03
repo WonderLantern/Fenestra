@@ -5,10 +5,21 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'host'))
-from z63_package import verify_application, xor3
+from z63_package import verify_application, xor3, seal_header
 
 
 class Z63PackageTests(unittest.TestCase):
+    def test_digest_sealing_preserves_all_other_header_bytes(self):
+        suffix=b'fixture8';body=b'original fixture';replacement=b'changed fixture'
+        header=bytearray((i%256 for i in range(608)))
+        header[0x220:0x240]=header[:32][::-1]
+        header[0x240:0x254]=hashlib.sha1(body+suffix).digest()
+        sealed=seal_header(header,body,replacement,suffix)
+        self.assertEqual(sealed[:0x240],header[:0x240])
+        self.assertEqual(sealed[0x254:],header[0x254:])
+        self.assertEqual(sealed[0x240:0x254],hashlib.sha1(replacement+suffix).digest())
+        with self.assertRaises(ValueError):seal_header(header,body,replacement,b'wrong888')
+
     def setUp(self):
         self.original = bytes(range(64)) + bytes(256)
         self.profile = dict(image_base=0x4000, application_sha256=hashlib.sha256(self.original).hexdigest(),

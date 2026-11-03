@@ -179,7 +179,7 @@ using MCU buttons. With `--repeat-activation`, pressing Start twice produces one
 worker and one INIT/TICK/STOP sequence. Media loss during IO and shutdown under
 load need separate acceptance before broader runtime claims.
 
-The current host suite passes 80 tests with three platform skips. Earlier
+The current host suite runs 82 tests with three platform skips. Earlier
 bring-up checks covered 43 original
 FILESRV cases, and seven adapted original-kernel fixture cases. The source export is verified independently against its inventory; build
 outputs and private firmware inputs stay outside it. These
@@ -203,3 +203,38 @@ task create/resume retention, lifecycle STOP races and translated resident-code
 mapping. They substitute native IO/tasks and remain separate from full-system
 results. `build-z63-adapter` also builds the standalone card object after original
 input verification; it emits no resident core or firmware package.
+
+## Zf comparison and first camera-test boundary
+
+The [Zf C3.01 PR](https://github.com/WonderLantern/Fenestra/pull/3), reviewed
+at head `d3a00a59ae09c63fb27655225bf8981271e514f4`, is a useful EXPEED7
+reference. This port also admits an exact original payload, caps native cached
+reads at 511 bytes, compares discovered names without ASCII case sensitivity,
+and uses the native visible viewport for ordinary page drawing. Its bindings,
+hooks and original-image checks are specific to Z6III C2.01. Zf's reported
+physical-camera success does not qualify this target.
+
+The host USB profile `z63-c201` accepts the model/version pair `Z6_3` / `V2.01`
+observed in the full-system guest, along with explicit spelling aliases.
+A different firmware version is rejected before opening a PTP session.
+
+With a locally supplied eight-byte digest suffix, packaging first verifies the
+exact original C2.01 digest, then changes only header bytes `[0x240,0x254)`.
+It preserves all other 608-byte header fields, including the twelve following
+bytes, version fields and RSA slots. Fixed-length paired ciphertext/plaintext
+reconstruction and repaired member/body CRCs produce a complete local container.
+This follows the Zf repacker's header-preservation approach; it does not create
+a new vendor signature or establish updater admission. Neither suffix nor
+firmware bytes belong in the source archive.
+
+The intended first physical body is stock C2.01. Ordinary updater admission of
+a same-version package and restoration after installation remain unverified.
+Do not invent a newer version or assume a downgrade/reinstall is available.
+Local test preparation must record the exact package digest, leave autostart
+off and USB debugging disabled, and begin with updater recognition before any
+programming decision. After an independently reviewed installation/recovery
+route, the first runtime checks are stock boot without modules, manual menu
+activation, a single reviewed module, Back/return to live view, and clean
+power-switch shutdown. Capture, removal during IO and stress tests are later
+gates. Current artifacts retain `DO_NOT_FLASH` until that installation and
+recovery route is established. No physical-camera test has been performed.

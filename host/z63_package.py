@@ -43,16 +43,6 @@ def directory(body):
     return rows
 
 
-def tail(digest):
-    state = digest[0]
-    result = bytearray()
-    for index in range(32):
-        state = (214013 * state + 2531011) & 0xffffffff
-        if index >= 20:
-            result.append((state >> 16) & 255)
-    return bytes(result)
-
-
 def xor3(encoded, original, replacement):
     if len(encoded) != len(original) or len(original) != len(replacement):
         raise ValueError('paired CTR requires identical byte positions/length')
@@ -64,6 +54,18 @@ def xor3(encoded, original, replacement):
         result.extend((int.from_bytes(a, 'little') ^ int.from_bytes(b, 'little') ^
                        int.from_bytes(c, 'little')).to_bytes(len(a), 'little'))
     return bytes(result)
+
+
+def seal_header(raw, original, replacement, suffix):
+    if len(raw)<608 or len(suffix)!=8:
+        raise ValueError('complete header and eight local suffix bytes required')
+    digest=hashlib.sha1(original+suffix).digest()
+    if raw[0x240:0x254]!=digest or raw[0x220:0x240]!=raw[:32][::-1]:
+        raise ValueError('authentication material does not validate original C2.01 envelope')
+    # Keep the version/reserved tail, RSA slots and prefix byte-identical.
+    # A recurrence fitting the original twelve bytes does not authorize edits.
+    header=bytearray(raw[:608]);header[0x240:0x254]=hashlib.sha1(replacement+suffix).digest()
+    return bytes(header)
 
 
 def verify_application(original, candidate, receipt, profile):
@@ -128,14 +130,7 @@ def build(raw_path, body_path, candidate_path, receipt_path, output, suffix_path
         suffix = Path(suffix_path).read_bytes()
         if len(suffix) != 8:
             raise ValueError('authentication suffix must be exactly eight local bytes')
-        digest = hashlib.sha1(original + suffix).digest()
-        if (raw[0x240:0x254] != digest or raw[0x254:0x260] != tail(digest) or
-                raw[0x220:0x240] != raw[:32][::-1]):
-            raise ValueError('authentication material does not validate original C2.01 envelope')
-        header = bytearray(raw[:608])
-        digest = hashlib.sha1(body + suffix).digest()
-        header[0x240:0x254], header[0x254:0x260] = digest, tail(digest)
-        package = bytes(header) + encoded
+        package = seal_header(raw,original,body,suffix) + encoded
         if hashlib.sha1(body + suffix).digest() != package[0x240:0x254]:
             raise ValueError('candidate authentication reconstruction differs')
     out = Path(output).resolve()
@@ -150,7 +145,9 @@ def build(raw_path, body_path, candidate_path, receipt_path, output, suffix_path
         candidate_application_sha256=sha(candidate), packaged_application_sha256=after[2]['sha256'],
         body_sha256=sha(body), encoded_body_sha256=sha(encoded),
         package_sha256=sha(package) if package is not None else None,
-        authentication_reconstructed=package is not None, updater_tested=False, physical_camera_tested=False,
+        authentication_reconstructed=False, updater_tested=False, physical_camera_tested=False,
+        package_digest_reconstructed=package is not None,outer_authentication_applied=False,
+        original_header_outside_digest_preserved=True,
         do_not_flash=True, other_components_unchanged=True, original_application_reconstruction=True,
         components=after)
     (out / 'package.json').write_text(json.dumps(report, indent=2)+'\n')
