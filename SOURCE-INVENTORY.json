@@ -3,8 +3,8 @@
   "files": [
     {
       "path": ".github/workflows/source-tests.yml",
-      "bytes": 461,
-      "sha256": "691d3c91fd17cde211b466a7433a9f7a36e40bdc22fb98d86fed771493ab1156",
+      "bytes": 714,
+      "sha256": "1060fd7bf7a32c54d5fd729543dec7d820dd9d43ac5460f2316c727f1fa5bbfc",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
@@ -3533,8 +3533,8 @@
     },
     {
       "path": "src/platform_native.c",
-      "bytes": 8228,
-      "sha256": "e56213f986f473d5d59f7da1642e62e7fbfa4e7925a019f190bdec438f93106c",
+      "bytes": 8246,
+      "sha256": "9132f53f52ba0bd9c5a9b9f4e100c15e775a94ebe73686f160f3e71a357aa69d",
       "origin": "project-source",
       "snapshot_sha256": "e56213f986f473d5d59f7da1642e62e7fbfa4e7925a019f190bdec438f93106c",
       "transformed": false,
@@ -3783,8 +3783,8 @@
     },
     {
       "path": "tests/run_z8_session.py",
-      "bytes": 7048,
-      "sha256": "6e58ba25e5f436e8cb5b93b93c936a838ecdc03ec0a2dea686b3a2621bee62e1",
+      "bytes": 8193,
+      "sha256": "7c8fe3bbc7ddba05888d803bc43a8805223aef5848ca0c0e4bdf81fb03646397",
       "origin": "authored-for-z8-c311-port",
       "snapshot_sha256": null,
       "transformed": false,
@@ -3882,6 +3882,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "tests/test_z8_address_space.py",
+      "bytes": 952,
+      "sha256": "81db41eea806ea20f7c908f0fb56dba9bbcff1e75f7a8a3779147f4bf0107fe1",
+      "origin": "authored-for-z8-c311-port",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
       "path": "tests/test_z8_codec_offline.py",
       "bytes": 2991,
       "sha256": "a1a86c5ff2942de0c2a307db25314e17fecee85b85abc28d90c07b16706a5096",
@@ -3895,6 +3905,16 @@
       "path": "tests/test_z8_container.py",
       "bytes": 3049,
       "sha256": "ea67536e188c76ca616d232b99a1bcadc38dc32342c4f137cfe051fa20ee4428",
+      "origin": "authored-for-z8-c311-port",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/test_z8_exec_context.py",
+      "bytes": 1038,
+      "sha256": "974d155a7fd5c5c969a883393c4fb88d4de4168301398d00acb18b34a7c36383",
       "origin": "authored-for-z8-c311-port",
       "snapshot_sha256": null,
       "transformed": false,
@@ -3922,6 +3942,26 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "tests/z8_address_space_fixture.c",
+      "bytes": 4335,
+      "sha256": "94ca1596f4929c6eb36ba4da16be178b5401ef0cbb05a3304eb3d54151c249db",
+      "origin": "authored-for-z8-c311-port",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/z8_exec_context_fixture.c",
+      "bytes": 2513,
+      "sha256": "2ce50062c14d2050d0028c1e05bdd6b39fcc6bddd7f6bd0d037419e84022cdcf",
+      "origin": "authored-for-z8-c311-port",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
       "path": "tests/z8_session_boot.S",
       "bytes": 1068,
       "sha256": "97ff42f3a4f2cabe3dd661acc8337cec6397c2ef638be5d1dc4f7dfdc916b122",
@@ -3933,8 +3973,8 @@
     },
     {
       "path": "tests/z8_session_fixture.c",
-      "bytes": 6327,
-      "sha256": "5559f45218e4e9fc561cc45c06801cebbc185690bf36ec9a7cbacea377631e32",
+      "bytes": 6779,
+      "sha256": "182ddc1f7484c52c9662dba899904053c140787532ce1dc66a6110de6c068102",
       "origin": "authored-for-z8-c311-port",
       "snapshot_sha256": null,
       "transformed": false,
@@ -3955,6 +3995,36 @@
       "path": "tests/z8_session_package.S",
       "bytes": 249,
       "sha256": "88a3cd2caea91ebd018d8890b7f37435917be8164ac3ce8227f40aeb57f44586",
+      "origin": "authored-for-z8-c311-port",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/z8_unit_boot.S",
+      "bytes": 670,
+      "sha256": "4f01faa3278b58a5e8ffa7d83e6cebad36693a787028a4f3b6377950a6ecc4c3",
+      "origin": "authored-for-z8-c311-port",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/z8_unit_fixture.ld",
+      "bytes": 437,
+      "sha256": "eb14aa47277a1d514e05a18b6867fec0ba270213427773bbbcb33cb7f7d6e504",
+      "origin": "authored-for-z8-c311-port",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/z8_unit_support.py",
+      "bytes": 3163,
+      "sha256": "d5e2ec23c659b9843d7ee85ec659ae063cd639d72d33916ab2c410e868a6a597",
       "origin": "authored-for-z8-c311-port",
       "snapshot_sha256": null,
       "transformed": false,
