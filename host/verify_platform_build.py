@@ -67,9 +67,16 @@ def main():
         from native_ui_dispatch_sites import sites as ui_sites,verify_original as verify_ui
         ui_hooks=ui_sites('z8-c311') if report.get('ui_dispatch_hook_version')==1 else {}
         if ui_hooks:verify_ui('z8-c311',original)
+        sysctl_hooks={}
+        if report.get('system_hook_version')==1:
+            sysctl=profile['sysctl']
+            window=original[sysctl['dispatch']-BASE:sysctl['dispatch']-BASE+sysctl['window_bytes']]
+            if _h.sha256(window).hexdigest()!=sysctl['prefix_sha256']:raise ValueError('Z8 sysctl dispatch window differs')
+            sysctl_hooks={sysctl['dispatch']:'fx_z8_system_dispatch'}
+        expected_hooks={**ui_hooks,**sysctl_hooks}
         if (len(candidate)!=len(original) or not 0<len(code)<=0x60000 or
-            len(report['changes'])!=len(ui_hooks) or
-            {int(c['address'],16):c['symbol'] for c in report['changes']}!=ui_hooks):
+            len(report['changes'])!=len(expected_hooks) or
+            {int(c['address'],16):c['symbol'] for c in report['changes']}!=expected_hooks):
             raise ValueError('only independently bound Z8 UI-loop entries may change')
         if _h.sha256(candidate).hexdigest()!=report['candidate_sha256']:raise ValueError('candidate differs')
         nm=shutil.which('llvm-nm')

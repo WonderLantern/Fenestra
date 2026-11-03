@@ -23,8 +23,12 @@ sys.path.insert(0, str(ROOT / 'emulation'))
 from native_ui_dispatch_sites import sites as ui_sites, verify_original as verify_ui, call as ui_call
 
 CODE = 0x401A0000
-SYSTEM_HOOK = 0x40FAC944        # system-event -> menu routing bridge (0x40FAC9BC bl 0x40EC4644 host entry)
-SYSTEM_CONT = SYSTEM_HOOK + 16  # 16-byte window: sub sp; stp x19,x30; bl 0x40F703F4; mov x1
+# System-event dispatcher entry (FUN_40d60ec8; event id read from message+0x20,
+# see docs/validation-z8-c311.md). The 16-byte window is four stack-push STPs,
+# replayed verbatim by the generated system_trampoline.S; hooking the entry
+# covers every pump path that funnels through this dispatcher.
+SYSTEM_HOOK = 0x40D60EC8
+SYSTEM_CONT = SYSTEM_HOOK + 16
 LIMIT = 0x40200000
 TARGET = 'z8-c311'
 
@@ -36,6 +40,7 @@ TARGET = 'z8-c311'
 PLATFORM = [f'src/platform/z8_c311/{s}' for s in (
     'menu.c', 'services.c', 'task.c', 'card.c', 'module_stage.c', 'module_session.c',
     'module_worker.c', 'address_space.c', 'exec_context.c', 'ui_dispatch_profile.c',
+    'lifecycle.c',
     'startup_files.c', 'rtos.c', 'private_call.S', 'user_call.S', 'v0_stubs.c', 'ptp_stub.c', 'system_trampoline.S')]
 COMMON = ['src/panic.c', 'src/native_panic.c', 'src/module_bus.c', 'src/native_resources.c',
           'src/worker_wait.c', 'src/capacity.c', 'src/slot_pool.c', 'src/machine.c',
@@ -69,20 +74,24 @@ def build(firmware, output):
     if any(original[CODE - BASE:LIMIT - BASE]):
         raise ValueError('original RX padding not empty')
     # Z8 system event table startup evidence (the Z9 C5.32 table check equivalent)
-    table = 0x43F907F8 - BASE
+    sysctl = profile['sysctl']
+    table = sysctl['table'] - BASE
     for event, name in ((19, b'eSyscCommandId_AppFirstStartComplete'),
                         (7, b'eSyscCommandId_BSShutdown'),
+                        (23, b'eSyscCommandId_CardRemove'),
                         (24, b'eSyscCommandId_CardMountComplete')):
-        ident, pointer = struct.unpack_from('<I4xQ', original, table + event * 88)
+        ident, pointer = struct.unpack_from('<I4xQ', original, table + event * sysctl['stride'])
         if ident != event or original[pointer - BASE:pointer - BASE + len(name) + 1] != name + b'\0':
             raise ValueError('Z8 system event table differs')
     out.mkdir(parents=True)
     generate(TARGET, firmware, out / 'bindings', require_condition=False)
-    # System trampoline: replay the displaced window verbatim (the BL stays a
-    # placeholder, patched after linking) and tail-branch to the continuation.
+    # System trampoline: replay the pinned dispatcher-entry window verbatim
+    # (four stack-push STPs, no relocations) and tail-branch to the body.
     window = original[SYSTEM_HOOK - BASE:SYSTEM_HOOK + 16 - BASE]
     words = struct.unpack_from('<4I', window)
-    assert (words[2] >> 26) == 0x25, 'window[2] must be BL'
+    if hashlib.sha256(window).hexdigest() != sysctl['prefix_sha256'] \
+            or hashlib.sha256(original[SYSTEM_HOOK - BASE:SYSTEM_HOOK + sysctl['span_bytes'] - BASE]).hexdigest() != sysctl['span_sha256']:
+        raise ValueError('Z8 system dispatch window differs')
     tramp = (
         '.text\n'
         '.global fx_z8_system_original\n'
@@ -90,8 +99,7 @@ def build(firmware, output):
         'fx_z8_system_original:\n'
         f'    .inst 0x{words[0]:08x}\n'
         f'    .inst 0x{words[1]:08x}\n'
-        '    bl fx_z8_system_bl_placeholder\n'
-        'fx_z8_system_bl_placeholder:\n'
+        f'    .inst 0x{words[2]:08x}\n'
         f'    .inst 0x{words[3]:08x}\n'
         '    ldr x16,1f\n'
         '    br x16\n'
@@ -107,8 +115,11 @@ def build(firmware, output):
         raise RuntimeError('LLVM tools required (clang, ld.lld, llvm-objcopy, llvm-nm on PATH)')
     cc, ld, objcopy, nm = tools
     hooks = ui_sites(TARGET)
-    # The system hook is not installed by this build (ui_sites returns only
-    # the ten UI sites); the trampoline above is kept for the future wiring.
+    # The sysctl gate is installed at the dispatcher entry with a plain
+    # branch (not a BL): the displaced window saves the gate's resume point,
+    # so the original's epilogue returns into the gate and the gate restores
+    # the caller's LR.
+    hooks[SYSTEM_HOOK] = 'fx_z8_system_dispatch'
     identity_inputs = sorted(set(NAMES + [
         'host/build_z8_core.py', 'host/platform_profiles.py', 'host/compiler_dependencies.py',
         'emulation/z8_core.ld', 'emulation/native_ui_dispatch_sites.py']
@@ -169,30 +180,28 @@ def build(firmware, output):
     symbols = {p[2]: int(p[0], 16) for line in subprocess.check_output(
         [nm, '--defined-only', str(elf)], text=True).splitlines() if len(p := line.split()) == 3}
     extension = bytearray(binary.read_bytes())
-    # Trampoline BL relocation: the placeholder line is a self-branch
-    # (bl fx_z8_system_bl_placeholder) replaced after linking.
-    if 'fx_z8_system_original' in symbols:
-        bl_site = symbols['fx_z8_system_original'] + 8
-        target = 0x40F703F4
-        delta = target - bl_site
-        assert delta % 4 == 0 and -(1 << 27) <= delta < (1 << 27), 'system trampoline BL out of range'
-        struct.pack_into('<I', extension, bl_site - CODE, 0x94000000 | ((delta // 4) & 0x3FFFFFF))
     extension = bytes(extension)
     if CODE + len(extension) > LIMIT:
         raise ValueError('core exceeds RX padding')
     candidate = bytearray(original)
     candidate[CODE - BASE:CODE - BASE + len(extension)] = extension
+    def branch(address, target):
+        # Plain B (LR untouched): required at the dispatcher entry, where the
+        # displaced window must save the gate's resume point in the original
+        # stack frame. UI sites keep ui_call (BL) as before.
+        delta = target - address
+        if delta % 4 or not -(1 << 27) <= delta < (1 << 27):
+            raise ValueError('branch out of range')
+        return struct.pack('<I', 0x14000000 | ((delta // 4) & 0x3FFFFFF))
     changes = []
     for address, name in hooks.items():
         if name not in symbols:
             raise ValueError('hook symbol missing: ' + name)
-        delta = symbols[name] - address
-        if delta % 4 or not -(1 << 27) <= delta < (1 << 27):
-            raise ValueError('branch out of range for ' + name)
+        encode = branch if address == SYSTEM_HOOK else ui_call
         before = original[address - BASE:address - BASE + 4]
-        candidate[address - BASE:address - BASE + 4] = ui_call(address, symbols[name])
+        candidate[address - BASE:address - BASE + 4] = encode(address, symbols[name])
         changes.append(dict(address=hex(address), symbol=name,
-                            before=before.hex(), after=ui_call(address, symbols[name]).hex()))
+                            before=before.hex(), after=encode(address, symbols[name]).hex()))
     restored = bytearray(candidate)
     restored[CODE - BASE:CODE - BASE + len(extension)] = bytes(len(extension))
     for change in changes:

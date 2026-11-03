@@ -22,6 +22,7 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
 #include "module_worker.h"
 #include "menu_data.h"
 #include "services.h"
+#include "lifecycle.h"
 #include "fenestra_accounting_service.h"
 #include "fenestra_shared_accounts.h"
 #include "fenestra_native_namespace.h"
@@ -73,6 +74,9 @@ typedef struct {
     uint32_t skipped;
     FxStartupService startup;
     FxStartupFiles startup_files;
+    /* SYSCTL lifecycle inbox: written by the system-event gate callbacks,
+     * consumed by the dispatch pump (see fx_native_ui_dispatch_domain). */
+    FxZ8Lifecycle lifecycle;
     /* FW_LIST callback-enumeration staging: Z8 has no Z9-style find-first API,
      * and the staging buffer must live in the state heap because the module
      * region is not writable on this target. */
@@ -133,6 +137,7 @@ static void *allocate(uint32_t n) { return FN(0x40d2c408, void *(*)(uint32_t, ui
 FxPtp *fx_z8_menu_ptp(void) {State *s=state();return s?&s->ptp:0;}
 FxRtos *fx_z8_menu_rtos(void) {State *s=state();return s?&s->rtos:0;}
 FxLinuxBridge *fx_z8_menu_linux(void) {State *s=state();return s?&s->linux:0;}
+FxZ8Lifecycle *fx_z8_runtime_lifecycle(void) {State *s=state();return s?&s->lifecycle:0;}
 int fx_z8_menu_ptp_active(void) {
     State *s=state();return s && atomic_load(&s->activation) &&
         !atomic_load(&s->shutdown) && !atomic_load(&s->startup.shutdown);
@@ -1088,20 +1093,30 @@ uint64_t fx_z8_menu_navigate(uint32_t page) {
 uint64_t fx_z8_system_dispatch(void *message, uint32_t sync) {
     uint32_t event = message ? *(const uint32_t *)((const uint8_t *)message + 32u) : UINT32_MAX;
     State *s = state();
-    if (event == 7u && s) {
+    if ((event == 7u || event == 23u) && s) {
         /* Original event is forwarded exactly once, even if a module/native
-         * call hangs. Never remove the flag after the card cleanup window. */
+         * call hangs. Never remove the flag after the card cleanup window.
+         * BSShutdown (7) and CardRemove (23) share the stop handshake: the
+         * startup service quiesces modules before the original handler runs. */
         atomic_store(&s->startup.cleanup_window,1u);
         atomic_store_explicit(&s->startup.shutdown,1u,memory_order_release);
         for(uint32_t i=0;i<15u && !atomic_load_explicit(&s->startup.shutdown_done,memory_order_acquire);++i)
             (void)fx_z8_task_delay_ticks(33u);
         atomic_store(&s->startup.cleanup_window,0u);
     }
+    if (event == 7u)
+        fx_z8_before_bs_shutdown_event(event, sync);
+    else if (event == 23u)
+        fx_z8_before_card_remove(event, sync);
     uint64_t r = fx_z8_system_original(message, sync);
     /* Independently decoded C311 table: AppFirstStartComplete=19, NOT20. */
-    if (event == 19u)
+    if (event == 19u) {
         install();
-    if(event==24u && s)atomic_store(&s->startup.inspect_requested,1u);
+        fx_z8_after_startup_complete(event, sync);
+    } else if (event == 24u) {
+        fx_z8_after_card_mount(event, sync);
+        if(s)atomic_store(&s->startup.inspect_requested,1u);
+    }
     return r;
 }
 const uint32_t fx_z8_menu_metadata[] = {MAGIC,

@@ -28,6 +28,16 @@ PROFILES={
    'camera.card.open':0x402daa4c,'camera.card.read':0x402dab4c,'camera.card.close':0x402daaac,
    'camera.card.seek64':0x402dac24,'camera.card.write':0x402dabb8,'camera.card.rename':0x402dad58},
   tables={'camera.menu.page-roots':(0xa032b50c8,56)},
+  # SYSCTL lifecycle: event table + dispatcher entry pinned against the original
+  # image. Dispatcher FUN_40d60ec8 reads the event id at message+0x20 (ldrsw at
+  # entry+0x18); its 16-byte entry window is four stack-push STPs (the same
+  # vendor prologue as the Zf reference window - identical prefix sha256).
+  # Z8 event ids differ from the Zf reference (8/20/24/25) - see lifecycle.h.
+  sysctl=dict(table=0x43F907F8,entries=64,stride=88,dispatch=0x40d60ec8,window_bytes=16,
+   prefix_sha256='90f0a19094d99d64fd16a94f4a89813b33637eea1a3d08c22a65f1f7368de5ec',
+   span_sha256='cf6a5129e6c7055536e11da441a06f2e644257eb96457be5a196212d168b0db1',
+   span_bytes=268,
+   events={'bs_shutdown':7,'startup_complete':19,'card_remove':23,'mount_complete':24}),
   native_pages=dict(first=0x4bffd20,stop=0x68b,kinds={2:1360,0:3,3:131,5:180}),
   abi_evidence=['docs/porting.md','emulation/native_ui_dispatch_sites.py:z8-c311',
                 'docs/validation-z8-c311.md']),
