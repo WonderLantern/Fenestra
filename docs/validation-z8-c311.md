@@ -39,8 +39,49 @@
 ### 4. Startup evidence (equivalent of the Z9 C5.32 event table check)
 - System event table at `0x43F907F8` (64×88B entries `{u32 id; u32 pad; u64
   name_ptr}`): id=7 `eSyscCommandId_BSShutdown`, id=19
-  `…AppFirstStartComplete`, id=24 `…CardMountComplete` — names compared byte
-  for byte. **The three key event ids match the Z9 values.**
+  `…AppFirstStartComplete`, id=23 `…CardRemove`, id=24
+  `…CardMountComplete` — names compared byte
+  for byte on every core build. **The four lifecycle event ids match the Z9
+  values** (the full 64-entry table was enumerated offline; slots and ids
+  agree 64/64).
+
+### 4a. System-event dispatcher and lifecycle gate (sysctl)
+- Dispatcher `FUN_40d60ec8` at `0x40d60ec8`: reads the event id at
+  `message+0x20` (`ldrsw` at entry+0x18), validates it against the pinned
+  table (`id < 0x50` and entry-id equality), walks the 16-slot subscriber
+  list at entry+0x10 via the registry at `0x43f90688`
+  (`eSyscController_Device/Card/DefaultDevice/Lens/CyclicTimer`; events 23
+  and 24 both reach `DefaultDevice` `0x40d62b04`), and takes the mutex
+  `0xa03417b28` when `sync == 0`. All five pump call sites
+  (`0x40d60eb8/0x40d61024/0x40d61080/0x40d611a8/0x40d68fb0`) funnel through
+  this single entry, so the gate covers every dispatch path.
+- The 16-byte entry window (four stack-push STPs — the same vendor prologue
+  as the Zf reference window, identical prefix sha256) is pinned in
+  `host/platform_profiles.py:z8-c311.sysctl` (prefix `90f0a190…`, span 268B
+  `cf6a5129…`) and re-verified on every core build;
+  `verify_platform_build.py` re-checks the window before accepting the hook.
+- The gate `fx_z8_system_dispatch` (`src/platform/z8_c311/menu.c`) is
+  installed with a plain branch at the dispatcher entry; the displaced
+  window is replayed verbatim by the generated `system_trampoline.S` (the
+  original's saved-LR slot returns into the gate, which restores the true
+  caller's LR). Z8 lifecycle ids are 7/19/23/24 — the Zf reference numbering
+  (8/20/24/25) does not transfer. Events 7/23 run the startup stop handshake
+  before the original handler, 19 installs the platform state, 24 requests
+  an inspect; all four record into the one-word lifecycle inbox
+  (`lifecycle.c`; the record body is inlined into the hooks at -O2).
+- Emulation evidence (z8-qemu, full-lab machine with the template card): a
+  real boot records `STARTED|CARD` (word `0x303`) through the installed
+  gate; a forced CardRemove (23) re-entry through the pinned dispatcher
+  entry clears `CARD` and lingers `CARD_PENDING` (`0x303→0x301`) with the
+  module worker's shutdown flag observed set; thousands of live
+  unregistered dispatches (the UsbRemove poller, event 34) leave the word
+  unchanged; the full patched-image regression stayed green in three
+  consecutive gate-enabled runs (FXBOOT1 record valid, DCIM/NIKON/Z_8
+  created, no unmodeled MMIO outside the ISP boundary block).
+- Boundary: the event 23/7 evidence is forced delivery under the emulator
+  (gdbstub re-entry with a captured real message), not a physical
+  card-removal interrupt; the worker INTERRUPTED continuation path remains
+  unexercised.
 
 ### 5. Core build (`host/build_z8_core.py` + `emulation/z8_core.ld`)
 - 73 source files compiled (LLVM 19.1.7, the same strict flag set as Z9,
@@ -59,7 +100,9 @@
 - **Stock baseline: 932/932 checks.**
 - **Fenestra v0 payload: 942/942 checks** (patched MAIN with the recomputed
   trailer CRC); includes full boot, menu navigation (ok/down/back ×2) and the
-  half-press path.
+  half-press path. (Measured on the UI-hooks-only v0 configuration; the later
+  sysctl-gate configuration is covered by the §4a patched-image regression
+  triad.)
 - **v0 behavioural-equivalence argument:** with `fx_native_ui_dispatch_domain()
   == 0` (platform state uninitialised) all ten UI hooks pass through to the
   original poll/wait on every path; the 942 green checks are the behavioural
@@ -113,6 +156,7 @@
 | Item | State | Notes |
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
+| worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
 | Native menu registration (menu reachability) | not enabled | menu.c is ported but the Z8 reverse engineering of SETUP pages/events/GUI object ids is not complete; v0 platform state stays uninitialised |
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation (module management entry) still pending |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |

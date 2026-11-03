@@ -14,8 +14,10 @@ profile:
   value never matches this image.
 
 Enabled today: core build, independent verification, container repack, the SDK
-module target and startup-file activation with a full session load
-(install → activate → stage → load → EL0 user call) validated under a matching
+module target, startup-file activation with a full session load
+(install → activate → stage → load → EL0 user call) and sysctl lifecycle
+events (the system-event dispatcher gate records startup/mount and stops
+module work on card removal or shutdown), all validated under a matching
 Z8 emulator.
 
 Not enabled: native menus (ported, Z8 SETUP page/event/GUI-object bindings
