@@ -33,6 +33,7 @@ typedef struct {
     FxAllocationObserver queue_observer;
 } FxModuleEndpoint;
 typedef struct {
+    _Atomic uintptr_t extensions;
     _Atomic uint32_t lock;FxSlotBudget budget;FxSlotPool endpoints;
     FxAllocationObserver metadata;
     FxAllocationObserver (*owner_queue)(FxPlatformOwner *);

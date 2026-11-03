@@ -116,6 +116,8 @@ typedef struct {
 } FxPlatform;
 
 struct FxPlatformOwner {
+    _Atomic uintptr_t extensions;
+    _Atomic uint64_t module_time_ms;
     const FxPlatform *platform;
     uint32_t owner,generation,capabilities,kind;
     _Atomic uint32_t first_error;
@@ -140,7 +142,7 @@ struct FxPlatformOwner {
     /* Trusted Loader snapshot. Installed once, after mapping publication and
      * before the first generic service call. Never populated from a request. */
     uint8_t *module_image;
-    uint32_t module_bytes,module_segment_count;
+    uint32_t module_bytes,module_segment_count,module_entry_abi;
     FxSegment module_segments[FX_MODULE_SEGMENTS];
     /* Native GUI publishes control/foreground/epoch in one atomic word.
      * Independent of the finite event queue and the worker's UI lock. */
@@ -210,6 +212,7 @@ FxResult fx_platform_stop(FxPlatformOwner *,uint32_t panic);
 FxResult fx_platform_bind_module(FxPlatformOwner *,const FxModule *,void *image,uint32_t capacity);
 /* Worker-only, after EL0 has completely returned on original tables. Validate
  * every segment before copying; no native callback retains a module pointer. */
+FxResult fx_platform_module_range(FxPlatformOwner *,uint64_t,uint32_t,uint32_t);
 FxResult fx_platform_module_transfer(FxPlatformOwner *,uint64_t address,void *,uint32_t bytes,uint32_t write_to_module);
 /* Native GUI uses copied snapshots. Active provider references must drain
  * before QUIESCED. Passive page references retain core-owned storage through

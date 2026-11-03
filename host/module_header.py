@@ -4,11 +4,12 @@ import struct
 def entry_abi(data):
     if len(data)<128 or data[:8]!=b'FENESTRA':raise ValueError('module header missing')
     version,header,abi,isa=struct.unpack_from('<4I',data,8)
-    if (header,abi,isa)!=(128,1,1) or version not in (1,2,3):raise ValueError('unsupported module header')
+    if (header,abi,isa)!=(128,1,1) or version not in (1,2,3,4):raise ValueError('unsupported module header')
     if version<3 and any(data[120 if version==2 else 116:128]):raise ValueError('reserved module header bytes set')
+    if version==4 and any(data[120:128]):raise ValueError("reserved native header fields set")
     if version>=2:
         kind=struct.unpack_from('<I',data,116)[0]
-        if kind!=1:raise ValueError('unsupported module entry ABI')
+        if kind!=(2 if version==4 else 1):raise ValueError('unsupported module entry ABI')
         return kind
     return 1 if struct.unpack_from('<Q',data,108)[0]&0x3f0000 else 0
 
@@ -23,6 +24,7 @@ STACK_LIMIT = 1024 * 1024
 
 def stack_requirements(data):
     entry_abi(data)
+    if entry_abi(data)==2:return 0,0
     if struct.unpack_from('<I', data, 8)[0] < 3:
         return STACK_DEFAULT, STACK_DEFAULT
     native, user = struct.unpack_from('<2I', data, 120)
@@ -39,18 +41,19 @@ def validate_package(data, identity, *, capabilities=0x7f0000):
     workers' capacities. The target identity is supplied by the chosen profile.
     This is corruption/ABI validation, not a package signature or sandbox.
     """
-    if not 128 < len(data) <= PACKAGE_LIMIT:
+    native=entry_abi(data)==2
+    if not 128 < len(data) <= (32*1024*1024 if native else PACKAGE_LIMIT):
         raise ValueError('module package exceeds native worker capacity')
-    if entry_abi(data) != 1 or data[24:56] != identity:
+    if data[24:56] != identity:
         raise ValueError('module target or service entry differs')
     native_stack, user_stack = stack_requirements(data)
     import hashlib
     if hashlib.sha256(data[128:]).digest() != data[56:88]:
         raise ValueError('module body checksum differs')
     size, image, entry, count, relocs, required = struct.unpack_from('<5IQ', data, 88)
-    if size != len(data) or not 0 < image <= IMAGE_LIMIT or required & ~capabilities:
+    if size != len(data) or not 0 < image <= (64*1024*1024 if native else IMAGE_LIMIT) or required & ~capabilities:
         raise ValueError('module size/image/capabilities outside native worker contract')
-    if not 0 < count <= 8 or relocs > 128:
+    if not 0 < count <= 8 or relocs > (65536 if native else 128):
         raise ValueError('module segment/relocation capacity exceeded')
     table_end = 128 + count * 24 + relocs * 16
     if table_end > len(data):
@@ -82,7 +85,9 @@ def validate_package(data, identity, *, capabilities=0x7f0000):
         if (kind != 1 or at & 7 or at in seen or not inside(at, 8, 2)
                 or value > 0xffffffff or not inside(value, 1, 1)):
             raise ValueError('invalid module relocation')
+        if native and seen and at<=previous:raise ValueError("native relocations must be sorted")
+        previous=at
         seen.add(at)
     return dict(package_bytes=size, image_bytes=image, entry_offset=entry,
-                segments=count, relocations=relocs, required=required, entry_abi=1,
+                segments=count, relocations=relocs, required=required, entry_abi=2 if native else 1,
                 native_stack_bytes=native_stack, user_stack_bytes=user_stack)

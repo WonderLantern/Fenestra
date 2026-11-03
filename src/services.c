@@ -41,8 +41,8 @@ FxResult fx_module_directory_inspect_accounted(const FxModuleDirectory *io,const
     uint32_t bytes=0;FxModule module;
     FxResult r=io->read(io->context,copied_name,buffer,room,&bytes);
     if(r==FX_OK && bytes!=size)r=FX_INTEGRITY;
-    if(r==FX_OK && fx_module_header_entry(buffer,bytes)!=FX_MODULE_ENTRY_SERVICES)r=FX_CAPABILITY;
-    if(r==FX_OK)r=fx_module_inspect(buffer,bytes,firmware,capabilities,FX_NATIVE_MODULE_IMAGE_LIMIT,&module);
+    if(r==FX_OK && fx_module_header_entry(buffer,bytes)!=FX_MODULE_ENTRY_SERVICES && fx_module_header_entry(buffer,bytes)!=FX_MODULE_ENTRY_NATIVE)r=FX_CAPABILITY;
+    if(r==FX_OK)r=fx_module_inspect(buffer,bytes,firmware,capabilities,FX_RESIDENT_IMAGE_LIMIT,&module);
     if(r==FX_OK){fx_sha256(buffer,bytes,digest);*out=module;}
     if(temporary){memory.release(memory.context,buffer);fx_allocation_observe(observer,room,FX_ALLOC_FREE_PENDING);}
     return r;
@@ -101,7 +101,7 @@ FxResult fx_modules_discover_accounted(const FxModuleDirectory *io,const uint8_t
         uint32_t slot;
         result=fx_module_index_add(&found.index,identity,&slot);if(result!=FX_OK)break;
         descriptor.bytes=(uint32_t)item.bytes;descriptor.image_bytes=module.bytes;
-        descriptor.required=(uint32_t)module.required_capabilities;descriptor.stacks=module.stacks;
+        descriptor.required=(uint32_t)module.required_capabilities;descriptor.stacks=module.stacks;descriptor.entry_abi=module.entry_abi;
         found.entries=found.index.records;found.entries[slot]=descriptor;found.count=found.index.count;
     }
     FxResult closed=io->close(io->context);

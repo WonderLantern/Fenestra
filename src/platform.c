@@ -1,12 +1,13 @@
 #include "fenestra_memory.h"
 #include "fenestra_platform.h"
+#include "fenestra_extensions.h"
 _Static_assert(sizeof(FxUiEvent)==24u,"UI event wire ABI remains unchanged");
 _Static_assert(sizeof(FxUiTextEvent)==152u && sizeof(FxUiTextEvent)<=FX_SERVICE_BYTES,"UI text wire ABI");
 _Static_assert(sizeof(FxUiStatus)==40u,"UI submission status wire ABI");
 
 FxResult fx_platform_bind_module(FxPlatformOwner *o,const FxModule *m,void *image,uint32_t capacity) {
     if(!o || !o->platform || !m || !image || !m->prepared || !m->bytes || m->bytes>capacity ||
-       m->bytes>FX_MODULE_MEMORY_LIMIT || !m->segment_count || m->segment_count>FX_MODULE_SEGMENTS ||
+       m->bytes>(m->entry_abi==FX_MODULE_ENTRY_NATIVE?FX_RESIDENT_IMAGE_LIMIT:FX_MODULE_MEMORY_LIMIT) || !m->segment_count || m->segment_count>FX_MODULE_SEGMENTS ||
        (uintptr_t)image>UINTPTR_MAX-m->bytes)return FX_ARGUMENT;
     if(o->module_image || o->phase!=FX_OWNER_RUNNING)return FX_STATE;
     for(uint32_t i=0;i<m->segment_count;++i) {
@@ -19,11 +20,11 @@ FxResult fx_platform_bind_module(FxPlatformOwner *o,const FxModule *m,void *imag
         }
     }
     memcpy(o->module_segments,m->segments,m->segment_count*sizeof(FxSegment));
-    o->module_bytes=m->bytes;o->module_segment_count=m->segment_count;o->module_image=image;
+    o->module_bytes=m->bytes;o->module_entry_abi=m->entry_abi;o->module_segment_count=m->segment_count;o->module_image=image;
     return FX_OK;
 }
-FxResult fx_platform_module_transfer(FxPlatformOwner *o,uint64_t address,void *data,uint32_t bytes,uint32_t write_to_module) {
-    if(!o || !data || !bytes || write_to_module>1u)return FX_ARGUMENT;
+FxResult fx_platform_module_range(FxPlatformOwner *o,uint64_t address,uint32_t bytes,uint32_t write_to_module) {
+    if(!o || !bytes || write_to_module>1u)return FX_ARGUMENT;
     if(!o->module_image || o->phase!=FX_OWNER_RUNNING)return FX_STATE;
     uint64_t base=(uintptr_t)o->module_image;
     if(address<base || address-base>=o->module_bytes || bytes>o->module_bytes-(address-base))return FX_BOUNDS;
@@ -40,7 +41,12 @@ FxResult fx_platform_module_transfer(FxPlatformOwner *o,uint64_t address,void *d
         uint32_t step=found->memory_bytes-(at-found->image_offset);if(step>remaining)step=remaining;
         at+=step;remaining-=step;
     }
-    uint8_t *p=o->module_image+(uint32_t)(address-base);
+    return FX_OK;
+}
+FxResult fx_platform_module_transfer(FxPlatformOwner *o,uint64_t address,void *data,uint32_t bytes,uint32_t write_to_module) {
+    if(!data)return FX_ARGUMENT;
+    FxResult r=fx_platform_module_range(o,address,bytes,write_to_module);if(r!=FX_OK)return r;
+    uint8_t *p=(uint8_t *)(uintptr_t)address;
     if(write_to_module)memmove(p,data,bytes);else memmove(data,p,bytes);
     return FX_OK;
 }
@@ -1115,7 +1121,7 @@ FxResult fx_platform_stop(FxPlatformOwner *s, uint32_t panic) {
     fx_platform_wake(s);
     if (!bind_lock(s))
         return FX_BUSY;
-    FxResult result = FX_OK;
+    FxResult result = fx_extensions_stop(s);
     for(uint32_t i=0;i<s->bindings.lease_capacity;++i) {
         if(!panic && atomic_load(&s->phase)==FX_OWNER_FAULT) {result=FX_STATE;break;}
         FxBindingLease *l=fx_binding_store_lease_at(&s->bindings,i);

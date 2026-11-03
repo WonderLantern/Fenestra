@@ -14,6 +14,13 @@ This index follows the SDK headers and profiles in this distribution. Refer to t
 | Tasks, locks, and events | `fenestra_tasks_sdk.h`, `fenestra_mutex_sdk.h`, `fenestra_events_sdk.h` | Context and blocking rules depend on the operation. |
 | Video configuration | `fenestra_video_sdk.h` | General record/configuration services do not add sensor capabilities by themselves. |
 | Resources and communication | `fenestra_accounting_sdk.h`, `fenestra_bus_sdk.h` | Owner/generation, shared budgets, drops, and congestion handling. |
+| Native entry and hooks | `fenestra_native_sdk.h`, `fenestra_native_hook.h` | Once-only original-context entry; module-owned hooks/tasks and retained code. |
+| Providers, streams, time, logs and self | `fenestra_extensions_sdk.h`, `fenestra_stream.h`, `fenestra_time.h` | Named runtime providers, bulk data and explicit clocks. |
+| Continuations and large selections | `fenestra_async.h`, `fenestra_ui_list_sdk.h` | One submitted request at a time; native paged rows with stable identities. |
+| Audio provider library | `fenestra_audio.h` | Module-side format, stream and lifecycle contract; no core physical PCM driver. |
+
+See [generic module services](module-services.md) for operation and lifetime
+contracts, and [native extensions](native-extensions.md) for native execution.
 
 ## Before calling a service
 
@@ -64,6 +71,9 @@ Source: [fenestra_file_sdk.h](../include/fenestra_file_sdk.h)
 
 - `fx_sdk_file_seek`
 - `fx_sdk_file_tell`
+- `fx_sdk_file_module`
+- `fx_sdk_file_rename`
+- `fx_sdk_file_original_open`
 
 ### fenestra_mapping_sdk.h
 

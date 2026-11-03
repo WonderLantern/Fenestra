@@ -2,11 +2,13 @@
 import argparse
 import hashlib
 import json
+import subprocess
 from pathlib import Path, PurePosixPath
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--distribution',action='store_true',help='also reject unlisted files, including local build outputs')
+    parser.add_argument('--tracked',action='store_true',help='compare the inventory with Git-tracked source paths')
     args=parser.parse_args()
     root=Path(__file__).resolve().parent
     manifest=json.loads((root/'SOURCE-INVENTORY.json').read_text(encoding='utf-8'))
@@ -24,6 +26,9 @@ def main():
     if args.distribution:
         actual={p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
         if actual!=names|{'SOURCE-INVENTORY.json'}:raise ValueError('unlisted files in distribution')
+    if args.tracked:
+        tracked=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode('utf-8').strip('\0').split('\0')
+        if set(tracked)!=names|{'SOURCE-INVENTORY.json'}:raise ValueError('inventory differs from tracked source paths')
     print(json.dumps(dict(passed=True,files=len(names),strict_distribution=args.distribution)))
 
 if __name__=='__main__':main()

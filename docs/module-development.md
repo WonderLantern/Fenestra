@@ -4,7 +4,7 @@
 
 Start with `examples/hello/module.c`. It creates a native PAGE and ACTION and receives input through the shared event queue. `modules/demo/sdk.c` also demonstrates display binding, capability queries, pages, foreground focus and batched animation frames.
 
-Place sources under `modules/<name>/` or `examples/<name>/`. The builder currently requires the main source, additional C files and output to reside within the source tree so it can record the complete dependency set. The tree can be copied to any working directory.
+Sources and output can live in an independent project. The builder records transitive headers and additional C/static-library inputs without requiring them inside the SDK tree. Use `--source`, `--include-dir`, `--library` and `--debug` as needed. Export a standalone SDK with `python host/export_sdk.py --output <new-directory>`; its `build_module.py` requires LLVM and Python, without original firmware or keys.
 
 ```sh
 python host/build_sdk_module.py examples/hello/module.c --id hello --target zr-c110 --output-dir build/hello-zr
@@ -33,6 +33,12 @@ A typical state machine:
 
 Success from `fx_sdk_submit` means local submission succeeded; the reply's `result` is the service result. On `FX_BUSY`, normally retain the current phase and retry later without duplicating a non-idempotent operation. `FX_EMPTY` means there is no input available.
 
+For a native resident extension, use `--native` and the once-only
+`fenestra_native_entry(const FxNativeBootstrap *, FxNativeExports *)` contract.
+See [native extensions](native-extensions.md) and
+`examples/native-resident/module.c`. Native/managed execution is independent of
+APP/EXTENSION/SERVICE purpose.
+
 ## Named interfaces
 
 `fx_sdk_open(&client, api, "camera.display.scene", 1)` requests version 1 of the scene service. The returned handle belongs to the current owner/generation. Read the descriptor before using it. Handles from other module instances are not valid persistent configuration values.
@@ -40,6 +46,11 @@ Success from `fx_sdk_submit` means local submission succeeded; the reply's `resu
 Functions, tables, hooks, devices and resources share a name-resolution boundary but have different operation ABIs. Consult the [API reference](api-reference.md) and headers. Integer handles do not make their operation parameters interchangeable.
 
 For a new platform capability, define a general data structure and operation contract, then implement the profile adapter. Platforms without that capability must return an explicit unavailable result. Feature modules should use these contracts rather than module-specific core opcodes.
+
+Native modules can publish runtime providers; ordinary modules discover them
+through `core.providers` and transfer bulk data through `core.streams`.
+`core.time`, `core.logs`, `core.self`, file extensions and the module-side audio
+contract are documented in [generic module services](module-services.md).
 
 ## UI
 
@@ -52,7 +63,7 @@ For a new platform capability, define a general data structure and operation con
 
 ## Large modules, memory and tasks
 
-The current native worker accepts packages up to 1 MiB, loaded images up to 4 MiB, at most 8 segments and 128 relocations. Discovery can enumerate many modules, but active instances also consume owners, stacks, heap, stock tasks and retained resources.
+Managed workers accept packages up to 1 MiB, loaded images up to 4 MiB, eight segments and 128 relocations. Native v4 residents accept packages up to 32 MiB, images up to 64 MiB, eight segments and 65536 sorted relocations. These ceilings do not reserve RAM. Discovery can enumerate many modules, but active instances also consume owners, stacks, heap, stock tasks and retained resources.
 
 Request a v3 package when explicit stack sizes are needed:
 
@@ -61,6 +72,11 @@ python host/build_sdk_module.py examples/hello/module.c --id hello --target zr-c
 ```
 
 Native stacks range from 32 KiB to 1 MiB; user stacks range from 4 KiB to 1 MiB. Both use 4 KiB alignment. v1/v2 default to 64 KiB for each stack. Use `--simd` for code that requires full SIMD context preservation; the capability requirement lets incompatible cores reject it.
+
+Those stack declarations apply to managed workers. `--native` cannot combine
+with them: initialization runs on the original Loader stack, and the module
+owns resident task creation. A native entry or callback cannot assume that
+original firmware tasks preserve SIMD merely because managed workers do.
 
 Store large data in allocated buffers or card files and access it through block reads or mapping services. Model weights need not occupy static `.wlm` segments. Keep asynchronous task data alive until the task completes. Closing a page does not permit reclamation of resources retained by an owner.
 
