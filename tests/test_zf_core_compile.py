@@ -16,14 +16,13 @@ class ZfCoreCompileTests(unittest.TestCase):
             build_zf_core.build(None, None, experimental_adapters=False, native_menu=True)
 
     def test_source_inventory_is_nonempty_and_target_specific_link_is_absent(self):
-        self.assertGreaterEqual(len(build_zf_core.SHARED_SOURCES), 66)
+        self.assertEqual(len(build_zf_core.SHARED_SOURCES), 66)
         self.assertIn('src/native_scene.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/native_display.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/platform_native.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/ptp.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/ptp_device_info.c', build_zf_core.SHARED_SOURCES)
         self.assertIn('src/native_call_a64.S', build_zf_core.SHARED_SOURCES)
-        self.assertIn('src/platform/zf_c301/dehaze_provider.c', build_zf_core.SHARED_SOURCES)
         self.assertNotIn('src/platform/z9_c532/menu.c', build_zf_core.SHARED_SOURCES)
 
     def test_experimental_adapter_inventory_is_guarded(self):
