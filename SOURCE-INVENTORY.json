@@ -3498,8 +3498,8 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md",
-      "bytes": 7936,
-      "sha256": "90d39f4490fc14d8125a38eb14539aca31a6e9d3985a49464cae0400652de7e6"
+      "bytes": 8103,
+      "sha256": "585d2630a1aa71654506223fe449e7e9d7546e8bd86b9c9600746704ca62a864"
     },
     {
       "path": "tests/test_cipher_patch.py",

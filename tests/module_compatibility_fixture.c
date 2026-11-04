@@ -1,4 +1,8 @@
 /* Read-only synthetic packages; no camera, firmware, mapping or entry calls. */
+#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
+/* Use the ISO C file API in this fixture on every host compiler. */
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 #include "fenestra_module_manager.h"
 #include <assert.h>
 #include <inttypes.h>
