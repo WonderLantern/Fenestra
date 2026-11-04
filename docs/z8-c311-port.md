@@ -21,7 +21,7 @@ removal/shutdown into a lifecycle inbox; forcing the worker stop path is
 pending natural-context delivery), all validated under a matching
 Z8 emulator.
 
-Not enabled: native menus (ported, Z8 SETUP page/event/GUI-object bindings
+Partially enabled: native menu trio + font request sites are pinned and hooked (see validation section 4b); the render-profile cluster (row layout/draw/visibility) is still Z9-reference and stays dormant, so menu-driven navigation is pending
 pending), device-side PTP (the profile reports `FX_CAPABILITY`), Linux bridge,
 USB debug and fonts. Unsupported capabilities report `FX_CAPABILITY` rather than
 faking success; per-item evidence and boundaries live in

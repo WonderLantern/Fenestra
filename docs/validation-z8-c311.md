@@ -194,13 +194,44 @@
 - Filesystem error semantics observed: `0x80001003` = drive not registered,
   `0x80000010` = not found, `0x80000030` = directory end sentinel.
 
+## 4b. Native menu bindings (T12)
+
+Pinned against the original C311 image (all addresses RE-verified by
+decompiled semantics plus call-graph evidence; method notes in the local
+T12 engineering record):
+
+| Binding | Address | Evidence |
+| --- | --- | --- |
+| `camera.menu.page.get` | `0x403db694` | `root[group] + (id & 0xffff) * 0x60` over the page-roots table `0xa032b50c8`; 325 call sites; 16B entry window sha256 `dec337c6...23a710c` |
+| `camera.menu.text.get` | `0x4032e130` | `(language, id, &utf16, &bytes)` bank lookup matching the reimplemented stock path; sole reader of the bank roots; window sha256 `5615d42d...7fc9564` |
+| `camera.menu.navigate` | `0x4039e810` | the 2973-site open-request funnel `(page, context)`; SETUP (638) verified flowing through it; 16B window (str/stp/mov pair, position-independent) sha256 `d62ce251...139784b7`, replayed by the generated `navigate_trampoline.S` |
+| `camera.menu.open` | `0x403ad6d8` | the `(group, page)` open primitive (26 callers); the ported `0x403adbac` call was a Z9 reference landing mid-function on C311 and is replaced |
+| Text bank roots | `0xa0281cd5c` count, `0xa02f2ac38` pool, `0xa02f2ac40` fonts, `0xa02f2ac48` offsets, `0xa02f2ac50` attributes | registered by the firmware text init (`FUN_403edf3c` via `FUN_4032e05c/074/08c/0a4/104`); cluster order mirrors Z9 |
+| Font request sites | lock `0x402e5550` / unlock `0x402e5564` (mutex `0xa02e8c658`), 13 enter sites `0x402edc90..0x402f0248`, measure `0x4088bdac`, set_layout `0x4088c620`, line probe `0x402eeb28` | byte-verified pattern at all 13 sites (lock BL; orr w0,#2; register; event-op; orr w0,#2; wait; unlock BL at +28, the Z9 geometry); structural check in `emulation/native_font_sites.py:z8-c311` runs at build and verify time |
+| SETUP navigation table | `0x43bf0680` (12 records, next page id `0x68c`) | C311 uses one table per page family; the ported `0x43014bb8` (Z9 single 18-event table) reads as high-entropy data here |
+
+Installation: page.get/text.get/navigate are plain-branch full replacements
+at their entries (stock semantics reimplemented; navigate keeps the
+displaced window); the font sites are BL hooks around the original
+lock/unlock calls. While the platform state is uninitialised every hook is
+pure passthrough. Baseline equivalence: the patched image passes the full
+RE0 regression (FXBOOT1 + DCIM/NIKON/Z_8 + hello module present, no
+unmodeled MMIO; artifact `menu-reg-1` in the local evidence store).
+
+Boundaries (explicit): the render-profile cluster (ui_layout/ui_text/
+visibility/draw profiles, ~20 Z9 reference slots, all confirmed NOT
+function entries on C311), the font fallback face (open_font/select_font/
+fallback data) and display restore remain unpinned; the Fenestra page
+construction and draw paths stay dormant until they are pinned, so
+menu-driven navigation and activation are not yet exercised end to end.
+
 ## Unverified / not enabled (explicit boundaries)
 
 | Item | State | Notes |
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
-| Native menu registration (menu reachability) | not enabled | menu.c is ported but the Z8 reverse engineering of SETUP pages/events/GUI object ids is not complete; v0 platform state stays uninitialised |
+| Native menu registration (menu reachability) | bindings enabled, navigation E2E pending | menu trio + font sites + navigation table pinned and hooked (section 4b); the render-profile cluster stays Z9-reference and dormant, so SETUP navigation is not yet exercised |
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation (module management entry) still pending |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
