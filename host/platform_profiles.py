@@ -215,6 +215,11 @@ def generate(target,firmware,output):
     lines.append('{"core.capacity",FX_BIND_DEVICE,FX_CALL_DEVICE,1,FX_BIND_PROVIDER,FX_SDK_QUERY,0,(uintptr_t)fx_capacity_resource,{0}},')
     records.append(dict(name='core.capacity',kind='device',abi='device',version=1,native_provider=True,
                         origin='src/capacity.c:fx_capacity_resource'))
+    lines.insert(1,'#include "fenestra_audio_output.h"')
+    lines.append('{"camera.audio.output",FX_BIND_DEVICE,FX_CALL_DEVICE,1,FX_BIND_PROVIDER,FX_SDK_BINDING,0,(uintptr_t)fx_audio_resource,{0}},')
+    records.append(dict(name='camera.audio.output',kind='device',abi='device',version=1,native_provider=True,
+                        origin='src/native_audio.c:fx_audio_resource',
+                        note='query capabilities; no physical output until a verified platform adapter registers it'))
     if target=='zr-c110':
         # The generic registry routes model providers by the checked profile's
         # callback pointer, not a camera-specific branch in common services.
@@ -261,6 +266,6 @@ def generate(target,firmware,output):
                 native_condition_abi=verify_ui_condition_abi(target,data),
                 native_card_capacity=verify_card_capacity(target,data),
                 runtime_hooks_and_devices_qualified=False,
-                registered_native_providers=['core.schedule','core.resources','core.capacity','rtos.mappings','rtos.events','core.machine','core.memory','card.files','core.hooks','core.tick','core.services'])
+                registered_native_providers=['core.schedule','core.resources','core.capacity','camera.audio.output','rtos.mappings','rtos.events','core.machine','core.memory','card.files','core.hooks','core.tick','core.services'])
     (out/'bindings.json').write_text(json.dumps(result,indent=2)+'\n')
     return result

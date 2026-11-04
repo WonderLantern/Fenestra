@@ -63,8 +63,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6762,
-      "sha256": "eedb00db2976aa73a417dbf22e48bfcd847d16288145c21a8deaea5b4430a3c1",
+      "bytes": 6963,
+      "sha256": "bf1a2618cbe5c63d8f2bb2697cb6a189d2cbca82cbee87381c2a88f0e5ec0b5f",
       "origin": "project-source",
       "snapshot_sha256": "ccee77bf6619d5747c065433c0ec84bc3524e690f1db8a5bc8d7a030a171fc29",
       "transformed": true,
@@ -73,8 +73,8 @@
     },
     {
       "path": "docs/api-reference.md",
-      "bytes": 9285,
-      "sha256": "fb9701aaf56c96d97bc781c267beec43ec916fa68d29ef7f35982be7a6e7c54a",
+      "bytes": 9667,
+      "sha256": "ef656c2746bc4fe9647574c7adee8bdec3153870e493fbeef51e93b23242496a",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": true,
@@ -90,6 +90,16 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "docs/audio.md",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 8896,
+      "sha256": "506ed81376b66d47b1d881e3bd85e82aa14bae30c942fc0a5a430b82c28e133b"
     },
     {
       "path": "docs/debugging.md",
@@ -113,8 +123,8 @@
     },
     {
       "path": "docs/module-development.md",
-      "bytes": 5981,
-      "sha256": "eac7330a00279cb5b1ee6553f31afc868d0d360c268697e87896742d920ac726",
+      "bytes": 6301,
+      "sha256": "776878d7bcd922ac84efa9a10c9f37f0b3e023c7f53d108ea7b8c1a215515042",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": true,
@@ -222,6 +232,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "examples/audio-tone/module.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4174,
+      "sha256": "edee37bd47bafee6ba2d15f5708a6abf4d2664a20992c37f06f902c843bf8ca2"
+    },
+    {
       "path": "examples/hello/module.c",
       "bytes": 1695,
       "sha256": "de999443d62b3488adf0904da09852b0ea154045d399e65f3fb3fe10c7e9a4dc",
@@ -243,8 +263,8 @@
     },
     {
       "path": "host/build_c110_menu.py",
-      "bytes": 36325,
-      "sha256": "725606f3fc75b88ddd2b086be90aa750b52a875a150d27ebaf5403894c61b7e7",
+      "bytes": 36376,
+      "sha256": "97a872d52c891333440eb6ac56273e08cfccea11c94653690e9c78732e42538f",
       "origin": "project-source",
       "snapshot_sha256": "262fd42abd022e62dc04f4c06aec9ff0a577ef218395adbe80c8a2cbcab07744",
       "transformed": true,
@@ -273,8 +293,8 @@
     },
     {
       "path": "host/build_z9_core.py",
-      "bytes": 12678,
-      "sha256": "9a46c3f540e309cde33fd3d03f3851cca77ec5483802572665daca7b357dd628",
+      "bytes": 12726,
+      "sha256": "9ef6dd6273af495e702153f93f5b0839f7c24518ae0e5ee6b42c1ae43480f0e5",
       "origin": "project-source",
       "snapshot_sha256": "41e35ef55be0023dce129c78b79b78be5d327be6166272d5804719506a113ef8",
       "transformed": true,
@@ -423,8 +443,8 @@
     },
     {
       "path": "host/platform_profiles.py",
-      "bytes": 22377,
-      "sha256": "1faaf055f0b887bf3905188e114b4b98d2fb4b98ad2125ccd131d42e8e24ee6a",
+      "bytes": 22905,
+      "sha256": "4ce7107b21f8f87b4fb7923491302ee008bb6f6cf1aacf1915705b77a1dc858a",
       "origin": "project-source",
       "snapshot_sha256": "78a2f74229773e5ba8dbebcbdff0ce4035f3002b413d39d0c9331cd98fb310eb",
       "transformed": true,
@@ -730,6 +750,36 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "include/fenestra_audio.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1846,
+      "sha256": "0fdaeeabb4b879d6f157f260f6ebaf1d006468ddf69f4e7a7dbb96f4e9c6b230"
+    },
+    {
+      "path": "include/fenestra_audio_output.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2810,
+      "sha256": "7058677bd61b2dd460936538d4108853a7c7318e75652b28667de599ebac7643"
+    },
+    {
+      "path": "include/fenestra_audio_sdk.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1609,
+      "sha256": "e7b74c07f1eaa31ebffb0eda6b6c35307fd2acea5d383515557f0b0a8504fc4e"
     },
     {
       "path": "include/fenestra_binding_store.h",
@@ -1982,6 +2032,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "src/audio.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 9696,
+      "sha256": "cf19367a73f39f8fbf4326ecfd6705a4155e94a7dc05ed831207e2eec1e5985f"
+    },
+    {
       "path": "src/binding_store.c",
       "bytes": 13278,
       "sha256": "e27e46ff206d0be9762a9e01e2bf8e14979542535796d7b03357d099974e0195",
@@ -2140,6 +2200,16 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "src/native_audio.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2663,
+      "sha256": "ecf4749af946e4927c35d43f6055ca25096830ff68bbfbef5cf06afe8e5277ee"
     },
     {
       "path": "src/native_call.c",
@@ -3440,6 +3510,26 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/test_audio.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 13669,
+      "sha256": "f63d4781b22834efbdcc51abe37330ec07ef74a635102c01818dd313c8241e20"
+    },
+    {
+      "path": "tests/test_audio.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2486,
+      "sha256": "3470a9b6846b6cd22bc4df2b5a40b522257673871369d2c427d111e7febd6ad6"
     },
     {
       "path": "tests/test_cipher_patch.py",

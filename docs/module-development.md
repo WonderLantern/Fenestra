@@ -41,6 +41,11 @@ Functions, tables, hooks, devices and resources share a name-resolution boundary
 
 For a new platform capability, define a general data structure and operation contract, then implement the profile adapter. Platforms without that capability must return an explicit unavailable result. Feature modules should use these contracts rather than module-specific core opcodes.
 
+For PCM playback, use `camera.audio.output` through `fenestra_audio_sdk.h`.
+The [audio guide](audio.md) documents buffering, mixing, volume and owner cleanup;
+`examples/audio-tone/module.c` shows an ordinary module using it. Query availability:
+the current ZR/Z9 profiles do not yet register a physical output adapter.
+
 ## UI
 
 - Represent choices and switches with `FxUiControl` kind/value fields, rather than changing action titles to simulate state.
