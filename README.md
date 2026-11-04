@@ -2,6 +2,8 @@
 
 > **Early development:** Fenestra is still at an early stage. Major changes, including breaking changes to interfaces and behavior, are likely as the project evolves. Backward compatibility is not yet guaranteed.
 
+**DO NOT FLASH CURRENT VERSION AS WE DISCOVERED POTENTIAL RISK OF BRICKING YOUR DEVICE**
+
 Fenestra is a camera firmware extension runtime that loads independent `.wlm` modules from a memory card. The Fenestra menu manages activation, modules, and debugging. WonderLantern hosts module pages and settings. Adding a module does not require rebuilding the core. A character-rain animation is included as `modules/demo/`.
 
 This repository contains the core, module SDK, host debugging tools, firmware patch tools, and development documentation. Supply the original firmware and patch-generation material yourself. Build tools extract required original instructions locally from the specified firmware.
