@@ -6,12 +6,15 @@ stereo expansion, stereo mixing, per-stream gain, pause, drain and stop.
 It uses the existing binding grant (`FX_SDK_BINDING`), copied service exchange
 and owner lifecycle. There is no audio-specific module type or new opcode.
 
-**Hardware status:** neither published ZR C1.10 nor Z9 C5.32 profile currently
-registers a verified PCM output adapter. On these profiles the binding can be
-opened and queried, but `capabilities` is zero and CONFIGURE returns
-`FX_CAPABILITY`. This contribution implements and tests the software path; it
-does not establish audible speaker/headphone playback on a camera. Codec
-control-register serialization alone is not evidence of a PCM playback ABI.
+**Native backend:** ZR C1.10 and Z9 C5.32 use the original SoundService message
+queue, original PCM buffers, completion callbacks and AudioIF driver. They
+advertise 48 kHz S16_LE output with one physical channel; stereo module inputs
+are mixed and downmixed to mono. This path is implemented, linked into both
+cores and verified offline against original firmware instructions. Audible
+output, physical DMA/cache timing and native audio coexistence still require
+camera validation. See [native audio](native-audio.md) for evidence and limits.
+Platforms without an adapter return zero capabilities and CONFIGURE returns
+`FX_CAPABILITY`.
 Microphone capture, compressed-file decoding and resampling are not implemented.
 
 ## Module SDK
@@ -30,7 +33,10 @@ submit asynchronously: return from the entry, then collect the matching
 3. Call `fx_sdk_audio_configure` with `FxAudioConfig`. Use the queried sample
    rate, `FX_AUDIO_S16_LE`, one or two channels, an explicit queue size and
    gain from 0 (mute) through `FX_AUDIO_GAIN_ONE` (unity).
-4. Prequeue PCM with `fx_sdk_audio_write`, then START. A frame contains one
+4. Prequeue PCM with `fx_sdk_audio_write`, then START. For the Nikon backend,
+   cover its two 4,800-frame periods before START when possible. Native device
+   preparation is asynchronous: yield and retry START after `FX_BUSY` without
+   advancing the source cursor. A frame contains one
    sample per input channel, not one byte or necessarily one sample.
 5. Refill before the queue empties. WRITE returns `FX_BUSY` if the entire block
    does not fit; no part is accepted. Advance the source cursor only after
@@ -49,7 +55,7 @@ No native address or PCM buffer handle is returned to a module.
 | QUERY | None / 0 | `FxAudioInfo` in reply data, including live usage and explicit stream/byte limits. |
 | CONFIGURE | `FxAudioConfig` / 0 | Allocate one queue per binding. A second CONFIGURE returns `FX_STATE`; close and reopen to change format. |
 | WRITE | `FxAudioWrite` / 0 | Copy a whole block into the queue; `FX_BUSY` has no acceptance side effect. |
-| START | None / 0 | Play/resume READY, PAUSED or PLAYING. |
+| START | None / 0 | Play/resume READY, PAUSED or PLAYING. Native preparation/contention can return `FX_BUSY`; retry after yielding. |
 | PAUSE | None / 0 | Retain the queue without consuming samples. |
 | GAIN | None / unsigned Q16 | Change this stream's gain; mixing saturates at the signed 16-bit output limits. |
 | STATUS | None / 0 | `FxAudioStatus`: state, queue depth and cumulative submitted/rendered frames and underrun blocks. |
@@ -83,17 +89,21 @@ intentional end-of-drain do not count as underruns.
 ## Platform output adapter
 
 [fenestra_audio_output.h](../include/fenestra_audio_output.h) is the trusted
-adapter contract. A platform adapter must first establish and acquire a native
-playback path, including its original-firmware ownership/coexistence rules.
-It then:
+adapter contract. A platform adapter must establish the native playback ABI
+and its original-firmware ownership/coexistence rules. Registration may precede
+device initialization; acquire the native session before consuming module PCM.
+The adapter:
 
 1. Supplies a core-resident `FxAudioOutput` and allocator/context that remain
-   valid until reboot. Call `fx_audio_output_init` with sample rate, PCM byte
-   budget, maximum streams, submit/queue sizes and render block size.
+   valid until reboot. Firmware profiles supply `fx_audio_domain()` from their
+   existing retained heap state; mutable static data cannot live in ROM padding.
+   Call `fx_audio_output_init` with sample rate, physical output channel count,
+   PCM byte budget, maximum streams, submit/queue sizes and render block size.
 2. Calls `fx_audio_output_register` once. An alternate output cannot replace an
    installed one. Registration itself does not initialize a codec, write MMIO,
    start a task/IRQ, or perform any firmware Flash operation.
-3. Calls `fx_audio_render` from its verified native playback callback to fill
+3. Calls `fx_audio_render` or `fx_audio_render_counted` from its normal playback
+   task after receiving a verified native buffer-completion notification to fill
    an adapter-owned stereo S16_LE buffer. The adapter manages device/DMA
    buffering, buffer ownership, cache synchronization and output timing.
 4. Keeps the adapter, output and callback code resident. There is no public
@@ -126,8 +136,9 @@ adapter operation. This service does not claim to provide those operations.
 ## Example and checks
 
 [examples/audio-tone/module.c](../examples/audio-tone/module.c) is an ordinary
-APP that synthesizes a quarter-second 440 Hz triangle wave, queues it, drains
-and closes. It handles unavailable audio by closing and finishing normally.
+APP that synthesizes a quarter-second 440 Hz triangle wave, prequeues it, drains
+and closes. It handles unavailable audio and device errors by closing and
+finishing normally.
 
 ```sh
 python -B host/build_sdk_module.py examples/audio-tone/module.c --id audio-tone --target zr-c110 --required 0x210000 --output-dir build/audio-zr
@@ -140,5 +151,9 @@ registry, provider, module-image range checks and software mixer with synthetic
 PCM and a synthetic profile. They cover mixing/clipping/gain, ring wrap,
 backpressure, failed copies, allocation/format limits, revocation under lock
 contention, owner cleanup, request replay and the ordinary tone module with and
-without a registered output. They do not validate physical audio, latency,
+without a registered output. Additional cases run the real native controller
+for both message layouts, including hardware-tail retention, lazy task startup,
+busy/foreign ownership, missing callbacks, rejection and delayed STOP. An
+ordinary tone module also runs through the actual native worker into synthetic
+original-format PCM banks. These cases do not validate physical audio, latency,
 DMA/cache behavior, microphone capture or coexistence with native recording.

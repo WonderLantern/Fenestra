@@ -44,7 +44,8 @@ For a new platform capability, define a general data structure and operation con
 For PCM playback, use `camera.audio.output` through `fenestra_audio_sdk.h`.
 The [audio guide](audio.md) documents buffering, mixing, volume and owner cleanup;
 `examples/audio-tone/module.c` shows an ordinary module using it. Query availability:
-the current ZR/Z9 profiles do not yet register a physical output adapter.
+the ZR/Z9 native backend reuses original SoundService playback, with physical
+audio validation still pending. Other profiles may report output unavailable.
 
 ## UI
 

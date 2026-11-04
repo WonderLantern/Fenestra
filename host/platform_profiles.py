@@ -20,6 +20,14 @@ def native_optimization(source):
         'src/platform/zr_c110/menu.c','src/startup.c','src/startup_files.c','src/startup_service.c')
     return '-Os' if source in cold else '-O2'
 
+AUDIO_PROFILES={
+ 'zr-c110':dict(command_base=0x431d0010,init_result=21,start_result=16,init_extra=2,
+    submit=0x40f3580c,state=0x40f371d0,recording=0x40f36920,beep=0x40f37924,consumer=0xa034038b0,
+    dispatcher=0x40f37084),
+ 'z9-c532':dict(command_base=0x431d0014,init_result=20,start_result=20,init_extra=0,
+    submit=0x40d25554,state=0x40d26da8,recording=0x40d26534,beep=0x40d2756c,consumer=0xa03219610,
+    dispatcher=0x40d26c68)}
+
 PROFILES={
  'zr-c110':dict(model='Nikon ZR',version='C 1.10',bytes=88157349,
   sha256='606d6116dc8e1560fb1608743a18840e0f7ab2617d11bcf02af025405aca1542',
@@ -173,15 +181,22 @@ def generate(target,firmware,output):
     p,data=load(target,firmware);out=Path(output)
     if not out.resolve().is_relative_to(ROOT) or out.exists():raise ValueError('new owned binding output required')
     out.mkdir(parents=True)
+    audio=AUDIO_PROFILES[target]
+    audio_functions={name:audio[field] for name,field in (
+        ('camera.audio.queue.submit','submit'),('camera.audio.playback.state','state'),
+        ('camera.audio.recording.state','recording'),('camera.audio.beep.state','beep'))}
+    (out/'audio_profile.h').write_text('/* Original SoundService ABI; see docs/native-audio.md. */\n'
+        '#define FX_TARGET_SOUND_PROFILE {'+','.join(str(audio[key])+'u' for key in
+        ('command_base','init_result','start_result','init_extra'))+'}\n')
     records=[];lines=['/* Generated from a complete pinned original image. */',
                      'static const FxNamedBinding fx_target_bindings[]={']
-    for name,address in p['functions'].items():
+    for name,address in {**p['functions'],**audio_functions}.items():
         at=address-BASE;original=data[at:at+16]
         if at<0 or len(original)!=16 or not any(original):raise ValueError('missing native function '+name)
         records.append(dict(name=name,kind='function',abi='aapcs64-u64x8',address=hex(address),original=original.hex(),version=1))
         lines.append('{'+json.dumps(name)+',FX_BIND_FUNCTION,FX_CALL_U64_8,1,FX_BIND_ESCAPE,FX_SDK_NATIVE,0,'+
                      hex(address)+'ull,{'+','.join(map(str,original))+'}},')
-    for name,(address,size) in p['tables'].items():
+    for name,(address,size) in {**p['tables'],'camera.audio.playback.consumer':(audio['consumer'],8)}.items():
         records.append(dict(name=name,kind='table',abi='bytes',address=hex(address),bytes=size,version=1,
                             original=None,note='original keyboard page; geometry only, business callbacks must be replaced' if name=='camera.ui.editor.template' else 'original native correction records' if name=='camera.video.correction.records' else 'BSS pointer storage; populated by original initialization'))
         lines.append('{'+json.dumps(name)+',FX_BIND_TABLE,FX_CALL_BYTES,1,FX_BIND_READ|FX_BIND_ESCAPE,FX_SDK_BINDING,'+
@@ -219,7 +234,7 @@ def generate(target,firmware,output):
     lines.append('{"camera.audio.output",FX_BIND_DEVICE,FX_CALL_DEVICE,1,FX_BIND_PROVIDER,FX_SDK_BINDING,0,(uintptr_t)fx_audio_resource,{0}},')
     records.append(dict(name='camera.audio.output',kind='device',abi='device',version=1,native_provider=True,
                         origin='src/native_audio.c:fx_audio_resource',
-                        note='query capabilities; no physical output until a verified platform adapter registers it'))
+                        note='lazy original SoundService PCM output; docs/native-audio.md; physical validation pending'))
     if target=='zr-c110':
         # The generic registry routes model providers by the checked profile's
         # callback pointer, not a camera-specific branch in common services.
@@ -265,6 +280,8 @@ def generate(target,firmware,output):
                 abi_evidence=p['abi_evidence'],native_namespace=verify_page_namespace(p,data),
                 native_condition_abi=verify_ui_condition_abi(target,data),
                 native_card_capacity=verify_card_capacity(target,data),
+                native_audio=dict(**audio,sample_rate=48000,physical_channels=1,period_bytes=9600,periods=2,
+                                  evidence='docs/native-audio.md',physical_qualified=False),
                 runtime_hooks_and_devices_qualified=False,
                 registered_native_providers=['core.schedule','core.resources','core.capacity','camera.audio.output','rtos.mappings','rtos.events','core.machine','core.memory','card.files','core.hooks','core.tick','core.services'])
     (out/'bindings.json').write_text(json.dumps(result,indent=2)+'\n')

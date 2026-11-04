@@ -9,12 +9,24 @@ struct FxAudioStream {
     _Atomic uint32_t revoked;
     uint8_t pcm[];
 };
-static _Atomic(FxAudioOutput *) current;
+#ifndef FX_PLATFORM_PROFILE
+static FxAudioDomain domain;
+FxAudioDomain *fx_audio_domain(void){return &domain;}
+#endif
 static int take(FxAudioOutput *o) {
     uint32_t zero=0u;
     return atomic_compare_exchange_strong_explicit(&o->lock,&zero,1u,memory_order_acquire,memory_order_relaxed);
 }
 static void leave(FxAudioOutput *o) {atomic_store_explicit(&o->lock,0u,memory_order_release);}
+FxResult fx_audio_activity(FxAudioOutput *o,FxAudioActivity *a) {
+    if(!o || !a || o->initialized!=FX_AUDIO_ABI)return FX_ARGUMENT;
+    if(!take(o))return FX_BUSY;
+    *a=(FxAudioActivity){o->streams,0u};
+    for(FxAudioStream *s=o->head;s;s=s->next)
+        if(!atomic_load_explicit(&s->revoked,memory_order_acquire) &&
+           (s->state==FX_AUDIO_PLAYING || s->state==FX_AUDIO_DRAINING))++a->active;
+    leave(o);return FX_OK;
+}
 static int member(FxAudioOutput *o,const FxAudioStream *s) {
     for(FxAudioStream *p=o->head;p;p=p->next)if(p==s)return 1;
     return 0;
@@ -24,17 +36,21 @@ FxResult fx_audio_output_init(FxAudioOutput *o,const FxAudioOutputConfig *c) {
        !c->max_submit_frames || c->max_submit_frames>FX_AUDIO_MAX_SUBMIT_FRAMES ||
        !c->max_queue_frames || c->max_queue_frames>FX_AUDIO_MAX_QUEUE_FRAMES ||
        c->max_submit_frames>c->max_queue_frames || !c->max_render_frames ||
-       c->max_render_frames>FX_AUDIO_MAX_QUEUE_FRAMES || !c->max_streams || !c->byte_budget)return FX_ARGUMENT;
-    if(atomic_load_explicit(&current,memory_order_acquire)==o)return FX_STATE;
+       c->max_render_frames>FX_AUDIO_MAX_QUEUE_FRAMES || !c->max_streams || !c->byte_budget ||
+       c->output_channels>2u)return FX_ARGUMENT;
+    if(fx_audio_output_current()==o)return FX_STATE;
     memset(o,0,sizeof(*o));o->config=*c;atomic_init(&o->lock,0u);o->initialized=FX_AUDIO_ABI;return FX_OK;
 }
 FxResult fx_audio_output_register(FxAudioOutput *o) {
     if(!o || o->initialized!=FX_AUDIO_ABI)return FX_ARGUMENT;
+    FxAudioDomain *d=fx_audio_domain();if(!d)return FX_STATE;
     FxAudioOutput *expected=0;
-    if(atomic_compare_exchange_strong_explicit(&current,&expected,o,memory_order_acq_rel,memory_order_acquire))return FX_OK;
+    if(atomic_compare_exchange_strong_explicit(&d->output,&expected,o,memory_order_acq_rel,memory_order_acquire))return FX_OK;
     return expected==o?FX_OK:FX_BUSY;
 }
-FxAudioOutput *fx_audio_output_current(void) {return atomic_load_explicit(&current,memory_order_acquire);}
+FxAudioOutput *fx_audio_output_current(void) {
+    FxAudioDomain *d=fx_audio_domain();return d?atomic_load_explicit(&d->output,memory_order_acquire):0;
+}
 FxResult fx_audio_info(FxAudioOutput *o,FxAudioInfo *info) {
     if(!info)return FX_ARGUMENT;
     *info=(FxAudioInfo){.abi=FX_AUDIO_ABI,.bytes=sizeof(*info)};
@@ -42,7 +58,8 @@ FxResult fx_audio_info(FxAudioOutput *o,FxAudioInfo *info) {
     if(o->initialized!=FX_AUDIO_ABI)return FX_STATE;
     if(!take(o))return FX_BUSY;
     info->capabilities=FX_AUDIO_CAP_OUTPUT|FX_AUDIO_CAP_MIX|FX_AUDIO_CAP_GAIN;
-    info->sample_rate=o->config.sample_rate;info->output_channels=2u;info->format=FX_AUDIO_S16_LE;
+    info->sample_rate=o->config.sample_rate;info->output_channels=o->config.output_channels?o->config.output_channels:2u;
+    info->format=FX_AUDIO_S16_LE;
     info->max_submit_frames=o->config.max_submit_frames;info->max_queue_frames=o->config.max_queue_frames;
     info->streams=o->streams;info->max_streams=o->config.max_streams;
     info->byte_budget=o->config.byte_budget;info->used_bytes=o->used_bytes;
@@ -152,10 +169,20 @@ static void store(uint8_t *p,int64_t value) {
     uint16_t v=(uint16_t)value;p[0]=(uint8_t)v;p[1]=(uint8_t)(v>>8);
 }
 FxResult fx_audio_render(FxAudioOutput *o,void *pcm,uint32_t frames) {
+    return fx_audio_render_counted(o,pcm,frames,0);
+}
+FxResult fx_audio_render_counted(FxAudioOutput *o,void *pcm,uint32_t frames,uint32_t *source_frames) {
+    if(source_frames)*source_frames=0u;
     if(!o || !pcm || !frames || o->initialized!=FX_AUDIO_ABI)return FX_ARGUMENT;
     if(frames>o->config.max_render_frames)return FX_BOUNDS;
     uint8_t *out=pcm;memset(out,0,(size_t)frames*4u);
     if(!take(o))return FX_BUSY;
+    if(source_frames)for(FxAudioStream *s=o->head;s;s=s->next)
+        if(!atomic_load_explicit(&s->revoked,memory_order_acquire) &&
+           (s->state==FX_AUDIO_PLAYING || s->state==FX_AUDIO_DRAINING)) {
+            uint32_t count=s->queued_frames<frames?s->queued_frames:frames;
+            if(count>*source_frames)*source_frames=count;
+        }
     for(FxAudioStream *s=o->head;s;s=s->next)
         if(!atomic_load_explicit(&s->revoked,memory_order_acquire) &&
            s->state==FX_AUDIO_PLAYING && s->queued_frames<frames && s->underruns!=UINT64_MAX)++s->underruns;

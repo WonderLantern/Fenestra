@@ -28,8 +28,9 @@ Create `inputs` and `build` first. Place the original firmware in `inputs` and t
 Generating a patch requires LLVM, the Python build dependencies, and the appropriate key material. Developing standalone modules requires neither original firmware nor keys. See [Getting started](docs/getting-started.md) for setup and commands.
 
 Modules can use the [PCM audio SDK](docs/audio.md) for queued playback and mixing.
-Physical output requires a platform adapter; the published ZR/Z9 profiles
-currently report audio output unavailable.
+ZR C1.10 and Z9 C5.32 reuse the original SoundService/AudioIF PCM playback path;
+the native backend is implemented and verified offline, with physical audio
+validation still pending. See [native audio](docs/native-audio.md).
 
 ## Porting quick start
 

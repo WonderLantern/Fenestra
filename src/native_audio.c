@@ -1,5 +1,8 @@
 #include "fenestra_audio_output.h"
 #include "fenestra_memory.h"
+#ifdef FX_PLATFORM_PROFILE
+#include "fenestra_native_sound.h"
+#endif
 
 static FxResult read_module(void *context,uint64_t address,void *out,uint32_t bytes) {
     return fx_platform_module_transfer(context,address,out,bytes,0u);
@@ -20,6 +23,13 @@ FxResult fx_audio_resource(void *context,uint32_t operation,const FxNamedBinding
     }
     if(operation!=FX_RESOURCE_CALL || !q || !a)return FX_ARGUMENT;
     if(q->arg[2]>FX_AUDIO_STOP || (q->arg[2]!=FX_AUDIO_GAIN && q->arg[3]))return FX_ARGUMENT;
+#ifdef FX_PLATFORM_PROFILE
+    if(!output && (q->arg[2]==FX_AUDIO_QUERY || q->arg[2]==FX_AUDIO_CONFIGURE)) {
+        FxResult native=fx_native_audio_register(owner);
+        if(native!=FX_OK && native!=FX_CAPABILITY)return native;
+        output=fx_audio_output_current();
+    }
+#endif
     if(q->arg[2]==FX_AUDIO_QUERY) {
         if(q->bytes)return FX_ARGUMENT;
         FxAudioInfo info;FxResult result=fx_audio_info(output,&info);
@@ -49,5 +59,15 @@ FxResult fx_audio_resource(void *context,uint32_t operation,const FxNamedBinding
         return result;
     }
     if(q->arg[3]>UINT32_MAX)return FX_ARGUMENT;
+#ifdef FX_PLATFORM_PROFILE
+    if(q->arg[2]==FX_AUDIO_START || q->arg[2]==FX_AUDIO_DRAIN) {
+        FxAudioStatus status;FxResult result=fx_audio_stream_status(output,stream,&status);
+        if(result!=FX_OK)return result;
+        if((q->arg[2]==FX_AUDIO_START && status.state!=FX_AUDIO_DRAINING && status.state!=FX_AUDIO_DRAINED) ||
+           (q->arg[2]==FX_AUDIO_DRAIN && status.queued_frames)) {
+            result=fx_native_audio_prepare();if(result!=FX_OK)return result;
+        }
+    }
+#endif
     return fx_audio_stream_control(output,stream,(uint32_t)q->arg[2],(uint32_t)q->arg[3]);
 }

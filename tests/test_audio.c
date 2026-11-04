@@ -19,7 +19,7 @@ static FxResult read_pcm(void *context,uint64_t address,void *out,uint32_t bytes
     memcpy(out,(const void *)(uintptr_t)address,bytes);return FX_OK;
 }
 static void init(void) {
-    settings=(FxAudioOutputConfig){0,allocate,release,48000u,16384u,65536u,4096u,128u,1048576u};
+    settings=(FxAudioOutputConfig){0,allocate,release,48000u,16384u,65536u,4096u,128u,1048576u,2u};
     assert(fx_audio_output_init(&output,&settings)==FX_OK);
 }
 static FxAudioConfig config(uint32_t channels,uint32_t frames,uint32_t gain) {

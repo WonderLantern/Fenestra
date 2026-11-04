@@ -4,7 +4,7 @@
 static FxSdkClient client;
 static uint64_t binding;
 static FxAudioInfo info;
-static uint32_t stage,submitted,next_frames,oscillator;
+static uint32_t stage,submitted,next_frames,oscillator,prefill;
 static int16_t pcm[4096];
 
 enum {APP,OPEN,QUERY,CONFIGURE,FIRST,START,WRITE,DRAIN,CLOSE,FINISH,DONE};
@@ -15,7 +15,7 @@ static FxResult submit(const FxServiceModule *api) {
         case QUERY:return fx_sdk_audio_query(&client,api,binding);
         case CONFIGURE: {
             FxAudioConfig config={FX_AUDIO_ABI,sizeof(config),info.sample_rate,1u,FX_AUDIO_S16_LE,
-                                  info.max_queue_frames<8192u?info.max_queue_frames:8192u,FX_AUDIO_GAIN_ONE/4u,0u};
+                                  info.max_queue_frames<16384u?info.max_queue_frames:16384u,FX_AUDIO_GAIN_ONE/4u,0u};
             return fx_sdk_audio_configure(&client,api,binding,&config);
         }
         case FIRST:case WRITE: {
@@ -53,7 +53,10 @@ int fenestra_module_entry(const FxModuleServices *base) {
         /* Older cores may not expose the binding. Unsupported audio ends
          * normally; it must not panic a camera just because it cannot play. */
         if(stage==OPEN && reply.result==FX_CAPABILITY)stage=FINISH;
-        else if(reply.result!=FX_OK)return 5;
+        else if(reply.result!=FX_OK) {
+            if(stage>=QUERY && stage<=DRAIN)stage=CLOSE; /* Device errors are not a module Panic. */
+            else return 5;
+        }
         else switch(stage) {
             case APP:stage=OPEN;break;
             case OPEN:binding=reply.value[0];stage=QUERY;break;
@@ -61,12 +64,15 @@ int fenestra_module_entry(const FxModuleServices *base) {
                 if(reply.bytes!=sizeof(info))return 6;
                 for(uint32_t i=0u;i<sizeof(info);++i)((uint8_t *)&info)[i]=reply.data[i];
                 if(info.abi!=FX_AUDIO_ABI || info.bytes!=sizeof(info))return 7;
+                prefill=info.sample_rate/4u;
+                if(prefill>16384u)prefill=16384u;
+                if(prefill>info.max_queue_frames)prefill=info.max_queue_frames;
                 stage=(info.capabilities&FX_AUDIO_CAP_OUTPUT)?CONFIGURE:CLOSE;break;
             case CONFIGURE:stage=FIRST;break;
             case FIRST:case WRITE:
                 submitted+=next_frames;
                 oscillator=(uint32_t)((uint64_t)submitted*440u%info.sample_rate);
-                stage=stage==FIRST?START:(submitted==info.sample_rate/4u?DRAIN:WRITE);break;
+                stage=stage==FIRST?(submitted>=prefill?START:FIRST):(submitted==info.sample_rate/4u?DRAIN:WRITE);break;
             case START:stage=submitted==info.sample_rate/4u?DRAIN:WRITE;break;
             case DRAIN:stage=CLOSE;break;
             case CLOSE:stage=FINISH;break;

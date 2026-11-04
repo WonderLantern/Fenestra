@@ -157,7 +157,7 @@ def main():
                 raise ValueError('capture entry differs in native analysis image')
     if args.native_file_test_backend:
         sources += ['emulation/pcie_nvme.c','emulation/c110_file_card.c','src/exfat.c']
-    sources+=['src/audio.c','src/native_audio.c']
+    sources+=['src/audio.c','src/native_audio.c','src/native_sound.c','src/native_audio_driver.c']
     local_headers=[p.relative_to(ROOT).as_posix() for p in (ROOT/'src/platform/zr_c110').glob('*.h')]
     identity_inputs=sorted(set([p.relative_to(ROOT).as_posix() for p in displaced_inputs]+['host/displaced.py']+sources+local_headers+generated_headers+host_inputs+['host/build_c110_menu.py']+
         [p.relative_to(ROOT).as_posix() for p in (ROOT/'include').glob('*.h')]))
