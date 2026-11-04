@@ -28,7 +28,7 @@ FxResult fx_native_panic_show(FxNativeDisplay *display,FxScene *scene,const FxPa
 }
 FxResult fx_native_panic_poll(FxNativePanicPage *page) {
     if(!page || !page->captured)return FX_STATE;
-    if(page->shown && fx_native_display_is_current(&page->display))return FX_OK;
+    if(page->shown && fx_native_display_is_visible(&page->display))return FX_OK;
     FxResult r=fx_native_panic_show(&page->display,&page->scene,&page->report);
     page->result=(uint32_t)r;page->shown=r==FX_OK;
     return r;

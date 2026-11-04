@@ -12,6 +12,10 @@ from platform_profiles import PROFILES
 from module_header import validate_package
 
 ROOT = Path(__file__).resolve().parents[1]
+# Module identity for the experimental C2.01 bring-up runtime; this does not
+# register a complete core/package target in PROFILES.
+SDK_TARGETS = {name: row['module_identity'] for name, row in PROFILES.items()}
+SDK_TARGETS['z63-c201'] = None  # Loaded only for this experimental target.
 
 
 def main():
@@ -28,7 +32,7 @@ def main():
                    help='v3: owned RTOS task stack, 32768..1048576 bytes, page aligned')
     p.add_argument('--user-stack-bytes', type=lambda x: int(x,0),
                    help='v3: EL0 module stack, 4096..1048576 bytes, page aligned')
-    p.add_argument('--target',choices=tuple(PROFILES),default='zr-c110')
+    p.add_argument('--target',choices=tuple(SDK_TARGETS),default='zr-c110')
     args = p.parse_args()
     if args.simd:args.required|=0x400000
     source, out = args.source.resolve(strict=True), args.output_dir.resolve()
@@ -44,6 +48,8 @@ def main():
         any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789_-' for c in args.id) or
         not 0<=args.required<=0x7f0000 or args.required&~0x7f0000 or args.optional):
         raise ValueError('invalid module identity/capabilities')
+    if args.target == 'z63-c201' and len(args.id) > 8:
+        raise ValueError('Z6III C2.01 bring-up requires an 8.3 module filename (id at most 8 characters)')
     clang, linker = shutil.which('clang'), shutil.which('ld.lld')
     if not clang or not linker:
         raise RuntimeError('LLVM required')
@@ -69,7 +75,9 @@ def main():
             dependencies.add(dependency)
     subprocess.run([linker, '-m', 'aarch64elf', '-pie', '--no-dynamic-linker', '-Bsymbolic','--gc-sections',
                     '-z', 'max-page-size=4096', '-e', 'fenestra_module_entry',*map(str,objects),'-o',str(elf)], check=True, timeout=30)
-    identity=PROFILES[args.target]['module_identity']
+    identity=SDK_TARGETS[args.target]
+    if args.target == 'z63-c201':
+        identity=json.loads((ROOT / 'targets/z63-c201.json').read_text())['payload_sha256']
     data = pack(elf.read_bytes(), bytes.fromhex(identity), args.required,entry_abi=1,
                 native_stack_bytes=args.native_stack_bytes,user_stack_bytes=args.user_stack_bytes)
     if args.target=='zr-c110':require_module_target(data)
@@ -83,6 +91,8 @@ def main():
     sources = [source,*support,*sorted(dependencies),
                ROOT / 'host/build_sdk_module.py', ROOT / 'host/pack_module.py',
                ROOT / 'host/target_c110.py',ROOT/'host/module_header.py',ROOT/'host/platform_profiles.py',ROOT/'src/memory.c']
+    if args.target == 'z63-c201':
+        sources.append(ROOT / 'targets/z63-c201.json')
     report = dict(modules=[row], target=args.target, preflight=preflight, simd=args.simd, optimize=args.optimize,
                   sources={str(f.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(f.read_bytes()).hexdigest() for f in sources})
     (out / 'module.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
