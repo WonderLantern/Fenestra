@@ -73,7 +73,7 @@
   disassembles as `stp x25,x24,[sp,#-64]!; stp x23,x22,[sp,#16]; stp
   x21,x20,[sp,#32]; stp x19,x30,[sp,#48]` (bytes `f963bca9 f75b01a9
   f55302a9 f37b03a9`), then `mov x19,x0; mov w20,w1; ldrsw x8,[x19,#0x20]`
-  at entry+0x18 (`b9802268`); the event table's only data reference in the
+  at entry+0x18 (word `b9802268`, little-endian memory order `682280b9`); the event table's only data reference in the
   image is the load at `0x40d60f04` inside this function; five call sites
   reach it (`0x40d60eb8/0x40d61024/0x40d61080/0x40d611a8/0x40d68fb0`); the
   subscriber registry at `0x43f90688` names
@@ -87,7 +87,7 @@
   the Zf window" remark compares against the Zf branch text and was not
   re-verified in this tree.)
 - Emulation evidence (z8-qemu, full-lab machine with the template card;
-  probe artifact `probe-fin-e23`): a real boot records `STARTED|CARD`
+  probe artifact `probe-r2-e23`): a real boot records `STARTED|CARD`
   (word `0x303`) through the installed gate, stable across the observation
   window with live event-34 dispatch traffic sampled at the gate entry. A
   forced CardRemove (23) re-entry through the pinned dispatcher entry with
@@ -99,21 +99,24 @@
   propagate under forced delivery, and worker-stop on card removal is
   unproven** (an earlier revision of this section claimed a worker shutdown
   flag observation; that evidence read a wrong pointer and is withdrawn).
-- Forced event-7 re-entry (probe artifact `probe-fin-e7`): the word moves
+- Forced event-7 re-entry (probe artifact `probe-r2-e7`): the word moves
   `0x303→0x705` — exactly `STOP|STOP_PENDING` set with `CARD` cleared —
   and STOP is terminal: a direct `fx_z8_after_startup_complete` call
   records nothing afterwards, and the word stays frozen under live traffic.
 - Synthetic event-99 through the same path leaves the word unchanged
-  (probe artifact `probe-fin-e99b`); the observation window itself (live
+  (probe artifact `probe-r2-e99`); the observation window itself (live
   event-34 traffic, word stable at `0x303`) is the natural no-op control.
 - The full patched-image regression stayed green in three consecutive
   gate-enabled runs (reg-t13a/b/c: FXBOOT1 record valid, DCIM/NIKON/Z_8
   created, no unmodeled MMIO outside the ISP boundary block).
-- Natural delivery attempt: a runtime `cfexpress-card-present` QMP toggle
-  (the modeled detect line, `0x17a00044` bit 1) produced no dispatch and no
-  word change within 25 s. Triple-verified that no firmware code reads that
-  register: Ghidra cross-references 0, a full-image ADRP+LDR pattern scan
-  0, literal-constant scan 0. Natural card events therefore need a model
+- Natural delivery attempt (probe artifact `probe-r2-eject`): a runtime
+  `cfexpress-card-present` QMP toggle (the modeled detect line,
+  `0x17a00044` bit 1) produced no dispatch and no word change within 25 s.
+  No direct reference to that register was found anywhere in the image:
+  Ghidra cross-references 0 (analyzed functions only), a full-image
+  byte-level ADRP+LDR pattern scan 0, literal-constant scan 0 — computed
+  or indirect addressing is not covered by the scans; the runtime toggle
+  covers the dynamic path. Natural card events therefore need a model
   extension (the Z 6III qemu documents the equivalent slot with a 50 ms
   firmware poll; the Z8's detect path is presumably MCU-linked).
 - Boundary: the event 7/23 evidence is forced delivery under the emulator
