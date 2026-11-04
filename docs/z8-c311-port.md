@@ -16,8 +16,9 @@ profile:
 Enabled today: core build, independent verification, container repack, the SDK
 module target, startup-file activation with a full session load
 (install → activate → stage → load → EL0 user call) and sysctl lifecycle
-events (the system-event dispatcher gate records startup/mount and stops
-module work on card removal or shutdown), all validated under a matching
+events (the system-event dispatcher gate records startup/mount and card
+removal/shutdown into a lifecycle inbox; forcing the worker stop path is
+pending natural-context delivery), all validated under a matching
 Z8 emulator.
 
 Not enabled: native menus (ported, Z8 SETUP page/event/GUI-object bindings

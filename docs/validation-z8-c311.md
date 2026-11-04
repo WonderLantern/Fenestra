@@ -69,26 +69,66 @@
   before the original handler, 19 installs the platform state, 24 requests
   an inspect; all four record into the one-word lifecycle inbox
   (`lifecycle.c`; the record body is inlined into the hooks at -O2).
-- Emulation evidence (z8-qemu, full-lab machine with the template card): a
-  real boot records `STARTED|CARD` (word `0x303`) through the installed
-  gate; a forced CardRemove (23) re-entry through the pinned dispatcher
-  entry clears `CARD` and lingers `CARD_PENDING` (`0x303→0x301`) with the
-  module worker's shutdown flag observed set; thousands of live
-  unregistered dispatches (the UsbRemove poller, event 34) leave the word
-  unchanged; the full patched-image regression stayed green in three
-  consecutive gate-enabled runs (FXBOOT1 record valid, DCIM/NIKON/Z_8
+- RE provenance (frozen for re-verification): the dispatcher entry
+  disassembles as `stp x25,x24,[sp,#-64]!; stp x23,x22,[sp,#16]; stp
+  x21,x20,[sp,#32]; stp x19,x30,[sp,#48]` (bytes `f963bca9 f75b01a9
+  f55302a9 f37b03a9`), then `mov x19,x0; mov w20,w1; ldrsw x8,[x19,#0x20]`
+  at entry+0x18 (`b9802268`); the event table's only data reference in the
+  image is the load at `0x40d60f04` inside this function; five call sites
+  reach it (`0x40d60eb8/0x40d61024/0x40d61080/0x40d611a8/0x40d68fb0`); the
+  subscriber registry at `0x43f90688` names
+  `eSyscController_Device/Card/DefaultDevice/Lens/CyclicTimer`. The
+  previously assumed hook site `0x40FAC944` is a registered GUI callback
+  (its address is passed at `0x40fac91c`), disproved dynamically: boot
+  events 19/24 are recorded through `0x40d60ec8`, which would be impossible
+  were `0x40FAC944` the convergence point. The 64/64 table enumeration is
+  reproduced offline by iterating `0x43F907F8 + i*88` `{u32 id; u32 pad;
+  u64 name_ptr}` over the pinned image. (The "identical prefix sha256 to
+  the Zf window" remark compares against the Zf branch text and was not
+  re-verified in this tree.)
+- Emulation evidence (z8-qemu, full-lab machine with the template card;
+  probe artifact `probe-fin-e23`): a real boot records `STARTED|CARD`
+  (word `0x303`) through the installed gate, stable across the observation
+  window with live event-34 dispatch traffic sampled at the gate entry. A
+  forced CardRemove (23) re-entry through the pinned dispatcher entry with
+  a captured real message moves the word `0x303→0x301` (CARD cleared,
+  CARD_PENDING lingers). With a magic-validated module worker (`0x465a3957`
+  at the allocation, phase ACTIVE=2 before injection), the worker REMAINED
+  ACTIVE after injection and no `fx_z8_worker_shutdown` call was observed
+  through the end of the run: **the pre-authored stop handshake does not
+  propagate under forced delivery, and worker-stop on card removal is
+  unproven** (an earlier revision of this section claimed a worker shutdown
+  flag observation; that evidence read a wrong pointer and is withdrawn).
+- Forced event-7 re-entry (probe artifact `probe-fin-e7`): the word moves
+  `0x303→0x705` — exactly `STOP|STOP_PENDING` set with `CARD` cleared —
+  and STOP is terminal: a direct `fx_z8_after_startup_complete` call
+  records nothing afterwards, and the word stays frozen under live traffic.
+- Synthetic event-99 through the same path leaves the word unchanged
+  (probe artifact `probe-fin-e99b`); the observation window itself (live
+  event-34 traffic, word stable at `0x303`) is the natural no-op control.
+- The full patched-image regression stayed green in three consecutive
+  gate-enabled runs (reg-t13a/b/c: FXBOOT1 record valid, DCIM/NIKON/Z_8
   created, no unmodeled MMIO outside the ISP boundary block).
-- Boundary: the event 23/7 evidence is forced delivery under the emulator
-  (gdbstub re-entry with a captured real message), not a physical
-  card-removal interrupt; the worker INTERRUPTED continuation path remains
-  unexercised.
+- Natural delivery attempt: a runtime `cfexpress-card-present` QMP toggle
+  (the modeled detect line, `0x17a00044` bit 1) produced no dispatch and no
+  word change within 25 s. Triple-verified that no firmware code reads that
+  register: Ghidra cross-references 0, a full-image ADRP+LDR pattern scan
+  0, literal-constant scan 0. Natural card events therefore need a model
+  extension (the Z 6III qemu documents the equivalent slot with a 50 ms
+  firmware poll; the Z8's detect path is presumably MCU-linked).
+- Boundary: the event 7/23 evidence is forced delivery under the emulator
+  (gdbstub re-entry in an arbitrary stopped CPU context with sync=1, which
+  skips the dispatcher mutex); the natural dispatch-task context and the
+  sync=0 mutex path are not exercised, worker-stop propagation is an open
+  item, and the worker INTERRUPTED continuation path remains unexercised.
 
 ### 5. Core build (`host/build_z8_core.py` + `emulation/z8_core.ld`)
-- 73 source files compiled (LLVM 19.1.7, the same strict flag set as Z9,
+- 74 source files compiled (LLVM 19.1.7, the same strict flag set as Z9,
   including -Werror -Wconversion).
 - Linked at `0x401A0000` (original RX padding, asserted all-zero over 384KB
   before the build); core size 41,912 bytes in the earlier UI-hooks-only
-  configuration, 177,280 bytes in this port configuration.
+  configuration, 177,280 bytes in the port configuration and 177,312 bytes
+  in the sysctl-gate configuration (eleven hooks).
 - In-build bit-exact reconstruction verification: clearing the core region and
   restoring every hook reproduces the original byte for byte.
 - The module CRC16 trailer is recomputed explicitly (`verify_platform_build`
@@ -161,7 +201,7 @@
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation (module management entry) still pending |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
-| task.create/resume/delay addresses | Z9 reference values | prologue probes exist; create/resume are not exercised by the validated configuration; the delay binding runs on the loader's yield path and is tolerated (all runs) |
+| task.create/resume/delay addresses | Z9 reference values | prologue probes exist; create/resume are not exercised by the validated configuration; the delay binding runs on the loader's yield path (all runs) and on the sysctl stop-handshake wait loop (forced-delivery context) |
 | GUI mutex trio (0xa032dcb98 / 0x40d30004 / 0x40d2ffb0) | Z9 reference values | exercised on the load/refresh path (`refresh_core`) in the validated chain and tolerated across all runs; the Z8 mutex is not pinned |
 | FCB error codes / card_capacity BL chain | partial | loop signature verified; error paths and the call chain not pinned |
 | Hardware | **entirely unverified** | no device flashing; every conclusion in this file is emulation-boundary |

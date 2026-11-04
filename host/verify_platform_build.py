@@ -72,6 +72,8 @@ def main():
             sysctl=profile['sysctl']
             window=original[sysctl['dispatch']-BASE:sysctl['dispatch']-BASE+sysctl['window_bytes']]
             if _h.sha256(window).hexdigest()!=sysctl['prefix_sha256']:raise ValueError('Z8 sysctl dispatch window differs')
+            span=original[sysctl['dispatch']-BASE:sysctl['dispatch']-BASE+sysctl['span_bytes']]
+            if _h.sha256(span).hexdigest()!=sysctl['span_sha256']:raise ValueError('Z8 sysctl dispatch span differs')
             sysctl_hooks={sysctl['dispatch']:'fx_z8_system_dispatch'}
         expected_hooks={**ui_hooks,**sysctl_hooks}
         if (len(candidate)!=len(original) or not 0<len(code)<=0x60000 or

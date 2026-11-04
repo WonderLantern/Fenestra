@@ -75,7 +75,8 @@ typedef struct {
     FxStartupService startup;
     FxStartupFiles startup_files;
     /* SYSCTL lifecycle inbox: written by the system-event gate callbacks,
-     * consumed by the dispatch pump (see fx_native_ui_dispatch_domain). */
+     * retained for the future owner (see lifecycle.h; no consumer is linked
+     * into this configuration, so PENDING notices linger by design). */
     FxZ8Lifecycle lifecycle;
     /* FW_LIST callback-enumeration staging: Z8 has no Z9-style find-first API,
      * and the staging buffer must live in the state heap because the module
