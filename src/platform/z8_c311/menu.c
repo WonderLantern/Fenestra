@@ -176,24 +176,45 @@ __attribute__((unused)) static uint32_t noop(void *p) {
 }
 static FxNativeUi *module_ui(uint32_t, int);
 uint64_t fx_z8_menu_navigate(uint64_t page, void *context);
+/* C311 child lookup: the firmware resolver FUN_40325b60 takes (id, owner)
+ * and searches owner+0xC8; the shared visibility code calls (row, id). */
+static void *fx_z8_child_lookup(void *owner, uint32_t child) {
+    return ((void *(*)(uint32_t, void *))0x40325b60)(child, owner);
+}
+/* C311 layout primitives (pinned; see docs/validation-z8-c311.md 4c):
+ * count_rows FUN_403afe64 (selector 0x50002 as on Z9), highlight
+ * FUN_403aff78, reset_check FUN_403b1a5c (checkmark bitmap 0xa032acac8),
+ * repair_selection FUN_403db750 (weakest pin, probe-arbitrated),
+ * place_rows FUN_403b01f0 (staged visible-row list), resize_canvas
+ * FUN_403aec24 (canvas metrics 0xa032b1434-44c), prepare_viewport
+ * FUN_403b035c, scrollbar FUN_403aed8c (object 0x4ba3). */
 static const FxNativeLayoutProfile ui_layout={
     (uintptr_t)FN(0x403dbdb4,void *(*)(void)),
-    (uintptr_t)FN(0x403b037c,uint32_t (*)(void *,uint32_t)),
-    (uintptr_t)FN(0x403b0490,void (*)(void *,uint32_t,uint32_t)),
-    (uintptr_t)FN(0x403b05d0,void (*)(void *,uint32_t,uint32_t)),
-    (uintptr_t)FN(0x403b03f8,void (*)(void *)),
-    (uintptr_t)FN(0x403aed7c,void (*)(void *)),
-    (uintptr_t)FN(0x403af040,void (*)(void *)),
-    (uintptr_t)FN(0x403b0874,void (*)(void *)),
-    (uintptr_t)FN(0x403af294,void (*)(void *))};
+    (uintptr_t)FN(0x403afe64,uint32_t (*)(void *,uint32_t)),
+    (uintptr_t)FN(0x403aff78,void (*)(void *,uint32_t,uint32_t)),
+    (uintptr_t)FN(0x403b1a5c,void (*)(void *,uint32_t,uint32_t)),
+    (uintptr_t)FN(0x403db750,void (*)(void *)),
+    (uintptr_t)FN(0x403b01f0,void (*)(void *)),
+    (uintptr_t)FN(0x403aec24,void (*)(void *)),
+    (uintptr_t)FN(0x403b035c,void (*)(void *)),
+    (uintptr_t)FN(0x403aed8c,void (*)(void *))};
+/* C311 row widgets: row_lookup FUN_40325b60 (id, rows-owner; children at
+ * owner+0xC8), set_active FUN_403f6228 (+0x29 visible, +0x3c dirty,
+ * parent propagation), row_draw FUN_4031f9b8 (widget+0x48, installed by
+ * FUN_4031f8f0), value child 0x4ba5 / arrow child 0x4ba6 (composite
+ * builder FUN_403a8898 registration order), row objects 0x128 bytes. */
 static const FxNativeVisibilityProfile ui_visibility={
     (uintptr_t)FN(0x403dbdb4,void *(*)(void)),
-    (uintptr_t)FN(0x40325fac,void *(*)(uint32_t,void *)),
-    (uintptr_t)FN(0x403ec9d0,void (*)(void *,uint32_t)),
-    UINT64_C(0x4031f4ac),(uintptr_t)FN(0x4031fa5c,void *(*)(void *,uint32_t)),0x140u,0x4bedu,0x4becu};
+    (uintptr_t)FN(0x40325b60,void *(*)(uint32_t,void *)),
+    (uintptr_t)FN(0x403f6228,void (*)(void *,uint32_t)),
+    UINT64_C(0x4031f9b8),(uintptr_t)fx_z8_child_lookup,0x128u,0x4ba6u,0x4ba5u};
+/* value_lookup/set_disabled/set_text/release_text/value_bytes/
+ * set_alignment/measure/bounds are not yet pinned on C311 (the old Z9
+ * values were mid-function addresses); text_prepare stays dormant until
+ * they land. */
 static const FxNativeTextProfile ui_text_profile = {
-    0x403dbdb4u,0x40325facu,0x4031fa5cu,0x403ec9b0u,0x403ec9f0u,
-    0x4032be38u,0x4031f4acu,0x4becu,0x140u,0x118u,0x403ecbc4u,0x4031e87cu,0x4031e758u};
+    0x403dbdb4u,0x40325b60u,0u,0u,0u,0u,0x4031f9b8u,
+    0x4ba5u,0x128u,0u,0u,0x0u,0x0u};
 static const FxNativeEvent ui_editor_events[]={
     {0x295u,0x405065e0u,0x0u,0u},
     {0x296u,0x405065e4u,0x0u,0u},
@@ -238,24 +259,24 @@ const uint32_t fx_native_ui_dispatch_metadata[10]={0x46585544u,2u,offsetof(State
     offsetof(FxNativeUiDispatch,task),offsetof(FxNativeUiDispatch,pending),offsetof(FxNativeUiDispatch,running),
     offsetof(FxNativeUiDispatch,submitted),offsetof(FxNativeUiDispatch,completed),offsetof(FxNativeUiDispatch,last_task)};
 FxResult fx_native_apps_flush_native(void) {
-    void *mutex=(void *)(uintptr_t)UINT64_C(0xa032dcb98);
-    FN(0x40d30004,void (*)(void *))(mutex);
+    void *mutex=(void *)(uintptr_t)UINT64_C(0xa032b8044);
+    FN(0x40d2bfb4,void (*)(void *))(mutex);
     FxNativePage *page=FN(0x403dbdb4,FxNativePage *(*)(void))();uint32_t destination=0u;
     FxResult result=fx_native_apps_prepare_navigation(fx_native_apps_domain(),page,&destination);
-    FN(0x40d2ffb0,void (*)(void *))(mutex);
+    FN(0x40d2bf60,void (*)(void *))(mutex);
     if(destination){(void)FN(0x403ad6d8,uint64_t (*)(uint32_t,uint32_t))(2u,destination);return FX_OK;}
     return result;
 }
 FxResult fx_native_ui_flush_owner(FxPlatformOwner *owner) {
-    void *mutex=(void *)(uintptr_t)UINT64_C(0xa032dcb98);
-    FN(0x40d30004,void (*)(void *))(mutex);
+    void *mutex=(void *)(uintptr_t)UINT64_C(0xa032b8044);
+    FN(0x40d2bfb4,void (*)(void *))(mutex);
     FxNativePage *page=FN(0x403dbdb4,FxNativePage *(*)(void))();
     FxNativeUi *ui=page?fx_native_ui_find_page(page->identity>>16):0;
     if(ui && ui->owner==owner) {
         uint32_t destination=0u;FxResult redirect=fx_native_ui_retirement_target(ui,page->identity>>16,&destination);
         if(redirect==FX_EMPTY)redirect=fx_native_ui_prepare_navigation(ui,page,&destination);
         if(redirect!=FX_EMPTY) {
-            FN(0x40d2ffb0,void (*)(void *))(mutex);
+            FN(0x40d2bf60,void (*)(void *))(mutex);
             if(redirect!=FX_OK)return redirect;
             (void)FN(0x403ad6d8,uint64_t (*)(uint32_t,uint32_t))(2u,destination);
             fx_native_ui_refresh_owner(owner);return FX_OK;
@@ -294,16 +315,24 @@ FxResult fx_native_ui_flush_owner(FxPlatformOwner *owner) {
             if(fx_native_ui_trace(ui,8u,row_id,fx_native_text_prepare(&ui_text_profile,page,row_id,rows[i].word[0],value_id,enabled,ui))!=FX_OK) {
                 repaint=0;continue;
             }
-            void *row=FN(0x40325fac,void *(*)(uint32_t,void *))(row_id,fx_native_page_rows(page));
+            void *row=FN(0x40325b60,void *(*)(uint32_t,void *))(row_id,fx_native_page_rows(page));
             if(row) {
-                FN(0x403ec980,void (*)(void *,uint32_t))(row,1u);
-                void *value=FN(0x4031fa5c,void *(*)(void *,uint32_t))(row,0x4becu);
-                if(value)FN(0x403ec980,void (*)(void *,uint32_t))(value,1u);
+                FN(0x403f6228,void (*)(void *,uint32_t))(row,1u);
+                void *value=fx_z8_child_lookup(row,0x4ba5u);
+                if(value)FN(0x403f6228,void (*)(void *,uint32_t))(value,1u);
                 painted=1u;
             }
         }
         if(repaint && painted) {
-            FxNativeMenuDrawProfile draw={0x403f196cu,0x403266ecu,0x403ebfb8u,0x403efcecu,0x40c7cb34u,0x40325facu,0x4bf1u,(uintptr_t)fx_native_backdrop_restore};
+            /* C311 draw primitives: dirty FUN_403f1940 (colour fields +
+             * dirty bit +0x3c), dispatch FUN_40325a80 (container
+             * dispatcher: iterates children, calls widget+0x48, clears the
+             * dirty bit), device FUN_403f0db8 (context by id), empty
+             * FUN_40c7bea4 (zero-rect test). The rectangle clip-setup
+             * primitive and the modal body id are not yet pinned:
+             * draw_pair rejects a null rectangle, so the repaint degrades
+             * to repaint=0 until they land (documented boundary). */
+            FxNativeMenuDrawProfile draw={0x403f1940u,0x40325a80u,0x403f0db8u,0u,0x40c7bea4u,0x40325b60u,0u,(uintptr_t)fx_native_backdrop_restore};
             if(changed&FX_NATIVE_UI_STRUCTURE)draw.restore=(uintptr_t)fx_native_menu_restore;
             if(fx_native_ui_trace(ui,9u,0u,fx_native_menu_draw(&draw,page))!=FX_OK)repaint=0;
         }
@@ -312,7 +341,7 @@ FxResult fx_native_ui_flush_owner(FxPlatformOwner *owner) {
     if(repaint && painted)FN(0x403eb0dc,void (*)(void *,uint32_t,uint32_t))
         ((void *)(uintptr_t)UINT64_C(0x403eb078),3u,7u);
     if(repaint)(void)fx_native_ui_trace(ui,10u,0u,fx_native_ui_presented(ui,revision));
-    FN(0x40d2ffb0,void (*)(void *))(mutex);
+    FN(0x40d2bf60,void (*)(void *))(mutex);
     return repaint?FX_OK:refreshed==FX_OK?FX_BUSY:refreshed;
 }
 uint32_t fx_native_module_loaded(const char *id) {
@@ -378,8 +407,8 @@ __attribute__((unused)) static void refresh_core(State *s) {
      * helper can repaint a different ancestor when extensions own the leaf.
      * A worker must acquire that exclusion before touching cached GUI text;
      * changing phase alone leaves the already rendered Ready string stale. */
-    void *mutex=(void *)(uintptr_t)UINT64_C(0xa032dcb98);
-    FN(0x40d30004,void (*)(void *))(mutex);
+    void *mutex=(void *)(uintptr_t)UINT64_C(0xa032b8044);
+    FN(0x40d2bfb4,void (*)(void *))(mutex);
     int repaint=FN(0x403dbdb4,void *(*)(void))()==&s->core.page;
     if(repaint) {
         (void)page_opened(&s->core.page);
@@ -400,13 +429,13 @@ __attribute__((unused)) static void refresh_core(State *s) {
          * into that target can erase cached labels on the current leaf. */
         void *canvases[2]={(void *)s->core.page.surface,(void *)s->core.page.content};
         for(uint32_t i=0;i<2u;++i)if(canvases[i]) {
-            FN(0x403f196c,void (*)(void *,uint32_t))(canvases[i],1u);
-            (void)FN(0x403266ec,uint32_t (*)(void *,void *,void *))(canvases[i],0,0);
+            FN(0x403f1940,void (*)(void *,uint32_t))(canvases[i],1u);
+            (void)FN(0x40325a80,uint32_t (*)(void *,void *,void *))(canvases[i],0,0);
         }
     }
     if(repaint)FN(0x403eb0dc,void (*)(void *,uint32_t,uint32_t))
         ((void *)(uintptr_t)UINT64_C(0x403eb078),3u,7u);
-    FN(0x40d2ffb0,void (*)(void *))(mutex);
+    FN(0x40d2bf60,void (*)(void *))(mutex);
 }
 static FxNativeUi *module_ui(uint32_t index,int create) {
     (void)create;State *s=state();if(!s)return 0;

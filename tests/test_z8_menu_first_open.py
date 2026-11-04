@@ -78,3 +78,48 @@ class Z8MenuFirstOpenGeometry(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Z8RenderProfileContracts(unittest.TestCase):
+    """Pinned C311 render-profile contracts (validation section 4c)."""
+
+    MENU_C = ROOT / 'src' / 'platform' / 'z8_c311' / 'menu.c'
+
+    @classmethod
+    def _source(cls):
+        return cls.MENU_C.read_text()
+
+    def test_layout_profile_pinned(self):
+        text = self._source()
+        for address in ('0x403afe64', '0x403aff78', '0x403b1a5c', '0x403db750',
+                        '0x403b01f0', '0x403aec24', '0x403b035c', '0x403aed8c'):
+            self.assertIn(address, text)
+
+    def test_visibility_profile_pinned(self):
+        text = self._source()
+        for address in ('0x40325b60', '0x403f6228', '0x4031f9b8'):
+            self.assertIn(address, text)
+        self.assertIn('0x128u,0x4ba6u,0x4ba5u', text)
+
+    def test_stale_z9_render_values_removed_from_enabled_path(self):
+        # Reader/title/editor profiles intentionally retain Z9 references
+        # (documented T15 residuals); only the enabled-path profiles changed.
+        text = self._source()
+        for stale in ('0x403b037c', '0x403b0490', '0x403b05d0', '0x403b03f8',
+                      '0x403aed7c', '0x403af040', '0x403b0874', '0x403af294',
+                      '0x403f196c', '0x403266ec', '0x403ebfb8', '0x403efcec',
+                      '0x40c7cb34'):
+            self.assertNotIn(stale, text, stale)
+
+    def test_gui_mutex_pinned(self):
+        text = self._source()
+        self.assertIn('UINT64_C(0xa032b8044)', text)
+        self.assertIn('0x40d2bfb4', text)
+        self.assertIn('0x40d2bf60', text)
+        self.assertNotIn('0xa032dcb98', text)
+
+    def test_draw_degradation_is_explicit(self):
+        """rectangle/modal_id unpinned: draw_pair must reject and degrade."""
+        text = self._source()
+        self.assertIn('FxNativeMenuDrawProfile draw={0x403f1940u,0x40325a80u,0x403f0db8u,0u,0x40c7bea4u,0x40325b60u,0u,',
+                      text)

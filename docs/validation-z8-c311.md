@@ -225,6 +225,51 @@ fallback data) and display restore remain unpinned; the Fenestra page
 construction and draw paths stay dormant until they are pinned, so
 menu-driven navigation and activation are not yet exercised end to end.
 
+## 4c. Render-profile cluster (T12, second round)
+
+All pinned against the original C311 image by decompiled semantics; method
+notes in the local T12 engineering record. Layout/visibility/draw profiles
+in `src/platform/z8_c311/menu.c` now carry only pinned values.
+
+| Slot | Address | Evidence |
+| --- | --- | --- |
+| `count_rows(page,sel)` | `0x403afe64` | participation count loop over `FUN_403afba0`; the `0x50002` selector is used verbatim on C311 (`FUN_403afcac`) |
+| `highlight(page,i,0)` | `0x403aff78` | deselect/deselect pair in the selection-move path `FUN_403b07a4` |
+| `reset_check(page,id,0)` | `0x403b1a5c` | checkmark bitmap `0xa032acac8` write + row check-display toggle; 486 callers |
+| `repair_selection(page)` | `0x403db750` | view-chain refresh (weakest pin; navigation-probe arbitrated) |
+| `place_rows(page)` | `0x403b01f0` | staged visible-row list rebuild (`0xa032aa718` block) |
+| `resize_canvas(page)` | `0x403aec24` | canvas metrics publish (`0xa032b1434-44c`) |
+| `prepare_viewport(page)` | `0x403b035c` | extent measure + min/max + show |
+| `scrollbar(page)` | `0x403aed8c` | scrollbar object `0x4ba3` show/hide by content height |
+| `row_lookup(id,rows)` | `0x40325b60` | children of owner+0xC8 compared by id |
+| `set_active(obj,flag)` | `0x403f6228` | `FUN_40325f18`: +0x29 visible flag, +0x3c dirty, parent propagation |
+| `row_draw` | `0x4031f9b8` | stored at widget+0x48 by the initializer `FUN_4031f8f0` |
+| `child_lookup` | platform thunk | `FUN_40325b60` takes (id,owner); the thunk adapts the shared (row,id) call |
+| value/arrow child ids | `0x4ba5`/`0x4ba6` | composite builder `FUN_403a8898` registration order (Z9-analogous) |
+| row bytes | `0x128` | widget fields written to +0x122 by the initializer |
+| draw `dirty` | `0x403f1940` | colour fields + dirty-bit invalidation |
+| draw `dispatch` | `0x40325a80` | container dispatcher: iterates children, calls widget+0x48, clears +0x3c |
+| draw `device` | `0x403f0db8` | context-by-id getter |
+| draw `empty` | `0x40c7bea4` | zero-rect test |
+| GUI mutex | lock `0x40d2bfb4` / unlock `0x40d2bf60` / object `0xa032b8044` | primitives shared by the GUI wrappers; object chained via movz/movk at the refresh sites |
+
+Structural bonuses for T15: widget method slots (+0x48 draw, +0x58, +0x90),
+teardown `FUN_4031f51c`, participation test `FUN_403afba0`, index/object
+resolvers (`FUN_403afa34`, `FUN_403b01a0`), checked-state query
+`FUN_403afaec` and the checkmark bitmaps (`0xa032acac8` write,
+`0xa032aed40` read).
+
+Boundaries (explicit): the rectangle clip-setup primitive, the modal body
+id, the text-editor slots (`value_lookup`/`set_disabled`/`set_text`/
+`release_text`/`value_bytes`/`set_alignment`/`measure`/`bounds`), the font
+fallback face (`open_font`/`select_font`/fallback data) and display restore
+remain unpinned. With `rectangle` null the shared `draw_pair` rejects the
+profile and the repaint degrades to `repaint=0`, so menu navigation and
+activation stay unexercised end to end; the reader/title/editor profiles
+retain Z9 references as documented residuals. Baseline equivalence holds:
+the patched image passes the full RE0 regression twice (`menu-reg-1`,
+`menu-reg-2`).
+
 ## Unverified / not enabled (explicit boundaries)
 
 | Item | State | Notes |
