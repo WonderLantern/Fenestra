@@ -33,6 +33,10 @@ Modules can declare required interface names, types, call ABIs and exact
 versions. The [compatibility checker](docs/module-compatibility.md) validates
 these before loading and provides specific module-manager rejection reasons.
 
+[Cross-module resource arbitration](docs/module-conflicts.md) separately
+allows shared calls/reads and reports exclusive resource conflicts, including
+overlapping table aliases, hook targets and agreed semantic resource groups.
+
 A platform port targets an exact camera model and firmware build. Start with the [architecture and resource lifetimes](docs/architecture.md), then follow the [platform porting guide](docs/porting.md). Existing profiles are examples of the integration structure; their addresses and calling conventions must be established independently for a new target.
 
 1. **Prepare the inputs and toolchain.** Follow [Getting started](docs/getting-started.md) to install Python, LLVM, and build dependencies. Obtain the target's original update package and application component, record their complete SHA-256 identities, and distinguish package offsets from application virtual addresses. Keep firmware and key material local.
@@ -51,6 +55,7 @@ For a module targeting an already supported profile, begin with [Module developm
 - [Module development tutorial](docs/module-development.md)
 - [`.wlm` file format](docs/module-format.md)
 - [SDK and named binding reference](docs/api-reference.md)
+- [Conflicts between modules](docs/module-conflicts.md)
 - [Platform porting guide](docs/porting.md)
 - [Repacker and ciphertext patch format](docs/repacker.md)
 - [USB/PTP, RTOS/Linux, and remote debugging](docs/debugging.md)

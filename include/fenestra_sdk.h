@@ -54,6 +54,23 @@ static inline FxResult fx_sdk_capacity(FxSdkClient *c,const FxServiceModule *a,u
 static inline FxResult fx_sdk_open_instance(FxSdkClient *c,const FxServiceModule *a,const char *name,uint32_t version) {
     FxResult r=fx_sdk_open(c,a,name,version);if(r==FX_OK)a->exchange->request.arg[2]=1u;return r;
 }
+/* Ordinary function calls/readonly tables share; stateful sessions can opt
+ * into exclusivity. Old cores reject this nonzero formerly reserved field. */
+static inline FxResult fx_sdk_open_access(FxSdkClient *c,const FxServiceModule *a,const char *name,uint32_t version,uint32_t mode) {
+    if(mode!=FX_RESOURCE_SHARED && mode!=FX_RESOURCE_EXCLUSIVE)return FX_ARGUMENT;
+    FxResult r=fx_sdk_open(c,a,name,version);if(r==FX_OK)a->exchange->request.arg[3]=mode;return r;
+}
+/* One agreed name covers resources reached through different APIs. Reserve
+ * before native side effects; release with ordinary FX_BIND_CLOSE. */
+static inline FxResult fx_sdk_reserve(FxSdkClient *c,const FxServiceModule *a,const char *name,uint32_t mode) {
+    if(mode!=FX_RESOURCE_SHARED && mode!=FX_RESOURCE_EXCLUSIVE)return FX_ARGUMENT;
+    FxResult r=fx_sdk_open(c,a,name,1u);
+    if(r==FX_OK){a->exchange->request.arg[0]=FX_BIND_RESERVE;a->exchange->request.arg[1]=0u;a->exchange->request.arg[2]=mode;}
+    return r;
+}
+static inline FxResult fx_sdk_resource_conflict(FxSdkClient *c,const FxServiceModule *a) {
+    return fx_sdk_platform(c,a,FX_BIND_CONFLICT,0u,0u,0u,0,0u);
+}
 /* Optional target-specific bindings are copied into this owner, immutable
  * until reboot. Their ABI/preimage evidence is the module author's duty. */
 static inline FxResult fx_sdk_declare(FxSdkClient *c,const FxServiceModule *a,const FxBindingInfo *binding) {

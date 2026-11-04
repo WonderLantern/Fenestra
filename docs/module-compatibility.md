@@ -1,5 +1,9 @@
 # Module compatibility checks
 
+This page covers modules against the core. For conflicts between running
+modules sharing hardware or modifying the same memory, see
+[cross-module resource arbitration](module-conflicts.md).
+
 Compatibility checks happen during discovery and again during preparation,
 before image copying, executable publication or module entry. They apply to
 both ZR C1.10 and Z9 C5.32 through shared code and the actual linked registry.

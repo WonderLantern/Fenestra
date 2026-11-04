@@ -39,6 +39,12 @@ Success from `fx_sdk_submit` means local submission succeeded; the reply's `resu
 
 Functions, tables, hooks, devices and resources share a name-resolution boundary but have different operation ABIs. Consult the [API reference](api-reference.md) and headers. Integer handles do not make their operation parameters interchangeable.
 
+For resources shared with other modules, use the [conflict coordination
+contract](module-conflicts.md): ordinary calls and reads can share, writable
+tables and explicit native sessions acquire exclusive ownership, and semantic
+groups cover hardware accessed through different APIs. Handle `FX_CONFLICT`
+with its copied resource/holder diagnostic before performing native effects.
+
 For a new platform capability, define a general data structure and operation contract, then implement the profile adapter. Platforms without that capability must return an explicit unavailable result. Feature modules should use these contracts rather than module-specific core opcodes.
 
 ## UI

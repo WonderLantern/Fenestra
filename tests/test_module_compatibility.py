@@ -59,7 +59,7 @@ class CompatibilityTests(unittest.TestCase):
         cls.directory=Path(cls.temp.name);cls.binary=cls.directory/'check.exe'
         run=subprocess.run([compiler,'-std=c11','-O2','-Wall','-Wextra','-Werror','-Wconversion','-Wshadow',
             '-DFX_PLATFORM_PROFILE=1','-I','include','src/module.c','src/memory.c','src/sha256.c','src/services.c',
-            'src/platform.c','src/binding_store.c','src/native_call.c','src/module_manager.c','tests/module_compatibility_fixture.c',
+            'src/platform.c','src/binding_store.c','src/resource_conflict.c','src/native_call.c','src/module_manager.c','tests/module_compatibility_fixture.c',
             '-o',str(cls.binary)],cwd=ROOT,capture_output=True,text=True,timeout=60)
         if run.returncode:raise AssertionError(run.stdout+run.stderr)
 

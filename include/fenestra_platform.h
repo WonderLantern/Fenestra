@@ -26,8 +26,11 @@ enum { FX_BIND_FUNCTION=1u,FX_BIND_TABLE,FX_BIND_HOOK,FX_BIND_DEVICE };
 enum { FX_CALL_U64_8=1u,FX_CALL_BYTES,FX_CALL_EVENTS,FX_CALL_DEVICE };
 enum { FX_CALL_AAPCS64=5u };
 enum { FX_BIND_READ=1u,FX_BIND_WRITE=2u,FX_BIND_ESCAPE=4u,FX_BIND_PROVIDER=8u };
+/* Profile-required exclusivity; CLAIM_ONLY is an internal virtual group. */
+enum {FX_BIND_EXCLUSIVE=16u,FX_BIND_CLAIM_ONLY=32u};
 enum { FX_BIND_DESCRIBE,FX_BIND_OPEN,FX_BIND_CLOSE,FX_BIND_CALL,FX_BIND_COPY,FX_BIND_STORE };
 enum { FX_BIND_INFO=6u,FX_BIND_ENUMERATE=7u,FX_BIND_DECLARE=8u,FX_BIND_CAPACITY=9u };
+enum {FX_BIND_RESERVE=10u,FX_BIND_CONFLICT=11u};
 /* Allocated metadata capacities, not a promise of free native RAM. */
 typedef struct {uint32_t abi,bytes,lease_slots,active_leases,declaration_slots,declarations,
     budget,used,peak,identities_remaining,inline_leases,inline_declarations,profile_bindings,allocator_available,reserved[2];} FxBindingCapacity;
@@ -177,6 +180,8 @@ struct FxPlatformOwner {
     _Atomic uint32_t ui_event_capacity;
     uint32_t ui_event_bytes,ui_event_peak;FxAllocationObserver ui_event_observer;
     FxUiControlStore *ui_controls;FxIndexMemory ui_control_memory;uint32_t ui_control_budget;
+    FxResourceRegistry *conflicts; /* One activated controller-wide registry. */
+    FxResourceConflict last_conflict; /* Copied under binding_lock. */
 };
 static inline FxAllocationObserver fx_platform_account_observer(FxPlatformOwner *owner,const char *name) {
     return owner && owner->account_observer?owner->account_observer(owner,name):(FxAllocationObserver){0};
@@ -206,6 +211,11 @@ const FxNamedBinding *fx_platform_binding(const FxPlatformOwner *,uint32_t index
 const FxNamedBinding *fx_platform_find(const FxPlatformOwner *,const char *name);
 /* Internal native providers: binding_lock is already held. */
 const FxNamedBinding *fx_platform_open_binding(const FxPlatformOwner *,uint64_t token);
+uint32_t fx_platform_binding_access(const FxPlatformOwner *,uint64_t token);
+/* Trusted provider, with owner.binding_lock held. The claim remains live
+ * until acknowledged native detach, including after its source handle closes. */
+FxResult fx_platform_claim(FxPlatformOwner *,FxResourceClaim *,const char *,uint32_t domain,
+    uint64_t address,uint64_t bytes,uint32_t mode,FxServiceReply *);
 FxResult fx_platform_stop(FxPlatformOwner *,uint32_t panic);
 FxResult fx_platform_bind_module(FxPlatformOwner *,const FxModule *,void *image,uint32_t capacity);
 /* Read-only static interface contract; never OPEN/ATTACH a native resource. */
