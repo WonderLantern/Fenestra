@@ -16,6 +16,11 @@ PRODUCTION = {
     'z9-c532': dict(size=101846611, sha256=z9.RAW_SHA256, plaintext=z9.PLAIN_SHA256, header=32, component=z9.MAIN_NAME),
 }
 
+def require_core_target(target):
+    if target not in ('zr-c110', 'z9-c532'):
+        raise ValueError('unsupported platform: use the dedicated Zf builder and repacker')
+
+
 def zr_transform(body, material):
     if len(material) != 48 or len(body) < 32:
         raise ValueError('ZR material must be AES-256 key followed by 16-byte initial counter (48 bytes)')
@@ -33,6 +38,7 @@ def zr_tail(digest):
     return bytes(result)
 
 def decode_original(target, raw, key, suffix=None):
+    require_core_target(target)
     profile = PRODUCTION[target]
     if len(raw) != profile['size'] or sha(raw) != profile['sha256']:
         raise ValueError('unsupported original package: complete SHA-256 differs')
@@ -61,6 +67,7 @@ def decode_original(target, raw, key, suffix=None):
     return plain, main, suffix, entry
 
 def rebuild(target, raw, plain, main, replacement, key, suffix, entry):
+    require_core_target(target)
     if len(main) != len(replacement) or main == replacement:
         raise ValueError('application must contain fixed-size changes')
     if target == 'zr-c110':
@@ -90,6 +97,7 @@ def rebuild(target, raw, plain, main, replacement, key, suffix, entry):
     return candidate
 
 def build_core(target, firmware, output):
+    require_core_target(target)
     output = Path(output).resolve()
     if not output.is_relative_to(ROOT/'build') or output.exists():
         raise ValueError('choose a new directory below build/')
@@ -106,6 +114,7 @@ def build_core(target, firmware, output):
     return candidate
 
 def produce(target, firmware, key_file, suffix_file, work, patch, *, release='r3', envelope_key=None):
+    require_core_target(target)
     work, patch = Path(work).resolve(), Path(patch).resolve()
     if release == 'r3' and target == 'zr-c110' and envelope_key is None:
         raise ValueError('ZR r3 requires --envelope-key (user RSA public/private PEM)')

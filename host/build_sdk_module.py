@@ -10,8 +10,28 @@ from pack_module import pack
 from target_c110 import PACKAGE_SHA256, require_module_target
 from platform_profiles import PROFILES
 from module_header import validate_package
+from zf_c301_profile import load_profile
 
 ROOT = Path(__file__).resolve().parents[1]
+SDK_TARGETS = {target: profile['module_identity'] for target, profile in PROFILES.items()}
+# This identity is the original C3.01 EG payload, excluding its CRC. It is a
+# module-format target used by the hardware-tested link81 runtime.
+SDK_TARGETS['zf-c301'] = load_profile()['original_eg_module']['payload_sha256']
+
+
+def compiler_toolchain():
+    clang, lld = shutil.which('clang'), shutil.which('ld.lld')
+    if clang and lld:
+        return clang, lld, 'llvm'
+    gcc, ld = shutil.which('aarch64-linux-gnu-gcc'), shutil.which('aarch64-linux-gnu-ld')
+    if gcc and ld:
+        return gcc, ld, 'gnu-aarch64'
+    raise RuntimeError('LLVM or the GNU AArch64 cross-toolchain is required')
+
+
+def tool_identity(path):
+    version = subprocess.check_output([path, '--version'], text=True, timeout=10).splitlines()[0]
+    return dict(path=path, version=version)
 
 
 def main():
@@ -28,7 +48,8 @@ def main():
                    help='v3: owned RTOS task stack, 32768..1048576 bytes, page aligned')
     p.add_argument('--user-stack-bytes', type=lambda x: int(x,0),
                    help='v3: EL0 module stack, 4096..1048576 bytes, page aligned')
-    p.add_argument('--target',choices=tuple(PROFILES),default='zr-c110')
+    p.add_argument('--target',choices=tuple(SDK_TARGETS),default='zr-c110',
+                   help='zf-c301 targets Nikon Zf C3.01 (link81)')
     args = p.parse_args()
     if args.simd:args.required|=0x400000
     source, out = args.source.resolve(strict=True), args.output_dir.resolve()
@@ -44,12 +65,12 @@ def main():
         any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789_-' for c in args.id) or
         not 0<=args.required<=0x7f0000 or args.required&~0x7f0000 or args.optional):
         raise ValueError('invalid module identity/capabilities')
-    clang, linker = shutil.which('clang'), shutil.which('ld.lld')
-    if not clang or not linker:
-        raise RuntimeError('LLVM required')
+    compiler, linker, toolchain = compiler_toolchain()
+    compiler_info, linker_info = tool_identity(compiler), tool_identity(linker)
     out.mkdir(parents=True, exist_ok=False)
     obj, elf = out / 'module.o', out / 'module.elf'
-    compile_flags=[clang, '--target=aarch64-none-elf', '-std=c11', '-O'+args.optimize, '-Wall', '-Wextra', '-Werror',
+    compile_flags=[compiler, *(['--target=aarch64-none-elf'] if toolchain == 'llvm' else []),
+                    '-std=c11', '-O'+args.optimize, '-Wall', '-Wextra', '-Werror',
                     '-Wconversion', '-Wshadow', '-ffreestanding', '-fno-builtin', *([] if args.simd else ['-mgeneral-regs-only']),
                     '-mstrict-align', '-fno-stack-protector', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables',
                     '-fpie','-ffunction-sections','-fdata-sections','-DFX_FREESTANDING=1','-I', str(ROOT / 'include')]
@@ -69,7 +90,7 @@ def main():
             dependencies.add(dependency)
     subprocess.run([linker, '-m', 'aarch64elf', '-pie', '--no-dynamic-linker', '-Bsymbolic','--gc-sections',
                     '-z', 'max-page-size=4096', '-e', 'fenestra_module_entry',*map(str,objects),'-o',str(elf)], check=True, timeout=30)
-    identity=PROFILES[args.target]['module_identity']
+    identity=SDK_TARGETS[args.target]
     data = pack(elf.read_bytes(), bytes.fromhex(identity), args.required,entry_abi=1,
                 native_stack_bytes=args.native_stack_bytes,user_stack_bytes=args.user_stack_bytes)
     if args.target=='zr-c110':require_module_target(data)
@@ -83,8 +104,15 @@ def main():
     sources = [source,*support,*sorted(dependencies),
                ROOT / 'host/build_sdk_module.py', ROOT / 'host/pack_module.py',
                ROOT / 'host/target_c110.py',ROOT/'host/module_header.py',ROOT/'host/platform_profiles.py',ROOT/'src/memory.c']
+    if args.target == 'zf-c301':
+        sources.extend([ROOT/'host/zf_c301_profile.py', ROOT/'targets/nikon-zf-c301.json'])
     report = dict(modules=[row], target=args.target, preflight=preflight, simd=args.simd, optimize=args.optimize,
+                  toolchain=toolchain, compiler=compiler_info, linker=linker_info,
+                  module_identity=identity,
                   sources={str(f.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(f.read_bytes()).hexdigest() for f in sources})
+    if args.target == 'zf-c301':
+        report.update(target_support='link81-hardware-tested',
+                      module_identity_kind='original-eg-payload-sha256-without-crc')
     (out / 'module.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(report, indent=2))
 

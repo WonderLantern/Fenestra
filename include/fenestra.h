@@ -76,6 +76,8 @@ void fx_sha256(const void *, size_t bytes, uint8_t digest[32]);
 typedef struct {
     FxResult primary, cleanup;
     uint32_t bytes, read_calls, verified;
+    /* Diagnostic only: the digest of bytes read before any reject. */
+    uint8_t observed_sha256[32];
 } FxCardReceipt;
 
 /* Read-only data staging. The output never becomes executable memory. */

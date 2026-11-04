@@ -52,6 +52,9 @@ FxResult fx_module_manager_page(FxModuleManager *,uint32_t page);
  * Accepted UI publication may be pending; the normal tick retries it. */
 FxResult fx_module_manager_filter(FxModuleManager *,const char *,uint32_t bytes);
 FxResult fx_module_manager_freeze(FxModuleManager *);
+/* Copy the first enabled, validated module selected for the next activation.
+ * The caller receives a stable snapshot and may perform card IO afterwards. */
+FxResult fx_module_manager_selected(FxModuleManager *,FxManagedModule *out);
 void fx_module_manager_ready(FxModuleManager *);
 void fx_module_manager_tick(FxModuleManager *);
 void fx_module_manager_shutdown(FxModuleManager *);
