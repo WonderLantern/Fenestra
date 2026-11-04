@@ -98,7 +98,9 @@ typedef struct {
 static FxNativePage *stock(uint32_t group, uint32_t id) {
     if (group > 6u)
         return 0;
-    uintptr_t root = ((volatile uintptr_t *)(uintptr_t)UINT64_C(0xa032d5de8))[group];
+    /* C311 page-roots table (profile 'camera.menu.page-roots'); the former
+     * 0xa032d5de8 value was the Z9 reference and reads the wrong roots. */
+    uintptr_t root = ((volatile uintptr_t *)(uintptr_t)UINT64_C(0xa032b50c8))[group];
     return root ? (FxNativePage *)(root + (id & 65535u) * sizeof(FxNativePage)) : 0;
 }
 static void *map_allocate(void *context,uint32_t bytes){(void)context;return FN(0x40d2c408,void *(*)(uint32_t,uint32_t))(bytes,0u);}
@@ -107,8 +109,8 @@ static int text_ensure(State *s,uint32_t required) {
     FxNativeTextBank *old=atomic_load_explicit(&s->text_bank,memory_order_acquire),*bank=0;
     if(fx_native_text_bank_grow((FxIndexMemory){0,map_allocate,map_release},old,required,&bank)!=FX_OK)return 0;
     if(bank==old)return 1;
-    *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f4ab30)=(uintptr_t)bank->fonts;
-    *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f4ab40)=(uintptr_t)bank->attributes;
+    *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac40)=(uintptr_t)bank->fonts;
+    *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac50)=(uintptr_t)bank->attributes;
     __asm__ volatile("dmb ish":::"memory");
     atomic_store_explicit(&s->text_bank,bank,memory_order_seq_cst);
     fx_retained_account(fx_shared_text_account(&s->accounting),&bank->accounted,bank->bytes);return 1;
@@ -173,7 +175,7 @@ __attribute__((unused)) static uint32_t noop(void *p) {
     return 1u;
 }
 static FxNativeUi *module_ui(uint32_t, int);
-uint64_t fx_z8_menu_navigate(uint32_t page);
+uint64_t fx_z8_menu_navigate(uint64_t page, void *context);
 static const FxNativeLayoutProfile ui_layout={
     (uintptr_t)FN(0x403dbdb4,void *(*)(void)),
     (uintptr_t)FN(0x403b037c,uint32_t (*)(void *,uint32_t)),
@@ -241,7 +243,7 @@ FxResult fx_native_apps_flush_native(void) {
     FxNativePage *page=FN(0x403dbdb4,FxNativePage *(*)(void))();uint32_t destination=0u;
     FxResult result=fx_native_apps_prepare_navigation(fx_native_apps_domain(),page,&destination);
     FN(0x40d2ffb0,void (*)(void *))(mutex);
-    if(destination){(void)fx_z8_menu_navigate(destination);return FX_OK;}
+    if(destination){(void)FN(0x403ad6d8,uint64_t (*)(uint32_t,uint32_t))(2u,destination);return FX_OK;}
     return result;
 }
 FxResult fx_native_ui_flush_owner(FxPlatformOwner *owner) {
@@ -255,7 +257,7 @@ FxResult fx_native_ui_flush_owner(FxPlatformOwner *owner) {
         if(redirect!=FX_EMPTY) {
             FN(0x40d2ffb0,void (*)(void *))(mutex);
             if(redirect!=FX_OK)return redirect;
-            (void)fx_z8_menu_navigate(destination);
+            (void)FN(0x403ad6d8,uint64_t (*)(uint32_t,uint32_t))(2u,destination);
             fx_native_ui_refresh_owner(owner);return FX_OK;
         }
     }
@@ -1055,11 +1057,14 @@ static void fx_z8_menu_text_impl(int32_t language, int32_t id, const uint16_t **
         *bytes = n;
         return;
     }
-    int32_t count = *(volatile int32_t *)(uintptr_t)UINT64_C(0xa02822824), index = count > id ? id : 0;
+    int32_t count = *(volatile int32_t *)(uintptr_t)UINT64_C(0xa0281cd5c), index = count > id ? id : 0;
+    /* C311 text bank roots (registered by the firmware text init at
+     * FUN_403edf3c via FUN_4032e08c/FUN_4032e05c); the former 0xa02f4ab38/
+     * 0xa02f4ab28 values were Z9 references. */
     const uint32_t *offsets = ((const uint32_t *const *)(uintptr_t)(*(
-        volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f4ab38)))[language];
+        volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac48)))[language];
     const uint8_t *pool = ((const uint8_t *const *)(uintptr_t)(*(volatile uintptr_t *)(uintptr_t)UINT64_C(
-        0xa02f4ab28)))[language];
+        0xa02f2ac38)))[language];
     *text = (const uint16_t *)(const void *)(pool + (int32_t)offsets[index]);
     *bytes = offsets[index + 1] - offsets[index];
 }
@@ -1068,7 +1073,13 @@ const uint32_t fx_native_font_index_metadata[]={0x46584649u,1u,
     offsetof(FxTextRegions,root),offsetof(FxTextRegions,count),offsetof(FxTextRegion,begin),offsetof(FxTextRegion,end),
     offsetof(FxTextRegionBranch,child),offsetof(FxTextRegionBranch,prefix),offsetof(FxTextRegionBranch,bit),
     offsetof(FxNativeFont,error),sizeof(uintptr_t)*8u};
-const FxNativeFontProfile fx_z8_font_profile={0x402e4364u,0x402e4378u,UINT64_C(0xa02eac0e8),0x40884508u,0x40883a38u,0x42271338u,170765u,0x4088f2a0u,0x4088ea2cu};
+/* C311 font profile: request mutex pair 0x402e5550/0x402e5564 (object
+ * 0xa02e8c658), engine root 0xa02e8ca90, measure 0x4088bdac and
+ * set_layout 0x4088c620. The Z9 reference values (0x402e4364/78,
+ * 0x4088f2a0/0x4088ea2c, ...) were invalid on C311. The fallback face
+ * (open_font/select_font/fallback data) is not yet pinned; font_enter
+ * degrades to pure lock/unlock passthrough until it lands. */
+const FxNativeFontProfile fx_z8_font_profile={0x402e5550u,0x402e5564u,UINT64_C(0xa02e8ca90),0u,0u,0u,0u,0x4088bdacu,0x4088c620u};
 void fx_z8_font_enter(const void *request) {
     State *s=state();int enabled=s && (atomic_load(&s->activation)!=0u);
     fx_native_font_enter(enabled?&s->font_scope:0,&fx_z8_font_profile,enabled?&s->text_regions:0,request);
@@ -1085,11 +1096,16 @@ void fx_z8_menu_text(int32_t language,int32_t id,const uint16_t **text,uint32_t 
 }
 
 extern uint64_t fx_z8_system_original(void *, uint32_t);
-extern uint64_t fx_z8_navigate_original(uint32_t);
-uint64_t fx_z8_menu_navigate(uint32_t page) {
+extern uint64_t fx_z8_navigate_original(uint64_t, void *);
+/* Stock C311 navigation funnel (FUN_4039e810, 2973 call sites) takes
+ * (page, context); the Z9 reference hooked a single-argument entry with
+ * no separate counterpart here. Hooking the funnel intercepts every
+ * stock open request; Fenestra pages go through the C311 open-page
+ * primitive FUN_403ad6d8 (the old 0x403adbac call was a Z9 address). */
+uint64_t fx_z8_menu_navigate(uint64_t page, void *context) {
     if(page>=FENESTRA && page<FX_NATIVE_EXTENSION_PAGE_LIMIT)
-        return FN(0x403adbac,uint64_t (*)(uint32_t,uint32_t))(2u,page);
-    return fx_z8_navigate_original(page);
+        return FN(0x403ad6d8,uint64_t (*)(uint32_t,uint32_t))(2u,(uint32_t)page);
+    return fx_z8_navigate_original(page, context);
 }
 uint64_t fx_z8_system_dispatch(void *message, uint32_t sync) {
     uint32_t event = message ? *(const uint32_t *)((const uint8_t *)message + 32u) : UINT32_MAX;

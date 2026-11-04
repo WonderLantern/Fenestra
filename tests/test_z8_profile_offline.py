@@ -11,6 +11,8 @@ Z8_FUNCTIONS = {
     'rtos.memory.allocate', 'rtos.memory.release',
     'camera.card.open', 'camera.card.read', 'camera.card.close',
     'camera.card.seek64', 'camera.card.write', 'camera.card.rename',
+    'camera.menu.page.get', 'camera.menu.text.get',
+    'camera.menu.navigate', 'camera.menu.open',
 }
 
 

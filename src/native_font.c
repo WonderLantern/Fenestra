@@ -64,6 +64,12 @@ void fx_native_font_enter(FxNativeFont *s, const FxNativeFontProfile *p,
         s->engine = engine;
         s->face = 0u;
     }
+    if (!p->open_font) {
+        /* Platform without a pinned fallback face (the profile carries a
+         * null open_font): degrade to lock/unlock passthrough only. The
+         * native font scope never activates, so leave() stays a no-op. */
+        return;
+    }
     if (!s->face)
         s->face = ((uintptr_t (*)(uintptr_t, uint32_t, uintptr_t, uint32_t))p->open_font)(
             engine, 0u, p->fallback_data, p->fallback_bytes);

@@ -26,8 +26,25 @@ PROFILES={
   module_identity='f85e0138e2f5e660ece8560de62e0d12cb795e0e14983e50f20b61dce906c46c',
   functions={'rtos.memory.allocate':0x40d2c408,'rtos.memory.release':0x40d2c448,
    'camera.card.open':0x402daa4c,'camera.card.read':0x402dab4c,'camera.card.close':0x402daaac,
-   'camera.card.seek64':0x402dac24,'camera.card.write':0x402dabb8,'camera.card.rename':0x402dad58},
-  tables={'camera.menu.page-roots':(0xa032b50c8,56)},
+   'camera.card.seek64':0x402dac24,'camera.card.write':0x402dabb8,'camera.card.rename':0x402dad58,
+   # Native menu (T12): all pinned against the C311 image by decompiled
+   # semantics + call-graph evidence (docs/validation-z8-c311.md).
+   # page.get FUN_403db694 = root[group] + (id&0xffff)*0x60 reading the
+   # page-roots table; text.get FUN_4032e130 = (lang,id,&utf16,&bytes) bank
+   # lookup; navigate FUN_4039e810 = the 2973-site open-request funnel
+   # (page, ctx); open FUN_403ad6d8 = the (group,page) open primitive.
+   'camera.menu.page.get':0x403db694,'camera.menu.text.get':0x4032e130,
+   'camera.menu.navigate':0x4039e810,'camera.menu.open':0x403ad6d8},
+  tables={'camera.menu.page-roots':(0xa032b50c8,56),
+   # Text bank roots (firmware text init FUN_403edf3c registers these via
+   # FUN_4032e05c/074/08c/0a4/104; sole reader FUN_4032e130 clamps against
+   # the count word). Layout mirrors the Z9 bank cluster.
+   'camera.text.count':(0xa0281cd5c,4),'camera.text.pool-root':(0xa02f2ac38,8),
+   'camera.text.font-root':(0xa02f2ac40,8),'camera.text.offsets-root':(0xa02f2ac48,8),
+   'camera.text.attributes-root':(0xa02f2ac50,8),
+   # SETUP-family navigation event table: 12 records of
+   # {event, callback, condition, next}, next page id 0x68c.
+   'camera.menu.navigation':(0x43bf0680,12*32)},
   # SYSCTL lifecycle: event table + dispatcher entry pinned against the original
   # image. Dispatcher FUN_40d60ec8 reads the event id at message+0x20 (ldrsw at
   # entry+0x18); its 16-byte entry window is four stack-push STPs (the same

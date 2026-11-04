@@ -75,7 +75,26 @@ def main():
             span=original[sysctl['dispatch']-BASE:sysctl['dispatch']-BASE+sysctl['span_bytes']]
             if _h.sha256(span).hexdigest()!=sysctl['span_sha256']:raise ValueError('Z8 sysctl dispatch span differs')
             sysctl_hooks={sysctl['dispatch']:'fx_z8_system_dispatch'}
-        expected_hooks={**ui_hooks,**sysctl_hooks}
+        # T12 native menu + font sites: the menu trio is bound in the profile
+        # functions; the font enter/leave/line-probe sites come from the
+        # same emulation/native_font_sites.py structural profile the
+        # builder verified against the original image.
+        menu_hooks={}
+        if report.get('menu_hook_version')==1:
+            funcs=profile['functions']
+            menu_hooks={funcs['camera.menu.page.get']:'fx_z8_menu_page',
+                        funcs['camera.menu.text.get']:'fx_z8_menu_text',
+                        funcs['camera.menu.navigate']:'fx_z8_menu_navigate'}
+            import hashlib as _h2
+            nav_window=original[funcs['camera.menu.navigate']-BASE:funcs['camera.menu.navigate']-BASE+16]
+            from build_z8_core import MENU_NAV_WINDOW_SHA256
+            if _h2.sha256(nav_window).hexdigest()!=MENU_NAV_WINDOW_SHA256:raise ValueError('Z8 navigate funnel window differs')
+        font_hooks={}
+        if report.get('font_hook_version')==1:
+            from native_font_sites import sites as font_sites,verify_original as verify_font
+            verify_font('z8-c311',original)
+            font_hooks=font_sites('z8-c311')
+        expected_hooks={**ui_hooks,**sysctl_hooks,**menu_hooks,**font_hooks}
         if (len(candidate)!=len(original) or not 0<len(code)<=0x60000 or
             len(report['changes'])!=len(expected_hooks) or
             {int(c['address'],16):c['symbol'] for c in report['changes']}!=expected_hooks):
@@ -89,7 +108,7 @@ def main():
         for change in report['changes']:
             at=int(change['address'],16)-BASE;word=struct.unpack_from('<I',candidate,at)[0]
             if bytes.fromhex(change['before'])!=original[at:at+4]:raise ValueError('native original branch preimage differs')
-            if word&0xfc000000!=(0x94000000 if int(change['address'],16) in ui_hooks else 0x14000000):raise ValueError('not the expected direct branch/call')
+            if word&0xfc000000!=(0x94000000 if int(change['address'],16) in ui_hooks or int(change['address'],16) in font_hooks else 0x14000000):raise ValueError('not the expected direct branch/call')
             delta=(word&0x3ffffff)<<2
             if delta&(1<<27):delta-=1<<28
             if BASE+at+delta!=symbols[change['symbol']]:raise ValueError('branch/ELF symbol mismatch')

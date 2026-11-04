@@ -2,10 +2,12 @@
 #define FX_Z8_C311_MENU_DATA_H
 #include "fenestra.h"
 #define FX_Z8_MENU_ROWS 16u
-#define FX_Z8_MENU_EVENTS 18u
-/* Original ordinary menu navigation, including MENU/application return.
- * The old 42ea8928 modal table disables those contacts by condition. */
-#define FX_Z8_MENU_NAVIGATION UINT64_C(0x43014bb8)
+/* Original ordinary menu navigation for the SETUP page family. Pinned
+ * against the C311 image at 0x43bf0680: 12 records (not the Zf/Z9 single
+ * 18-event table); callbacks 0x403b1b74..0x403b1bb0 + 0x4054eae4/0x4054ea5c,
+ * conditions 0x403b1c5c/0x403b1c7c, next page id 0x68c. The old 0x43014bb8
+ * value was a Z9 reference that reads as high-entropy data on C311. */
+#define FX_Z8_MENU_NAVIGATION UINT64_C(0x43bf0680)
 typedef struct {uint32_t word[11];} FxZ8MenuRow;
 typedef struct {uint64_t event,callback,condition,next;} FxZ8MenuEvent;
 typedef struct {
@@ -22,7 +24,7 @@ typedef struct {
 typedef struct {
     FxZ8MenuPage page;FxZ8MenuDescriptor descriptor;uint8_t header[272];
     FxZ8MenuRow rows[FX_Z8_MENU_ROWS];uintptr_t events[FX_Z8_MENU_ROWS],callbacks[5];
-    FxZ8MenuEvent handlers[FX_Z8_MENU_ROWS][FX_Z8_MENU_EVENTS];
+    FxZ8MenuEvent handlers[FX_Z8_MENU_ROWS][12];
 } FxZ8OwnedMenu;
 /* Constructs unpublished RAM metadata using the exact original C311 Setup
  * and navigation records. No allocation, root publication, label fabrication,

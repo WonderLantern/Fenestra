@@ -1,11 +1,15 @@
-"""Compile a Z8 C3.11 headless core candidate in the original RX padding.
+"""Compile a Z8 C3.11 core candidate in the original RX padding.
 
-v0 headless configuration: hooks = the ten verified UI main-loop sites only
-(emulation/native_ui_dispatch_sites.py:z8-c311). All Fenestra logic is dormant
-while the platform state is uninitialised, so the patched image is behaviour-
-equivalent to stock. Native menu registration,
-fonts, display, PTP, Linux bridge and USB debug stay out of this build until
-their Z8 anchors are independently pinned.
+v0 configuration: hooks = the ten verified UI main-loop sites
+(emulation/native_ui_dispatch_sites.py:z8-c311), the sysctl dispatcher gate,
+the native menu trio (page.get/text.get/navigate funnel, all pinned against
+the C311 image) and the font request sites (emulation/native_font_sites.py:
+z8-c311, 13 paired requests + the line-metrics probe). All Fenestra logic
+stays dormant while the platform state is uninitialised, so the patched
+image remains behaviour-equivalent to stock until a Fenestra page is
+requested. Display restore, the render-profile cluster and the PTP/Linux/USB
+bridges stay out of this build until their Z8 anchors are independently
+pinned.
 No updater envelope is produced here; repack.py owns the container step.
 """
 import argparse
@@ -21,6 +25,7 @@ from platform_profiles import generate, load, verify_page_namespace, ROOT, BASE
 from compiler_dependencies import dependencies, identity_configuration, finalize_identity
 sys.path.insert(0, str(ROOT / 'emulation'))
 from native_ui_dispatch_sites import sites as ui_sites, verify_original as verify_ui, call as ui_call
+from native_font_sites import sites as font_sites, verify_original as verify_font
 
 CODE = 0x401A0000
 # System-event dispatcher entry (FUN_40d60ec8; event id read from message+0x20,
@@ -28,6 +33,20 @@ CODE = 0x401A0000
 # replayed verbatim by the generated system_trampoline.S; hooking the entry
 # covers every pump path that funnels through this dispatcher.
 SYSTEM_HOOK = 0x40D60EC8
+# Native menu trio (T12, pinned against the C311 image; see
+# docs/validation-z8-c311.md): page.get FUN_403db694 computes
+# root[group] + (id&0xffff)*0x60 over the page-roots table; text.get
+# FUN_4032e130 serves (lang,id,&utf16,&bytes) from the text bank; navigate
+# FUN_4039e810 is the 2973-site open-request funnel. page.get/text.get are
+# full replacements (the stock logic is reimplemented in menu.c, so no
+# trampoline is needed); navigate replays its 16-byte window (all
+# position-independent: str/stp/mov pair) through navigate_trampoline.S.
+MENU_PAGE_HOOK = 0x403DB694
+MENU_TEXT_HOOK = 0x4032E130
+MENU_NAV_HOOK = 0x4039E810
+# Window pinned against the original image; the builder regenerates the
+# trampoline from these bytes on every run and refuses to build on drift.
+MENU_NAV_WINDOW_SHA256 = 'd62ce25104f7bed9d5177799f23a4523dcbedecfb164e3979c9d17be913784b7'
 SYSTEM_CONT = SYSTEM_HOOK + 16
 LIMIT = 0x40200000
 TARGET = 'z8-c311'
@@ -41,13 +60,14 @@ PLATFORM = [f'src/platform/z8_c311/{s}' for s in (
     'menu.c', 'services.c', 'task.c', 'card.c', 'module_stage.c', 'module_session.c',
     'module_worker.c', 'address_space.c', 'exec_context.c', 'ui_dispatch_profile.c',
     'lifecycle.c',
-    'startup_files.c', 'rtos.c', 'private_call.S', 'user_call.S', 'v0_stubs.c', 'ptp_stub.c', 'system_trampoline.S')]
+    'startup_files.c', 'rtos.c', 'private_call.S', 'user_call.S', 'v0_stubs.c', 'ptp_stub.c', 'system_trampoline.S',
+    'navigate_trampoline.S')]
 COMMON = ['src/panic.c', 'src/native_panic.c', 'src/module_bus.c', 'src/native_resources.c',
           'src/worker_wait.c', 'src/capacity.c', 'src/slot_pool.c', 'src/machine.c',
           'src/hooks.c', 'src/native_hook_pages.c', 'src/module_manager.c', 'src/native_modules.c',
           'src/platform.c', 'src/binding_store.c', 'src/records.c', 'src/video_configuration.c',
           'src/capture_profile.c', 'src/native_call.c', 'src/native_call_a64.S',
-          'src/platform_native.c', 'src/native_editor.c', 'src/native_menu.c', 'src/native_ui.c',
+          'src/platform_native.c', 'src/native_editor.c', 'src/native_menu.c', 'src/native_font.c', 'src/native_ui.c',
           'src/native_ui_routes.c', 'src/native_ui_pager.c', 'src/native_ui_editor.c',
           'src/ui_document.c', 'src/native_ui_reader.c', 'src/text_page.c',
           'src/native_visibility.c', 'src/native_title.c', 'src/native_ui_callbacks.c',
@@ -109,6 +129,30 @@ def build(firmware, output):
     # copy matches the pinned original.
     (Path('src/platform/z8_c311') / 'system_trampoline.S').write_text(tramp)
 
+    # Native menu navigate funnel (T12): the 16-byte entry window is
+    # position-independent (str x20,[sp,#-0x10]! / stp x29,x30,[sp,#0x10] /
+    # mov x20,x1 / mov w19,w0) and replays verbatim; control resumes at
+    # entry+16. menu.c owns the full replacement and forwards non-Fenestra
+    # pages through this trampoline with (page, context).
+    nav_window = original[MENU_NAV_HOOK - BASE:MENU_NAV_HOOK + 16 - BASE]
+    if hashlib.sha256(nav_window).hexdigest() != MENU_NAV_WINDOW_SHA256:
+        raise ValueError('Z8 navigate funnel window differs')
+    nav_words = struct.unpack_from('<4I', nav_window)
+    nav_tramp = (
+        '.text\n'
+        '.global fx_z8_navigate_original\n'
+        '.type fx_z8_navigate_original,%function\n'
+        'fx_z8_navigate_original:\n'
+        f'    .inst 0x{nav_words[0]:08x}\n'
+        f'    .inst 0x{nav_words[1]:08x}\n'
+        f'    .inst 0x{nav_words[2]:08x}\n'
+        f'    .inst 0x{nav_words[3]:08x}\n'
+        '    ldr x16,1f\n'
+        '    br x16\n'
+        '    .balign 8\n'
+        f'1: .quad 0x{MENU_NAV_HOOK + 16:x}\n')
+    (Path('src/platform/z8_c311') / 'navigate_trampoline.S').write_text(nav_tramp)
+
     import shutil
     tools = [shutil.which(n) for n in ('clang', 'ld.lld', 'llvm-objcopy', 'llvm-nm')]
     if not all(tools):
@@ -120,6 +164,15 @@ def build(firmware, output):
     # so the original's epilogue returns into the gate and the gate restores
     # the caller's LR.
     hooks[SYSTEM_HOOK] = 'fx_z8_system_dispatch'
+    # The native menu trio: page.get/text.get are full replacements at their
+    # entry (stock semantics reimplemented in menu.c), navigate keeps its
+    # displaced window through navigate_trampoline.S. All three use the
+    # plain-branch encoding for the same LR-preservation reason as the gate.
+    verify_font(TARGET, original)      # structural check of the 13 font request sites
+    hooks[MENU_PAGE_HOOK] = 'fx_z8_menu_page'
+    hooks[MENU_TEXT_HOOK] = 'fx_z8_menu_text'
+    hooks[MENU_NAV_HOOK] = 'fx_z8_menu_navigate'
+    hooks.update(font_sites(TARGET))
     identity_inputs = sorted(set(NAMES + [
         'host/build_z8_core.py', 'host/platform_profiles.py', 'host/compiler_dependencies.py',
         'emulation/z8_core.ld', 'emulation/native_ui_dispatch_sites.py']
@@ -197,7 +250,8 @@ def build(firmware, output):
     for address, name in hooks.items():
         if name not in symbols:
             raise ValueError('hook symbol missing: ' + name)
-        encode = branch if address == SYSTEM_HOOK else ui_call
+        plain = address in (SYSTEM_HOOK, MENU_PAGE_HOOK, MENU_TEXT_HOOK, MENU_NAV_HOOK)
+        encode = branch if plain else ui_call
         before = original[address - BASE:address - BASE + 4]
         candidate[address - BASE:address - BASE + 4] = encode(address, symbols[name])
         changes.append(dict(address=hex(address), symbol=name,
@@ -224,7 +278,7 @@ def build(firmware, output):
         target=TARGET, code_bytes=len(extension),
         candidate_sha256=hashlib.sha256(candidate).hexdigest(),
         source_sha256=receipt,
-        ui_dispatch_hook_version=1, system_hook_version=1, changes=changes,
+        ui_dispatch_hook_version=1, system_hook_version=1, menu_hook_version=1, font_hook_version=1, changes=changes,
         commands=commands, compiler_dependencies=dependency_graph,
         debug_identity_configuration=debug_configuration,
         debug_identity_header=identity_header,
