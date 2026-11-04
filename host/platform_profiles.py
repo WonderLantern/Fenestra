@@ -21,6 +21,16 @@ def native_optimization(source):
     return '-Os' if source in cold else '-O2'
 
 PROFILES={
+ 'z8-c311':dict(model='Nikon Z8',version='C 3.11',bytes=81807711,
+  sha256='f85e0138e2f5e660ece8560de62e0d12cb795e0e14983e50f20b61dce906c46c',
+  module_identity='f85e0138e2f5e660ece8560de62e0d12cb795e0e14983e50f20b61dce906c46c',
+  functions={'rtos.memory.allocate':0x40d2c408,'rtos.memory.release':0x40d2c448,
+   'camera.card.open':0x402daa4c,'camera.card.read':0x402dab4c,'camera.card.close':0x402daaac,
+   'camera.card.seek64':0x402dac24,'camera.card.write':0x402dabb8,'camera.card.rename':0x402dad58},
+  tables={'camera.menu.page-roots':(0xa032b50c8,56)},
+  native_pages=dict(first=0x4bffd20,stop=0x68b,kinds={2:1360,0:3,3:131,5:180}),
+  abi_evidence=['docs/porting.md','emulation/native_ui_dispatch_sites.py:z8-c311',
+                'docs/validation-z8-c311.md']),
  'zr-c110':dict(model='Nikon ZR',version='C 1.10',bytes=88157349,
   sha256='606d6116dc8e1560fb1608743a18840e0f7ab2617d11bcf02af025405aca1542',
   module_identity='43bf4f5f1278fa6b0a551ceb6fa4ee749dc74bbc8a5ef4fba19b30062184e546',
@@ -144,6 +154,15 @@ def verify_card_capacity(target,data):
     elif target=='z9-c532':
         chain=[(0x402dc99c,0x408b94f8),(0x408b9538,0x408bb1f8),(0x408bb248,0x408bcd54)]
         loop,error=0x408bcda4,0x408bb270
+    elif target=='z8-c311':
+        # Partial original evidence: the 30-stream FCB bound loop (cmp x21,#0x1e;b.lo).
+        # The allocation call chain and exhaustion code path remain open; no
+        # card-capacity claim ships until they are pinned.
+        loop=0x408ba124
+        if struct.unpack_from('<II',data,loop-BASE)!=(0xf1007abf,0x54ffff43):raise ValueError('original FCB limit differs')
+        return dict(name='camera.card.streams.a',limit=30,exhausted=None,
+            call_chain=[],loop=hex(loop),error=None,
+            coverage='partial; Z8 C3.11 loop signature only',free_capacity_known=False)
     else:raise ValueError('unverified native card capacity profile')
     for address,destination in chain:
         word=struct.unpack_from('<I',data,address-BASE)[0]
@@ -158,19 +177,24 @@ def verify_card_capacity(target,data):
         call_chain=[dict(call=hex(a),target=hex(b)) for a,b in chain],loop=hex(loop),error=hex(error),
         coverage='partial; original callers and raw native calls untracked',free_capacity_known=False)
 
-def load(target,firmware):
+def load(target,firmware,require_condition=True):
     if target not in PROFILES:raise ValueError('unknown platform profile')
     p=PROFILES[target];path=Path(firmware)
     if path.stat().st_size!=p['bytes']:raise ValueError('wrong original application length')
     data=path.read_bytes()
     if hashlib.sha256(data).hexdigest()!=p['sha256']:raise ValueError('wrong original firmware identity')
     verify_page_namespace(p,data)
-    verify_ui_condition_abi(target,data)
+    if require_condition:
+        verify_ui_condition_abi(target,data)
+    else:
+        # Explicit pending gate: the target ships without a pinned condition-ABI
+        # window; builds must record this and must not enable UI condition hooks.
+        p.setdefault('pending',{})['ui_condition_abi']=True
     verify_card_capacity(target,data)
     return p,data
 
-def generate(target,firmware,output):
-    p,data=load(target,firmware);out=Path(output)
+def generate(target,firmware,output,require_condition=True):
+    p,data=load(target,firmware,require_condition);out=Path(output)
     if not out.resolve().is_relative_to(ROOT) or out.exists():raise ValueError('new owned binding output required')
     out.mkdir(parents=True)
     records=[];lines=['/* Generated from a complete pinned original image. */',
@@ -258,7 +282,7 @@ def generate(target,firmware,output):
     result=dict(schema='fenestra.named-platform/v1',target=target,model=p['model'],version=p['version'],
                 application_sha256=p['sha256'],module_identity=p['module_identity'],bindings=records,
                 abi_evidence=p['abi_evidence'],native_namespace=verify_page_namespace(p,data),
-                native_condition_abi=verify_ui_condition_abi(target,data),
+                native_condition_abi=(verify_ui_condition_abi(target,data) if require_condition else dict(target=target,pending=True)),
                 native_card_capacity=verify_card_capacity(target,data),
                 runtime_hooks_and_devices_qualified=False,
                 registered_native_providers=['core.schedule','core.resources','core.capacity','rtos.mappings','rtos.events','core.machine','core.memory','card.files','core.hooks','core.tick','core.services'])

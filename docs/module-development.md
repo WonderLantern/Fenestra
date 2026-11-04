@@ -9,9 +9,14 @@ Place sources under `modules/<name>/` or `examples/<name>/`. The builder current
 ```sh
 python host/build_sdk_module.py examples/hello/module.c --id hello --target zr-c110 --output-dir build/hello-zr
 python host/build_sdk_module.py examples/hello/module.c --id hello --target z9-c532 --output-dir build/hello-z9
+python host/build_sdk_module.py examples/hello/module.c --id hello --target z8-c311 --output-dir build/hello-z8
 python host/build_sdk_module.py modules/demo/sdk.c --id demo --target zr-c110 --output-dir build/demo-zr
 python host/build_sdk_module.py modules/demo/sdk.c --id demo --target z9-c532 --output-dir build/demo-z9
 ```
+
+Build separately for each target identity. Z8 activation currently uses the
+startup-file service; see the [Z8 C 3.11 guide](z8-c311-port.md) for the
+reproducible session runner and local verification.
 
 Each output directory must be new. Outputs include `.wlm`, an intermediate ELF and `module.json`. The JSON file records the build; it is not a runtime module catalog. The camera discovers modules from the card directory without that file.
 

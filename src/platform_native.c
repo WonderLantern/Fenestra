@@ -85,14 +85,16 @@ static FxResult cache(void *context,uint64_t address,uint32_t bytes,uint32_t ope
         else if(operation==FX_MACHINE_INVALIDATE)__asm__ volatile("dc ivac,%0"::"r"(at):"memory");
         else if(operation==FX_MACHINE_CLEAN_INVALIDATE)__asm__ volatile("dc civac,%0"::"r"(at):"memory");
         else __asm__ volatile("dc cvau,%0"::"r"(at):"memory");
-        if(at>UINT64_MAX-line)break;at+=line;
+        if(at>UINT64_MAX-line)break;
+        at+=line;
     }
     __asm__ volatile("dsb sy":::"memory");
     if(operation==FX_MACHINE_INSTRUCTIONS) {
         line=UINT64_C(4)<<(ctr&15u);
         for(uint64_t at=address&~(line-1u);at<end;) {
             __asm__ volatile("ic ivau,%0"::"r"(at):"memory");
-            if(at>UINT64_MAX-line)break;at+=line;
+            if(at>UINT64_MAX-line)break;
+        at+=line;
         }
         __asm__ volatile("dsb sy; isb":::"memory");
     }

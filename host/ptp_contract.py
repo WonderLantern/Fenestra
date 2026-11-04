@@ -4,12 +4,13 @@ import re
 PROFILES = {
     'zr-c110': (('ZR',), ('1.10', 'V1.10')),
     'z9-c532': (('Z 9', 'Z9'), ('5.32', 'V5.32')),
+    'z8-c311': (('Nikon Z8', 'Z8'), ('3.11', 'C 3.11', 'V3.11')),
 }
 
 
 def check_profile(profile):
     if profile not in ('auto', *PROFILES):
-        raise ValueError('PTP profile must be auto, zr-c110 or z9-c532')
+        raise ValueError('PTP profile must be auto, zr-c110, z9-c532 or z8-c311')
     return profile
 
 

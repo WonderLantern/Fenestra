@@ -6,11 +6,14 @@ import sys
 from cipher_patch import read_bounded, make_patch, sha
 import zr_plain_container
 import z9_update_codec as z9
+import z8_update_codec as z8
 import z9_update_envelope as z9_envelope
 from platform_profiles import PROFILES
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION = {
+    'z8-c311': dict(size=99051117, sha256='d67413c2ede6b9ce8887175f20700bd9fbad2a973a4820968c45503d15d80d96',
+                    plaintext='da0b0843d2e790ed6267f8a7fbbb393f464de4ed1c217964df782bf0a2795b43', header=32, component='eg2070_0311b0.bi'),
     'zr-c110': dict(size=117159984, sha256='43bf4f5f1278fa6b0a551ceb6fa4ee749dc74bbc8a5ef4fba19b30062184e546',
                     plaintext='5fa08a63b55508b578850b6e08b829c3dbaf3a9006e9c704dd771ef53f61548a', header=608, component='eg2210_0110k0.b'),
     'z9-c532': dict(size=101846611, sha256=z9.RAW_SHA256, plaintext=z9.PLAIN_SHA256, header=32, component=z9.MAIN_NAME),
@@ -36,6 +39,11 @@ def decode_original(target, raw, key, suffix=None):
     profile = PRODUCTION[target]
     if len(raw) != profile['size'] or sha(raw) != profile['sha256']:
         raise ValueError('unsupported original package: complete SHA-256 differs')
+    if target == 'z8-c311':
+        if len(key) != 8:
+            raise ValueError('Z8 material is the 8-byte K8 signature key')
+        tables, plain, main, name = z8.decode(raw, key)
+        return plain, main, None, dict(name=name, tables=tables, header=32)
     plain = zr_transform(raw[608:], key) if target == 'zr-c110' else z9.transform(raw[32:], key)
     if sha(plain) != profile['plaintext']:
         raise ValueError('key/material does not decode the pinned original body')
@@ -63,6 +71,13 @@ def decode_original(target, raw, key, suffix=None):
 def rebuild(target, raw, plain, main, replacement, key, suffix, entry):
     if len(main) != len(replacement) or main == replacement:
         raise ValueError('application must contain fixed-size changes')
+    if target == 'z8-c311':
+        body = z8.replace_main(plain, entry['tables'],
+                               entry['name'].rstrip(b'\0').decode('ascii'), replacement)
+        candidate = z8.encode(body, entry['tables'], key)
+        if len(candidate) != len(raw) or z8.decode(candidate, key, strict=False)[1] != body:
+            raise ValueError('Z8 round trip differs')
+        return candidate
     if target == 'zr-c110':
         changed = bytearray(plain)
         changed[entry['offset']:entry['offset']+len(replacement)] = replacement
@@ -93,7 +108,10 @@ def build_core(target, firmware, output):
     output = Path(output).resolve()
     if not output.is_relative_to(ROOT/'build') or output.exists():
         raise ValueError('choose a new directory below build/')
-    if target == 'zr-c110':
+    if target == 'z8-c311':
+        command = ['build_z8_core.py', '--firmware', str(firmware), '--output-dir', str(output)]
+        candidate = output/'z8-core.main'
+    elif target == 'zr-c110':
         command = ['build_c110_menu.py', '--firmware', str(firmware), '--output-dir', str(output),
                    '--native-capture', '--sensor-trace', '--event-trace']
         candidate = output/'c110-menu.snapshot'
@@ -107,6 +125,8 @@ def build_core(target, firmware, output):
 
 def produce(target, firmware, key_file, suffix_file, work, patch, *, release='r3', envelope_key=None):
     work, patch = Path(work).resolve(), Path(patch).resolve()
+    if release == 'r3' and target == 'z8-c311':
+        raise ValueError('Z8 has no pinned r3 release; use --release custom')
     if release == 'r3' and target == 'zr-c110' and envelope_key is None:
         raise ValueError('ZR r3 requires --envelope-key (user RSA public/private PEM)')
     if not work.is_relative_to(ROOT/'build') or work.exists():
@@ -118,7 +138,7 @@ def produce(target, firmware, key_file, suffix_file, work, patch, *, release='r3
     p = PRODUCTION[target]
     if len(raw) != p['size'] or sha(raw) != p['sha256']:
         raise ValueError('original package SHA-256 mismatch')
-    key = read_bounded(key_file, 48 if target == 'zr-c110' else z9.PERIOD)
+    key = read_bounded(key_file, 8 if target == 'z8-c311' else (48 if target == 'zr-c110' else z9.PERIOD))
     suffix = read_bounded(suffix_file, 8) if suffix_file else None
     plain, main, suffix, entry = decode_original(target, raw, key, suffix)
     work.mkdir(parents=True)
