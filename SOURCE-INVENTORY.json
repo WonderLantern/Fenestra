@@ -163,8 +163,8 @@
     },
     {
       "path": "docs/validation-z8-c311.md",
-      "bytes": 11911,
-      "sha256": "4da8039de99013525e3351f6211686acb486aed35fac0f811b40c2f91ac9c665",
+      "bytes": 14875,
+      "sha256": "4ce1aa2f007980a2e27da82b8113033d5d9af897b185c1be325cfb3e13b25d6a",
       "origin": "authored-for-z8-c311-port",
       "snapshot_sha256": null,
       "transformed": false,
@@ -183,8 +183,8 @@
     },
     {
       "path": "docs/z8-c311-port.md",
-      "bytes": 3877,
-      "sha256": "6e58c74db3ad92843bb67d548a312c681cb8241177d90554964e72a6cae9b24d",
+      "bytes": 3942,
+      "sha256": "3d63b0f3718b00207bddc44b63e172973eda430177e23a9b86e9152c9db842d3",
       "origin": "authored-for-z8-c311-port",
       "snapshot_sha256": null,
       "transformed": false,
@@ -673,8 +673,8 @@
     },
     {
       "path": "host/verify_platform_build.py",
-      "bytes": 10835,
-      "sha256": "ff3edecdc5d1b023653a73d8a30a69aca70a689d52535e44fba6622f6ac82fc7",
+      "bytes": 11049,
+      "sha256": "f28e0af2a764a675af67a1d0e8fda32b205019285d18effd161df41ca845176d",
       "origin": "project-source",
       "snapshot_sha256": "5a0ef3d7c51a99c8060a571157ca445d7ada7ac33bc3d17f0f749ab224b5eeb0",
       "transformed": true,
@@ -2633,8 +2633,8 @@
     },
     {
       "path": "src/platform/z8_c311/menu.c",
-      "bytes": 61429,
-      "sha256": "c48cdcc196bcf132b83c79165cfd8878e0ce465058ae1e624c4cd9109f945978",
+      "bytes": 61503,
+      "sha256": "3190b6701709d9c1ac77c7acc4d0d357d05b9c83c5cf0172e75c2d5d6bb62fef",
       "origin": "authored-for-z8-c311-port",
       "snapshot_sha256": null,
       "transformed": false,
