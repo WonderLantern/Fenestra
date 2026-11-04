@@ -125,6 +125,7 @@ def main():
     ui_hooks=ui_sites('zr-c110');font_hooks=font_sites('zr-c110');hooks.update(ui_hooks);hooks.update(font_hooks)
     sources+=['src/ui_dispatch.c','src/native_ui_dispatch.c','src/platform/zr_c110/ui_dispatch_profile.c','src/tasks.c','src/native_tasks.c']
     generated_headers=[(out/'bindings/platform_bindings.h').relative_to(ROOT).as_posix()];host_inputs=['host/build_c110_menu.py','host/inspect_c110_display_abi.py','host/inspect_c110_file_abi.py','host/target_c110.py','targets/nikon-zr.json','host/compiler_dependencies.py','host/platform_profiles.py','host/native_binding_inventory.py','emulation/c110_menu.ld','emulation/native_ui_dispatch_sites.py','emulation/native_font_sites.py']
+    host_inputs.append('host/module_compatibility.py')
     from c110_menu_image import SENSOR_TRACE_HOOKS,SENSOR_TRACE_PREIMAGES,direct_branch
     if args.sensor_trace:
         sources += ['src/platform/zr_c110/sensor_trace.c','src/platform/zr_c110/sensor_trace_native.c',
@@ -213,7 +214,7 @@ def main():
     elf=out / "menu.elf"
     run([linker,"-m","aarch64elf","-T","emulation/c110_menu.ld","--gc-sections",
          "--undefined=fx_c110_menu_page",
-         "--undefined=fx_c110_rtos_printf","--undefined=fx_native_rtos_metadata",
+         "--undefined=fx_c110_rtos_printf","--undefined=fx_native_rtos_metadata","--undefined=fx_module_compatibility_metadata",
          "--undefined=fx_c110_menu_layout","--undefined=fx_c110_system_dispatch",
          "--undefined=fx_c110_startup_metadata","--undefined=fx_c110_ptp_owner_metadata",
          "--undefined=fx_c110_ptp_lookup","--undefined=fx_c110_ptp_session",
@@ -250,6 +251,8 @@ def main():
         values=line.split()
         if len(values)==3:symbols[values[2]]=int(values[0],16)
     extension=binary.read_bytes()
+    from module_compatibility import export_core
+    (out/'compatibility.json').write_text(json.dumps(export_core(extension,symbols,CODE,'zr-c110'),indent=2)+'\n')
     for address,(trampoline,expected_hex) in PTP_PREIMAGES.items():
         expected=original[address-BASE:address-BASE+16]
         if hashlib.sha256(expected).hexdigest()!=expected_hex:raise ValueError('displaced instructions hash differs')

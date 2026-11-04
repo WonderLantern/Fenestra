@@ -84,11 +84,13 @@ def build(firmware,output):
         identity_inputs,dependency_graph,identity_header,debug_identity,write_debug_identity,
         lambda source:run(compilations[source]))
     elf=out/'core.elf';binary=out/'core.bin'
-    run([ld,'-m','aarch64elf','-T','emulation/z9_core.ld','--gc-sections',
+    run([ld,'-m','aarch64elf','-T','emulation/z9_core.ld','--gc-sections','--undefined=fx_module_compatibility_metadata',
          *['--undefined='+name for name in [*HOOKS.values(),'fx_z9_menu_metadata','fx_z9_panic_metadata','fx_z9_startup_metadata','fx_z9_ptp_metadata','fx_native_rtos_metadata','fx_native_modules_metadata','fx_native_scene_metadata','fx_native_load_buffer_metadata','fx_native_load_owner_metadata','fx_worker_wait_metadata','fx_native_font_index_metadata','fx_native_ui_dispatch_metadata','fx_native_ui_topology_metadata','fx_native_ui_editor_metadata','fx_native_ui_reader_metadata','fx_ui_controls_metadata','fx_native_ui_pager_metadata']],*objects,'-o',str(elf)])
     run([objcopy,'-O','binary',str(elf),str(binary)])
     symbols={p[2]:int(p[0],16) for line in subprocess.check_output([nm,'--defined-only',str(elf)],text=True).splitlines() if len(p:=line.split())==3}
     extension=binary.read_bytes();candidate=bytearray(original);candidate[CODE-BASE:CODE-BASE+len(extension)]=extension
+    from module_compatibility import export_core
+    (out/'compatibility.json').write_text(json.dumps(export_core(extension,symbols,CODE,'z9-c532'),indent=2)+'\n')
     for address,name in ((0x40d65a98,'fx_z9_system_original'),(0x403afa44,'fx_z9_navigate_original'),
                          (0x407e2e0c,'fx_z9_ptp_original_lookup'),(0x407e1834,'fx_z9_ptp_original_session'),
                          (0x4035705c,'fx_z9_ptp_original_operations'),(0x40c05714,'fx_z9_rtos_original_printf')):
@@ -109,7 +111,7 @@ def build(firmware,output):
     if bytes(restored)!=original or candidate[:0x40000]!=original[:0x40000]:raise ValueError('unexpected firmware mutation')
     (out/'z9-core.main').write_bytes(candidate)
     source_names=[*names,*[n for group in dependency_graph.values() for n in group],
-                  'host/compiler_dependencies.py','src/native_rtos_printf.inc','src/native_translation_impl.h','emulation/z9_core.ld','host/build_z9_core.py','host/platform_profiles.py','emulation/native_ui_dispatch_sites.py','emulation/native_font_sites.py',
+                  'host/compiler_dependencies.py','host/module_compatibility.py','src/native_rtos_printf.inc','src/native_translation_impl.h','emulation/z9_core.ld','host/build_z9_core.py','host/platform_profiles.py','emulation/native_ui_dispatch_sites.py','emulation/native_font_sites.py',
                   *[p.relative_to(ROOT).as_posix() for p in (ROOT/'include').glob('*.h')],
                   *[p.relative_to(ROOT).as_posix() for p in (ROOT/'src/platform/z9_c532').glob('*.h')]]
     result=dict(schema='fenestra.native-core/v1',target='z9-c532',base_sha256=profile['sha256'],

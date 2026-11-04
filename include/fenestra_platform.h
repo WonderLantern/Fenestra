@@ -208,6 +208,8 @@ const FxNamedBinding *fx_platform_find(const FxPlatformOwner *,const char *name)
 const FxNamedBinding *fx_platform_open_binding(const FxPlatformOwner *,uint64_t token);
 FxResult fx_platform_stop(FxPlatformOwner *,uint32_t panic);
 FxResult fx_platform_bind_module(FxPlatformOwner *,const FxModule *,void *image,uint32_t capacity);
+/* Read-only static interface contract; never OPEN/ATTACH a native resource. */
+FxResult fx_platform_interface(const FxPlatform *,const char *,FxModuleInterface *);
 /* Worker-only, after EL0 has completely returned on original tables. Validate
  * every segment before copying; no native callback retains a module pointer. */
 FxResult fx_platform_module_transfer(FxPlatformOwner *,uint64_t address,void *,uint32_t bytes,uint32_t write_to_module);

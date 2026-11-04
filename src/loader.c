@@ -32,8 +32,8 @@ FxResult fx_loader_prepare(FxLoader *loader, const FxCardIO *io, const char *pat
         }
         return fx_reject(&loader->runtime, result, loader->card.read_calls);
     }
-    result = fx_module_prepare(package, loader->card.bytes, pin, target,
-                               loader->runtime.verified_capabilities, image, image_capacity, &loader->module);
+    result = fx_module_prepare_report(package, loader->card.bytes, pin, target,
+                               loader->runtime.verified_capabilities, image, image_capacity, &loader->module,&loader->issue);
     if (result != FX_OK) return fx_reject(&loader->runtime, result, 0u);
     loader->image = image;
     memcpy(loader->package_sha256, pin, 32u);

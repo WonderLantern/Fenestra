@@ -63,8 +63,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6762,
-      "sha256": "eedb00db2976aa73a417dbf22e48bfcd847d16288145c21a8deaea5b4430a3c1",
+      "bytes": 6991,
+      "sha256": "78be7c2f23686c8594b33642665b6404bedba40dd14e870f14a09f94fda9877d",
       "origin": "project-source",
       "snapshot_sha256": "ccee77bf6619d5747c065433c0ec84bc3524e690f1db8a5bc8d7a030a171fc29",
       "transformed": true,
@@ -112,9 +112,19 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "docs/module-compatibility.md",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 6172,
+      "sha256": "fa0f9d4f26c3a1dab235c1fff7e0879e81b02878eccf140b85aaf41e8d90b437"
+    },
+    {
       "path": "docs/module-development.md",
-      "bytes": 5981,
-      "sha256": "eac7330a00279cb5b1ee6553f31afc868d0d360c268697e87896742d920ac726",
+      "bytes": 6293,
+      "sha256": "463923a88ebf74805e6177ed95b12d4a0231aa81e8f565a36fab99cd9464c558",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": true,
@@ -123,8 +133,8 @@
     },
     {
       "path": "docs/module-format.md",
-      "bytes": 3904,
-      "sha256": "c693cb6e368c36aa3ed66c821c16c6c469fd9101aef519adc0e9423be5928fce",
+      "bytes": 6890,
+      "sha256": "84f849bf6f8afafd120e5974b2fc24dafa6fd6c5742b9207e39bcac1d7dd073d",
       "origin": "project-source",
       "snapshot_sha256": "694019696565fc78722fd88dd7c87b2eb4f452333c9e353962ad249d5b32e30a",
       "transformed": true,
@@ -222,6 +232,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "examples/compatibility-probe/module.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1610,
+      "sha256": "81587a1c507e26083e6a8d0da3f7150f1fcc2c5915bcd1dce701f91b47dd8e59"
+    },
+    {
       "path": "examples/hello/module.c",
       "bytes": 1695,
       "sha256": "de999443d62b3488adf0904da09852b0ea154045d399e65f3fb3fe10c7e9a4dc",
@@ -243,8 +263,8 @@
     },
     {
       "path": "host/build_c110_menu.py",
-      "bytes": 36325,
-      "sha256": "725606f3fc75b88ddd2b086be90aa750b52a875a150d27ebaf5403894c61b7e7",
+      "bytes": 36594,
+      "sha256": "5e7a7f6d0573e46acaf065136851abb6defcdc18995bf75b1d8b35a609eb5677",
       "origin": "project-source",
       "snapshot_sha256": "262fd42abd022e62dc04f4c06aec9ff0a577ef218395adbe80c8a2cbcab07744",
       "transformed": true,
@@ -263,18 +283,18 @@
     },
     {
       "path": "host/build_sdk_module.py",
-      "bytes": 5990,
-      "sha256": "b42e7689ae395994449f268d43add051d9af413785c6f5d2fc805bbf88dc0f8c",
+      "bytes": 6859,
+      "sha256": "cd3523debbb5a04651a365787660d460ef0868bbed1af3ed3946ca90077eb00e",
       "origin": "project-source",
       "snapshot_sha256": "b42e7689ae395994449f268d43add051d9af413785c6f5d2fc805bbf88dc0f8c",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
     {
       "path": "host/build_z9_core.py",
-      "bytes": 12678,
-      "sha256": "9a46c3f540e309cde33fd3d03f3851cca77ec5483802572665daca7b357dd628",
+      "bytes": 12920,
+      "sha256": "9f347d8dc9b922e4519b913d1469965de7e323edab411c05d8013ad7d961f06e",
       "origin": "project-source",
       "snapshot_sha256": "41e35ef55be0023dce129c78b79b78be5d327be6166272d5804719506a113ef8",
       "transformed": true,
@@ -300,6 +320,26 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "host/check_module.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1608,
+      "sha256": "bd1e16eaf9ff77632a87a9538feb56a63c5c49962816bfbd4009011e81626c0f"
+    },
+    {
+      "path": "host/check_module_core.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3572,
+      "sha256": "77c1dc185a2ec37e6d3532389f2435227146eb72fc7b6115a2c80a5883bf3f39"
     },
     {
       "path": "host/cipher_patch.py",
@@ -382,12 +422,22 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "host/module_compatibility.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 10004,
+      "sha256": "cba149d7a5aca11c1c51ca5fb06f3a98ba7cbdc74304fbed905c0c6b2735fd5f"
+    },
+    {
       "path": "host/module_header.py",
-      "bytes": 4884,
-      "sha256": "c20ccfe9542bca9a57761654d33443ab6fb79029e7a6ca4d91e97520c7da685c",
+      "bytes": 5486,
+      "sha256": "8dbe506a3a30a7c3d0c49a198e7b82057cb9bc1d489c5f6fc86c41bd3b4ece35",
       "origin": "project-source",
       "snapshot_sha256": "c20ccfe9542bca9a57761654d33443ab6fb79029e7a6ca4d91e97520c7da685c",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -413,11 +463,11 @@
     },
     {
       "path": "host/pack_module.py",
-      "bytes": 7760,
-      "sha256": "b612d46e114ea9a6d1de48326cf55960534bcb87dcd95a478e154f8ab82d9deb",
+      "bytes": 8672,
+      "sha256": "8d2c66a1b28573b3519e9ec529206f75b1deaa496b4cf9e0c536930ae92789ad",
       "origin": "project-source",
       "snapshot_sha256": "b612d46e114ea9a6d1de48326cf55960534bcb87dcd95a478e154f8ab82d9deb",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -1103,11 +1153,11 @@
     },
     {
       "path": "include/fenestra_loader.h",
-      "bytes": 2005,
-      "sha256": "1edd453528c126b75eaff182c321244fede097e148cb64c9528122ddae882371",
+      "bytes": 2095,
+      "sha256": "405d3567f8975d9dc96a8b550621c4fa40ab1e46217307f6e2007b713c31bbe5",
       "origin": "project-source",
       "snapshot_sha256": "1edd453528c126b75eaff182c321244fede097e148cb64c9528122ddae882371",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -1183,11 +1233,11 @@
     },
     {
       "path": "include/fenestra_module.h",
-      "bytes": 3564,
-      "sha256": "3087802fe797467c91d67bf4cdaff58ae06aee79ce0ba159f0cbf48a113519e5",
+      "bytes": 5879,
+      "sha256": "fca3b827e873bdeb740da4f412b480034f5d1f656e08a04cef8f0d9d92b600ad",
       "origin": "project-source",
       "snapshot_sha256": "3087802fe797467c91d67bf4cdaff58ae06aee79ce0ba159f0cbf48a113519e5",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -1223,11 +1273,11 @@
     },
     {
       "path": "include/fenestra_module_manager.h",
-      "bytes": 2964,
-      "sha256": "0a7835079610f8ef6f1377b8b295b02cfe8a344c1093115fa677795f5ae09308",
+      "bytes": 2989,
+      "sha256": "87b42c3bbd37f87223e2579b0e52a0bbb43c2d265100660aa82126e3ed11da99",
       "origin": "project-source",
       "snapshot_sha256": "0a7835079610f8ef6f1377b8b295b02cfe8a344c1093115fa677795f5ae09308",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -1543,8 +1593,8 @@
     },
     {
       "path": "include/fenestra_platform.h",
-      "bytes": 18395,
-      "sha256": "8506bb04a50edfe1ba1fa6d5bd2ba407dc66da003ae8e10ddaeea4d1cbbeb993",
+      "bytes": 18560,
+      "sha256": "d6198731213728a19abd35bbe39dd3fe535c71da3827cab3b40d35536c9884e5",
       "origin": "project-source",
       "snapshot_sha256": "e99cd595ed118027d882dd6f53fea103fcabb671b2cd9df0ba7aaa5a596e2046",
       "transformed": true,
@@ -1663,11 +1713,11 @@
     },
     {
       "path": "include/fenestra_services.h",
-      "bytes": 6681,
-      "sha256": "9e6cc1ae41fef172615e13a8e1eba0c86837387ad1a28adde5668ad372de9da7",
+      "bytes": 6992,
+      "sha256": "fbe66a88e95f0a8c5a4a411ffeb1c905e4a038b9dd598deb333c0d05e6cd35b5",
       "origin": "project-source",
       "snapshot_sha256": "9e6cc1ae41fef172615e13a8e1eba0c86837387ad1a28adde5668ad372de9da7",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -2063,11 +2113,11 @@
     },
     {
       "path": "src/loader.c",
-      "bytes": 6877,
-      "sha256": "ea31b01fb5c8c670fd325efff2c0a1f9e5c7e1757eafcb0c6a6360c75706227d",
+      "bytes": 6899,
+      "sha256": "76b8f6ca276cc56db294c19021b3a09c8950fabdac64d927cf8f1373ff99417c",
       "origin": "project-source",
       "snapshot_sha256": "ea31b01fb5c8c670fd325efff2c0a1f9e5c7e1757eafcb0c6a6360c75706227d",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -2093,11 +2143,11 @@
     },
     {
       "path": "src/module.c",
-      "bytes": 7814,
-      "sha256": "799c6ffa54eb1995a87c724daf5d78b0d7e635c910906445991508c2f00135f0",
+      "bytes": 15232,
+      "sha256": "40a3c78070bafce4e746da766cfce8daa8f8b5b255a19c624fe964b4f30efe0b",
       "origin": "project-source",
       "snapshot_sha256": "799c6ffa54eb1995a87c724daf5d78b0d7e635c910906445991508c2f00135f0",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -2123,11 +2173,11 @@
     },
     {
       "path": "src/module_manager.c",
-      "bytes": 20176,
-      "sha256": "22d495721bd0784853ffc568965a786d91cf1ee0d0ee87cebbaa2b47a17f5f5e",
+      "bytes": 20868,
+      "sha256": "dd9ca8d7d95f8d1b072796f285c0002d2acc544f0c9259a4a9563974f3eddb84",
       "origin": "project-source",
       "snapshot_sha256": "22d495721bd0784853ffc568965a786d91cf1ee0d0ee87cebbaa2b47a17f5f5e",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -2483,11 +2533,11 @@
     },
     {
       "path": "src/platform.c",
-      "bytes": 60936,
-      "sha256": "2322204c34eb5dd9df8abe75575c0703178cdcf1586111078b4a3c1b75506f28",
+      "bytes": 61898,
+      "sha256": "c9c656e3bf846b0530755a04472fbbe1d5ea1d134055906cfb64f74513706375",
       "origin": "project-source",
       "snapshot_sha256": "2322204c34eb5dd9df8abe75575c0703178cdcf1586111078b4a3c1b75506f28",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -3193,11 +3243,11 @@
     },
     {
       "path": "src/platform_native.c",
-      "bytes": 8228,
-      "sha256": "e56213f986f473d5d59f7da1642e62e7fbfa4e7925a019f190bdec438f93106c",
+      "bytes": 9493,
+      "sha256": "a690033b56f15bd7e93517205e104ddc404c22a118eca606adbb23652d602d75",
       "origin": "project-source",
       "snapshot_sha256": "e56213f986f473d5d59f7da1642e62e7fbfa4e7925a019f190bdec438f93106c",
-      "transformed": false,
+      "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
     },
@@ -3253,8 +3303,8 @@
     },
     {
       "path": "src/services.c",
-      "bytes": 21683,
-      "sha256": "09cc9abfb8a5bf1a24a73ea2587e115ca7ca24ff07d4c4c9dd69c7240df605a3",
+      "bytes": 22492,
+      "sha256": "e542526730b369677e6134da4a2dfd0b3dfc18959d55fb03fb4b4b396cfde01a",
       "origin": "project-source",
       "snapshot_sha256": "a93182e34b1e297e4b5cb3bf4af56d5c39be775d875dcce579de4288871470ab",
       "transformed": true,
@@ -3442,6 +3492,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "tests/module_compatibility_fixture.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 7936,
+      "sha256": "90d39f4490fc14d8125a38eb14539aca31a6e9d3985a49464cae0400652de7e6"
+    },
+    {
       "path": "tests/test_cipher_patch.py",
       "bytes": 5861,
       "sha256": "5e122c7a6f27ac53495a9401c9f88e703f910b3a8e6de0d5913636236b792fbd",
@@ -3450,6 +3510,16 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/test_module_compatibility.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 11990,
+      "sha256": "8623bba3994f8101961e8a4a0c1d8cb2aca3c10b075bcb85ef75e3dd633e8193"
     },
     {
       "path": "tests/test_ptp.c",

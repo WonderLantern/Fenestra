@@ -66,6 +66,11 @@ Store large data in allocated buffers or card files and access it through block 
 
 ## Distribution
 
+For mandatory named APIs, declare their exact contracts with `--require-binding`
+and check against the intended core's exported `compatibility.json`. The
+[compatibility guide](module-compatibility.md) covers v4 packaging, precise
+rejection reasons and legacy behavior. Optional APIs still need runtime queries.
+
 Copy `build/<name>/<id>.wlm` to `FENESTRA/` on the card. IDs are at most 15 characters and use lowercase letters, digits, underscores and hyphens. Enable or disable through module management or the `.wlm` / `.wlm.disabled` suffix. No additional discovery catalog is required.
 
 Document the SDK version, target profile, capabilities, memory requirements, license and supported features. Supply module source as part of the project distribution workflow. Firmware tables and external weights must be provided separately by users where required; do not bundle vendor resources, device logs or serial numbers in public source.

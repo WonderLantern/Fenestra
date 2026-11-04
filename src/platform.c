@@ -4,6 +4,24 @@ _Static_assert(sizeof(FxUiEvent)==24u,"UI event wire ABI remains unchanged");
 _Static_assert(sizeof(FxUiTextEvent)==152u && sizeof(FxUiTextEvent)<=FX_SERVICE_BYTES,"UI text wire ABI");
 _Static_assert(sizeof(FxUiStatus)==40u,"UI submission status wire ABI");
 
+FxResult fx_platform_interface(const FxPlatform *p,const char *name,FxModuleInterface *out) {
+    if(!p || !name || !out)return FX_ARGUMENT;
+    memset(out,0,sizeof(*out));uint32_t n=0u;
+    while(n<64u && name[n])++n;
+    if(!n || n==64u)return FX_ARGUMENT;
+    for(uint32_t i=0u;i<p->count;++i) {
+        const FxNamedBinding *b=&p->bindings[i];uint32_t j=0u;
+        while(j<n && b->name[j] && b->name[j]==name[j])++j;
+        if(j!=n || b->name[j])continue;
+        uint32_t available=b->address?1u:0u;
+        if(b->kind==FX_BIND_FUNCTION)available&=b->abi==FX_CALL_AAPCS64?(p->io.call_frame?1u:0u):(p->io.call?1u:0u);
+        else if(b->kind==FX_BIND_HOOK || b->kind==FX_BIND_DEVICE)available&=p->io.resource?1u:0u;
+        else if(b->kind==FX_BIND_TABLE && (b->flags&FX_BIND_READ))available&=p->io.read?1u:0u;
+        *out=(FxModuleInterface){b->kind,b->abi,b->version,available,b->capabilities|FX_SDK_BINDING};return FX_OK;
+    }
+    return FX_EMPTY;
+}
+
 FxResult fx_platform_bind_module(FxPlatformOwner *o,const FxModule *m,void *image,uint32_t capacity) {
     if(!o || !o->platform || !m || !image || !m->prepared || !m->bytes || m->bytes>capacity ||
        m->bytes>FX_MODULE_MEMORY_LIMIT || !m->segment_count || m->segment_count>FX_MODULE_SEGMENTS ||

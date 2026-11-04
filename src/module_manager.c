@@ -50,8 +50,8 @@ static int filename(const char *file,char id[16],uint32_t *enabled) {
 }
 static FxResult inspect(FxModuleManager *m,FxManagedModule *e,uint64_t size) {
     FxModule module;
-    FxResult r=fx_module_directory_inspect_accounted(&m->io.directory,e->file,size,m->firmware,m->capabilities,
-        m->io.memory,m->scratch,sizeof(m->scratch),&module,e->digest,m->inspect_observer);
+    FxResult r=fx_module_directory_inspect_report(&m->io.directory,e->file,size,m->firmware,m->capabilities,
+        m->io.memory,m->scratch,sizeof(m->scratch),&module,e->digest,m->inspect_observer,&e->issue);
     if(r!=FX_OK)return r;
     e->valid=1u;e->error=0u;e->bytes=(uint32_t)size;e->image_bytes=module.bytes;
     e->required=(uint32_t)module.required_capabilities;return FX_OK;
@@ -134,8 +134,18 @@ static void publish(FxModuleManager *m) {
     project(m);
     for(uint32_t i=0;i<FX_MANAGED_ROWS;++i) {
         FxManagedModule empty={0};FxManagedModule *e=i<m->view_count?&m->entries[m->view_slots[i]]:&empty;
-        const char *why=!e->present?"Not on card":e->error==FX_CAPABILITY?"Incompatible":e->error?"Invalid module":!e->valid?"Not checked":
+        const char *why=!e->present?"Not on card":e->issue.reason?fx_module_issue_text(e->issue.reason):e->error==FX_CAPABILITY?"Incompatible":e->error?"Invalid module":!e->valid?"Not checked":
             m->activated && e->current!=e->enabled?"After restart":"";
+        char detail[FX_UI_TEXT]={0};
+        if(e->issue.binding[0]) {
+            const char *prefix=e->issue.reason==FX_MODULE_INTERFACE_MISSING?"Missing: ":
+                e->issue.reason==FX_MODULE_INTERFACE_VERSION?"Version: ":
+                e->issue.reason==FX_MODULE_INTERFACE_KIND?"Type: ":
+                e->issue.reason==FX_MODULE_INTERFACE_ABI?"ABI: ":
+                e->issue.reason==FX_MODULE_CAPABILITIES?"Capability: ":"Unavailable: ";
+            copy_text(detail,prefix,sizeof(detail));uint32_t n=0u;while(detail[n])++n;
+            copy_text(detail+n,e->issue.binding,sizeof(detail)-n);why=detail;
+        }
         /* Invalid files can still be disabled. Never silently load them. */
         /* Card membership and session residency are different: removing a
          * file never unloads its code or callbacks from the current session. */
