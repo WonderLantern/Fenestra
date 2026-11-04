@@ -15,6 +15,7 @@ static uint64_t descriptor(FxZ63AddressSpace *s,uintptr_t va) {
 }
 int main(void) {
     FxZ63AddressSpace s={0};uintptr_t root=0;
+    assert(fx_z63_space_init(&s,(void *)(uintptr_t)(UINT64_C(1)<<39),16u,0,mapping)==FX_ARGUMENT);
     assert(fx_z63_space_init(&s,tables,16u,0,mapping)==FX_OK);
     assert(fx_z63_space_map(&s,0x40910000u,4096u,FX_Z63_MAP_READ|FX_Z63_MAP_WRITE|FX_Z63_MAP_EXECUTE)==FX_ARGUMENT);
     assert(fx_z63_space_map(&s,0x40910000u,4096u,FX_Z63_MAP_READ|FX_Z63_MAP_EXECUTE)==FX_OK);

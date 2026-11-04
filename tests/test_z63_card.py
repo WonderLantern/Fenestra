@@ -64,7 +64,7 @@ class Z63CardTests(unittest.TestCase):
             self.skipTest('C compiler unavailable')
         with tempfile.TemporaryDirectory() as tmp:
             binary = Path(tmp) / 'lifecycle-test'
-            subprocess.run([cc, '-std=c11', '-pthread', '-Wall', '-Wextra', '-Werror',
+            subprocess.run([cc, '-std=c11', *([] if sys.platform=='win32' else ['-pthread']), '-Wall', '-Wextra', '-Werror',
                             str(ROOT / 'tests/z63_lifecycle_fixture.c'),
                             str(ROOT / 'src/platform/z63_c201/lifecycle.c'),
                             '-o', str(binary)], check=True)
@@ -85,9 +85,16 @@ class Z63CardTests(unittest.TestCase):
         cc = shutil.which('clang') or shutil.which('cc')
         if not cc:
             self.skipTest('C compiler unavailable')
+        # The fixture stores host pointers in guest page-table entries.
+        # Keep its image below the guest's 39-bit address limit. Windows
+        # ASLR can place the default image above that limit. These flags
+        # affect only this fixture; the production bounds stay intact.
+        link_flags = ['-no-pie'] if sys.platform.startswith('linux') else []
+        if sys.platform == 'win32':
+            link_flags = ['-Wl,/base:0x10000000', '-Wl,/dynamicbase:no']
         with tempfile.TemporaryDirectory() as tmp:
             binary = Path(tmp) / 'mapping-test'
-            subprocess.run([cc, *(['-no-pie'] if sys.platform.startswith('linux') else []), '-std=c11', '-Wall', '-Wextra', '-Werror',
+            subprocess.run([cc, *link_flags, '-std=c11', '-Wall', '-Wextra', '-Werror',
                             '-I', str(ROOT / 'include'), str(ROOT / 'tests/z63_address_space_fixture.c'),
                             str(ROOT / 'src/platform/z63_c201/address_space.c'), str(ROOT / 'src/memory.c'),
                             '-o', str(binary)], check=True)
