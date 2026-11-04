@@ -363,7 +363,7 @@ __attribute__((unused)) static uint32_t page_opened(void *context) {
     (void)fx_native_ui_page_open(page);
     FxNativeUi *u = fx_native_ui_find_page(page->identity >> 16);
     if(u && !fx_native_ui_page_matches(u,page))return 1u;
-    /* Original C311 value object uses child4bec and row children+128;
+    /* Original C311 value object uses child 0x4ba5 (see ui_visibility); the old text said4bec and row children+128;
      * ZR's4fb1/+130 are deliberately not reused. */
     const FxNativeDescriptor *d = (const FxNativeDescriptor *)page->descriptor;
     const FxNativeRow *rows = (const FxNativeRow *)d->rows;
@@ -420,7 +420,7 @@ __attribute__((unused)) static void refresh_core(State *s) {
             if(!row)continue;
             FN(0x403ec980,void (*)(void *,uint32_t))(row,1u);
             if(rows[i].word[6]==0x7ff2u || rows[i].word[6]==0x7ff5u || rows[i].word[6]==0x7ff6u) {
-                void *value=FN(0x4031fa5c,void *(*)(void *,uint32_t))(row,0x4becu);
+                void *value=fx_z8_child_lookup(row,0x4ba5u);
                 if(value)FN(0x403ec980,void (*)(void *,uint32_t))(value,1u);
             }
         }
@@ -482,7 +482,10 @@ static FxNativeUi *instance_ui(State *s,uint32_t index,const FxNativePage *paren
     FxNativeUi *u=allocate((uint32_t)sizeof(*u));if(!u)return 0;memset(u,0,sizeof(*u));
     fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_REQUESTED);
     FxNativeMenuProfile profile={parent,&s->rows[44],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,parent->identity>>16};
+        /* terminal/back/select/stay ids are still Z9 references pending C311
+ * pinning; the navigation_events bound (12) keeps the shared scans inside
+ * the pinned 0x43bf0680 table. */
+        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,parent->identity>>16,12u};
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
     uint32_t controls=0u,primary_pages=FX_NATIVE_UI_PAGES;int visible=0;
     if(fx_ui_presence(owner,&controls,&visible)==FX_OK && controls>FX_UI_CONTROLS)primary_pages=2u;
@@ -522,7 +525,10 @@ static FxNativePage *apps_page(State *s,uint32_t page) {
     if(!s->apps) {
         FxNativeApps *apps=&s->apps_storage;
     FxNativeMenuProfile profile={stock(2u,SETUP),&s->rows[44],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,SETUP};
+        /* terminal/back/select/stay ids are still Z9 references pending C311
+ * pinning; the navigation_events bound (12) keeps the shared scans inside
+ * the pinned 0x43bf0680 table. */
+        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,SETUP,12u};
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_apps_init(apps,&profile,callbacks,s,allocate,apps_count,apps_entry,apps_action,
             TEXT+1u,TEXT+21u,TEXT+22u,TEXT+5u,TEXT+4u,TEXT+24u,TEXT+25u)!=FX_OK)return 0;
@@ -890,7 +896,10 @@ static uint32_t manage_modules(void *p) {
         FxNativeModules *m=allocate((uint32_t)sizeof(*m));if(!m)return 0u;
         FxNativeMenuProfile profile={&s->core.page,&s->rows[44],
             (const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-            0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,FENESTRA};
+            /* terminal/back/select/stay ids are still Z9 references pending C311
+ * pinning; the navigation_events bound (12) keeps the shared scans inside
+ * the pinned 0x43bf0680 table. */
+        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,FENESTRA,12u};
         uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
             (uintptr_t)noop,(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_modules_init(m,fx_platform_target(),&profile,allocate,

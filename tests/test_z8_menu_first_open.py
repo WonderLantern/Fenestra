@@ -64,9 +64,13 @@ class Z8MenuFirstOpenGeometry(unittest.TestCase):
                    for i in range(size // 32)]
         self.assertEqual(len(records), 12)
         self.assertEqual(records[0][0], 0x27e, 'first event must be SETUP (638)')
+        callbacks = {r[1] for r in records}
+        conditions = {r[2] for r in records}
+        self.assertEqual(callbacks, {0x403b1b74, 0x403b1b8c, 0x403b1ba4,
+                                     0x403b1ba8, 0x403b1bb0, 0x4054eae4,
+                                     0x4054ea5c})
+        self.assertEqual(conditions, {0x403b1c5c, 0x403b1c7c})
         for event, callback, condition, nxt in records:
-            self.assertTrue(0x40160000 <= callback < 0x45000000)
-            self.assertTrue(0x40160000 <= condition < 0x45000000)
             self.assertEqual(nxt, 0x68c)
 
     def test_no_z9_navigation_constants_remain(self):
@@ -75,9 +79,6 @@ class Z8MenuFirstOpenGeometry(unittest.TestCase):
             text = source.read_text()
             self.assertNotRegex(text, r'UINT64_C\(0x43014bb8\)', source.name)
 
-
-if __name__ == '__main__':
-    unittest.main()
 
 
 class Z8RenderProfileContracts(unittest.TestCase):
@@ -123,3 +124,7 @@ class Z8RenderProfileContracts(unittest.TestCase):
         text = self._source()
         self.assertIn('FxNativeMenuDrawProfile draw={0x403f1940u,0x40325a80u,0x403f0db8u,0u,0x40c7bea4u,0x40325b60u,0u,',
                       text)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -276,7 +276,7 @@ the patched image passes the full RE0 regression twice (`menu-reg-1`,
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
-| Native menu registration (menu reachability) | bindings enabled, navigation E2E pending | menu trio + font sites + navigation table pinned and hooked (section 4b); the render-profile cluster stays Z9-reference and dormant, so SETUP navigation is not yet exercised |
+| Native menu registration (menu reachability) | bindings + render profiles enabled, navigation E2E pending | menu trio, font sites, layout/visibility/draw bindings pinned and hooked (sections 4b/4c); the residual set (draw rectangle/modal id, text-editor slots, fallback face, display restore, the Z9 event-id quintuple in the menu profiles) keeps construction dormant, so SETUP navigation is not yet exercised |
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation (module management entry) still pending |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |

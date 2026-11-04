@@ -60,13 +60,14 @@ static FxNativeAppLink *link_for(FxNativeApps *apps,uint32_t instance,uint32_t p
     for(FxNativeAppLink *link=*head;link;link=link->owner_next)
         if(link->instance==instance && link->page==page)return link;
     FxNativeEvent events[FX_NATIVE_EVENTS]={0};
-    if(fx_native_menu_link(events,apps->profile.navigation,apps->profile.terminal,
-            apps->profile.select_events,(uintptr_t)noop,page)!=FX_OK)return 0;
+    if(fx_native_menu_link_bounded(events,apps->profile.navigation,apps->profile.terminal,
+            apps->profile.select_events,(uintptr_t)noop,page,
+            apps->profile.navigation_events?apps->profile.navigation_events:FX_NATIVE_EVENTS)!=FX_OK)return 0;
     FxNativeAppLink *link=apps->allocate((uint32_t)sizeof(*link));if(!link)return 0;
     fx_allocation_observe(observer,(uint32_t)sizeof(*link),FX_ALLOC_REQUESTED);
     memset(link,0,sizeof(*link));link->instance=instance;link->page=page;
     memcpy(link->events,events,sizeof(events));
-    for(uint32_t i=0;i<FX_NATIVE_EVENTS;++i) {
+    for(uint32_t i=0;i<(apps->profile.navigation_events?apps->profile.navigation_events:FX_NATIVE_EVENTS);++i) {
         uint32_t event=(uint32_t)link->events[i].event&65535u;if(event==apps->profile.terminal)break;
         if(event==apps->profile.back_event)link->events[i].next=apps->profile.back;
         for(uint32_t k=0;k<4u;++k)if(event==apps->profile.select_events[k])
@@ -90,7 +91,7 @@ static FxNativePage *failed(FxNativeApps *apps,FxNativeAppFrame *f,uint32_t page
     memset(&f->native,0,sizeof(f->native));
     FxResult r=fx_native_menu_build(&f->native,&apps->profile,page,apps->title,rows,3u,callbacks);
     if(r!=FX_OK){apps->error=(uint32_t)r;return 0;}
-    for(uint32_t e=0u;e<FX_NATIVE_EVENTS;++e) {
+    for(uint32_t e=0u;e<(apps->profile.navigation_events?apps->profile.navigation_events:FX_NATIVE_EVENTS);++e) {
         uint32_t code=(uint32_t)f->native.handlers[1][e].event&65535u;
         if(code==apps->profile.terminal)break;
         for(uint32_t k=0u;k<4u;++k)if(code==apps->profile.select_events[k])

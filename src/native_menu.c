@@ -5,10 +5,15 @@ _Static_assert(sizeof(FxNativePage) == 96 && sizeof(FxNativeDescriptor) == 64, "
 FxResult fx_native_menu_link(FxNativeEvent out[FX_NATIVE_EVENTS],const FxNativeEvent *source,
                              uint32_t terminal,const uint32_t select_events[4],
                              uintptr_t action,uint64_t next) {
-    if(!out || !source || !select_events || !action)return FX_ARGUMENT;
+    return fx_native_menu_link_bounded(out,source,terminal,select_events,action,next,FX_NATIVE_EVENTS);
+}
+FxResult fx_native_menu_link_bounded(FxNativeEvent out[FX_NATIVE_EVENTS],const FxNativeEvent *source,
+                             uint32_t terminal,const uint32_t select_events[4],
+                             uintptr_t action,uint64_t next,uint32_t events) {
+    if(!out || !source || !select_events || !action || !events || events>FX_NATIVE_EVENTS)return FX_ARGUMENT;
     uint32_t n=0;
-    while(n<FX_NATIVE_EVENTS && (source[n].event&65535u)!=terminal)++n;
-    if(n==FX_NATIVE_EVENTS)return FX_INTEGRITY;
+    while(n<events && (source[n].event&65535u)!=terminal)++n;
+    if(n==events)return FX_INTEGRITY;
     memcpy(out,source,(n+1u)*sizeof(*out));
     for(uint32_t i=0;i<n;++i)
         for(uint32_t k=0;k<4u;++k)
@@ -40,10 +45,11 @@ FxResult fx_native_menu_build_style(FxNativeMenu *out, const FxNativeMenuProfile
     if (!out || !p || !p->page || !p->row || !p->navigation || !entries || !callbacks || !count ||
         count > FX_NATIVE_ROWS || !page || page > 65535u)
         return FX_ARGUMENT;
+    uint32_t nav_limit = p->navigation_events ? p->navigation_events : FX_NATIVE_EVENTS;
     uint32_t n = 0;
-    while (n < FX_NATIVE_EVENTS && (p->navigation[n].event & 65535u) != p->terminal)
+    while (n < nav_limit && (p->navigation[n].event & 65535u) != p->terminal)
         ++n;
-    if (n == FX_NATIVE_EVENTS)
+    if (n == nav_limit)
         return FX_INTEGRITY;
     if(style && (!style->descriptor || !style->rows || style->row_count<count ||
                  style->header_bytes<272u || style->header_bytes>sizeof(out->header)))return FX_ARGUMENT;

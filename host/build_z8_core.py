@@ -130,7 +130,7 @@ def build(firmware, output):
     (Path('src/platform/z8_c311') / 'system_trampoline.S').write_text(tramp)
 
     # Native menu navigate funnel (T12): the 16-byte entry window is
-    # position-independent (str x20,[sp,#-0x10]! / stp x29,x30,[sp,#0x10] /
+    # position-independent (str x20,[sp,#-0x10]! / stp x19,x30,[sp,#0x10] /
     # mov x20,x1 / mov w19,w0) and replays verbatim; control resumes at
     # entry+16. menu.c owns the full replacement and forwards non-Fenestra
     # pages through this trampoline with (page, context).
@@ -287,8 +287,9 @@ def build(firmware, output):
     (out / 'core-report.json').write_text(json.dumps(dict(
         target=TARGET, sources=len(NAMES), core_bytes=len(extension),
         hooks=changes, hook_count=len(changes),
-        configuration='v0-headless: UI-loop hooks only; dormant platform state; '
-                      'menu/font/display/ptp/linux/usb capabilities unavailable',
+        configuration='v0: UI-loop + sysctl + native-menu + font-request hooks; '
+                      'dormant until platform state initialises; render rectangle/modal, '
+                      'font fallback, display, ptp/linux/usb unavailable',
         ui_dispatch=verify_ui(TARGET, original)), indent=1) + '\n')
     print(json.dumps(dict(status='BUILT', core_bytes=len(extension), hooks=len(changes),
                           output=str(out / 'z8-core.main'))))

@@ -83,8 +83,8 @@
   },
   {
    "path": "docs/validation-z8-c311.md",
-   "bytes": 21228,
-   "sha256": "df955e85de79cb742d240a837306ef46cea7179e98bb2f2c0cfd28b89b1281b5"
+   "bytes": 21374,
+   "sha256": "5ead85f2a779e9eada503706bc0544f1239a2d4578e340ea95ad3d90066aba16"
   },
   {
    "path": "docs/validation.md",
@@ -153,8 +153,8 @@
   },
   {
    "path": "host/build_z8_core.py",
-   "bytes": 17373,
-   "sha256": "0571b473dc78e8fa747faf8e6a19a8343f484d4fd60a8f510addd0bdbf464b49"
+   "bytes": 17457,
+   "sha256": "6f5b5310efdbc5a935ba8576e98b5d04f07bd07b31fec49e5d6184b13c69b39b"
   },
   {
    "path": "host/build_z9_core.py",
@@ -688,8 +688,8 @@
   },
   {
    "path": "include/fenestra_native_menu.h",
-   "bytes": 4828,
-   "sha256": "776ba744de6e9b058b3ff449364110a6767cc95a51a8d314daa29c5a668c2bca"
+   "bytes": 5473,
+   "sha256": "5c2cfcbcda0d76b8a8ed455c0b0b2ed6e6a6e03033aa51a10ff17b2a247bae9f"
   },
   {
    "path": "include/fenestra_native_modules.h",
@@ -1093,8 +1093,8 @@
   },
   {
    "path": "src/native_apps.c",
-   "bytes": 14552,
-   "sha256": "81a77e008b1ccc7c5a82af3ea8a4b320d1d34e35ee529f44c78b01cde1c15253"
+   "bytes": 14786,
+   "sha256": "df4e46cc44e47806e0ea7ba8129057930e2a9223003bda5a334cd9d577dd5d22"
   },
   {
    "path": "src/native_call.c",
@@ -1148,8 +1148,8 @@
   },
   {
    "path": "src/native_menu.c",
-   "bytes": 9533,
-   "sha256": "660435fe555433f2180c841403bfb2d2436f560b8e63eba918449fed6f070eff"
+   "bytes": 9993,
+   "sha256": "d3c18e5375fa1adb79c409fd0f846de14aa5b7cf34a20fb50a84067fb09720ca"
   },
   {
    "path": "src/native_modules.c",
@@ -1318,8 +1318,8 @@
   },
   {
    "path": "src/platform/z8_c311/menu.c",
-   "bytes": 64477,
-   "sha256": "016803d1174e69983aac7544bb3fcf16c0620bbc239fecca2d99a6087592103c"
+   "bytes": 65076,
+   "sha256": "8687e7abfef3b3d1e78377f90cba95574b9784c85de63c178934fed02fa476a2"
   },
   {
    "path": "src/platform/z8_c311/menu_data.h",
@@ -1983,8 +1983,8 @@
   },
   {
    "path": "tests/test_z8_menu_first_open.py",
-   "bytes": 5339,
-   "sha256": "f2e9bbb87fa96ad5833b5f09be899ec91699006bfce84a979acead644f67a7c1"
+   "bytes": 5557,
+   "sha256": "9b72e4d45a39657c87f1da8809df7e9c2ceef64f128e65e6be376515d5bf3346"
   },
   {
    "path": "tests/test_z8_menu_profile_offline.py",

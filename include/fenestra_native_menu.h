@@ -43,6 +43,10 @@ typedef struct FxNativeRowProgram {
 typedef struct {
     const FxNativePage *page;const FxNativeRow *row;const FxNativeEvent *navigation;
     uint32_t terminal,back_event,select_events[4];uint64_t stay,back;
+    /* Records in `navigation` including the terminal record. Zero (the
+     * positional-initialiser default on older profiles) keeps the
+     * historical FX_NATIVE_EVENTS bound; C311 supplies 12. */
+    uint32_t navigation_events;
 } FxNativeMenuProfile;
 /* Link a row into an existing stock page. Preserve its original Back, Menu,
  * scrolling and conditional routes; only the four enter actions are replaced.
@@ -50,6 +54,11 @@ typedef struct {
 FxResult fx_native_menu_link(FxNativeEvent out[FX_NATIVE_EVENTS],const FxNativeEvent *source,
                              uint32_t terminal,const uint32_t select_events[4],
                              uintptr_t action,uint64_t next);
+/* Same contract, bounded by the profile's navigation record count (targets
+ * whose navigation table carries fewer than FX_NATIVE_EVENTS records). */
+FxResult fx_native_menu_link_bounded(FxNativeEvent out[FX_NATIVE_EVENTS],const FxNativeEvent *source,
+                             uint32_t terminal,const uint32_t select_events[4],
+                             uintptr_t action,uint64_t next,uint32_t events);
 typedef struct {
     uint32_t text,row,submenu,value;uintptr_t action;uint64_t next;
 } FxNativeEntry;
