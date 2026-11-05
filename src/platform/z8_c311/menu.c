@@ -934,6 +934,23 @@ static uint32_t manage_modules(void *p) {
 #endif /* !FX_Z8_HEADLESS menu callbacks */
 
 #ifndef FX_Z8_HEADLESS
+/* Z9-style front-loaded readiness check: everything timing-dependent (the
+ * SETUP descriptor fields, the stock row count, the text-bank roots) is
+ * validated BEFORE the State allocation, so a not-yet-ready boot retries
+ * without allocating (the z9 install performs its equivalent checks ahead
+ * of its allocate; construct_pages re-checks as defense in depth). */
+static int construct_ready(FxNativePage *sp) {
+    const FxNativeDescriptor *d=(const FxNativeDescriptor *)sp->descriptor;
+    if(!d || !d->header || !d->rows || !d->events)return 0;
+    if(!d->count || d->count>45u)return 0;
+    const uint8_t *fonts=*(const uint8_t *const *)(uintptr_t)UINT64_C(0xa02f2ac40);
+    const uintptr_t *attributes=*(const uintptr_t *const *)(uintptr_t)UINT64_C(0xa02f2ac50);
+    if(!fonts || !attributes)return 0;
+    for(uint32_t i=0u;i<LANGUAGES;++i)
+        if(attributes[i]<UINT64_C(0x40000000) || attributes[i]>=UINT64_C(0x4e100000))return 0;
+    return 1;
+}
+
 /* Enabled-install construction (the z9 install pattern with C311 values):
  * build the Fenestra/WonderLantern pages and the auto/guard child menus
  * from the stock SETUP page, link the two SETUP entry rows, grow the text
@@ -1038,6 +1055,10 @@ static void install(void) {
         if (e && e->magic == MAGIC && e->installed)
             return;
     }
+#ifndef FX_Z8_HEADLESS
+    if (!construct_ready(sp))
+        return;
+#endif
     State *s = allocate((uint32_t)sizeof(*s));
     if (!s)
         return;

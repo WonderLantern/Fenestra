@@ -83,8 +83,8 @@
     },
     {
       "path": "docs/validation-z8-c311.md",
-      "bytes": 25006,
-      "sha256": "4463eb3bc878934915f7f0fb5c2b9b4d4d36346aaca12216513b79a4a1c2c6df"
+      "bytes": 25751,
+      "sha256": "6f43e53cb58f34c6a7c2f2e6915a58f3f37e2d7e351ff8c56e5a9f31dc676dfc"
     },
     {
       "path": "docs/validation.md",
@@ -1243,8 +1243,8 @@
     },
     {
       "path": "src/native_ui_routes.c",
-      "bytes": 5381,
-      "sha256": "37bfaef2f15a4913260c64cc0c6345d384577455ea9d8bb2ef0a3ad005cef51e"
+      "bytes": 5818,
+      "sha256": "0baa96dc6617b00cbb92735edf661e3259c86a52eb50be34f04aa0a9db2f675b"
     },
     {
       "path": "src/native_vg_call.S",
@@ -1318,8 +1318,8 @@
     },
     {
       "path": "src/platform/z8_c311/menu.c",
-      "bytes": 73034,
-      "sha256": "d4cf85d4262eb962a22b897453b9d4d5ee0d94af90c5348109f4def7c81133d8"
+      "bytes": 74071,
+      "sha256": "9d9e764a0a04b964b2cc3d62b936218c7635e7b72e4e32376d426b5b4c9d5d57"
     },
     {
       "path": "src/platform/z8_c311/menu_construct.c",
@@ -1988,8 +1988,8 @@
     },
     {
       "path": "tests/test_z8_menu_construct.py",
-      "sha256": "b84be3d2677b665101427d8114850cb266441531c67ee0419cd92f53f138531a",
-      "bytes": 3388
+      "sha256": "0c1cfe7b54240264584aaa7194b35506c75d935b7e8edd86138c463a44d1cad0",
+      "bytes": 4635
     },
     {
       "path": "tests/test_z8_menu_first_open.py",

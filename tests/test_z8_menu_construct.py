@@ -56,6 +56,17 @@ class Z8MenuConstructSources(unittest.TestCase):
         self.assertNotIn('&s->rows[44]', text)
         self.assertEqual(text.count('&s->rows[2]'), 3)
 
+    def test_install_front_checks_before_allocation(self):
+        """Z9-style readiness check: the enabled install validates the
+        timing-dependent world (descriptor fields, stock count, text roots)
+        BEFORE allocating the State, so a not-yet-ready boot cannot leak."""
+        text = MENU_C.read_text()
+        self.assertIn('static int construct_ready(FxNativePage *sp)', text)
+        enabled = text.split('#ifndef FX_Z8_HEADLESS\n    construct_pages')[0]
+        self.assertIn('if (!construct_ready(sp))\n        return;', enabled[-2000:])
+        # the check call must precede the State allocation
+        self.assertLess(enabled.rfind('construct_ready(sp))'), enabled.rfind('State *s = allocate'))
+
     def test_shared_routes_use_bounded_link(self):
         """M-3: the shared route rewriter must consume the profile's
         navigation record count (C311 tables are 13 records; the legacy

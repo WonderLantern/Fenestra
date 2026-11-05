@@ -249,6 +249,17 @@ stream-fed window, qtest-primary evidence via `fx_z8_menu_metadata` v5;
   legs are the counterfactual: they send no keys and reach the same
   activation state), so menu-key-DRIVEN activation is NOT isolated by
   this evidence; an AUTO-off card variant is the follow-up input.
+  UPDATE (attribution leg, artifact `menu-e2e-att-2`): the AUTO-off card
+  variant (scripts/z8_card_auto_off.py clears FX_STARTUP_AUTO, desired
+  3->2 with recomputed CRC) proves the attribution gap is real and the
+  method works — pre-key state is activation 0/modules 0, and the key
+  sequence produces NO activation. Menu-key-driven activation is
+  additionally blocked by an input-protocol gap: vision-verified frames
+  show the MENU key opens the photo-shooting tab and the four-way keys
+  do not move the category tab strip (LEFT eventually exits the menu);
+  reaching the SET UP tab requires a command-dial rotation record,
+  which z8-qemu's z8_navigation_input BINDINGS does not carry. The dial
+  record format is the follow-up input.
 - negative (default image): the headless State installs (early publish)
   with construction dormant (no owned core page, no entry-row rewrite) —
   baseline equivalence, plus the full RE0 regression re-run
