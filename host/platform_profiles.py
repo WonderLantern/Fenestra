@@ -42,9 +42,10 @@ PROFILES={
    'camera.text.count':(0xa0281cd5c,4),'camera.text.pool-root':(0xa02f2ac38,8),
    'camera.text.font-root':(0xa02f2ac40,8),'camera.text.offsets-root':(0xa02f2ac48,8),
    'camera.text.attributes-root':(0xa02f2ac50,8),
-   # SETUP-family navigation event table: 12 records of
-   # {event, callback, condition, next}, next page id 0x68c.
-   'camera.menu.navigation':(0x43bf0680,12*32)},
+   # SETUP-family navigation event table: 13 records of
+   # {event, callback, condition, next} = 12 routes + the
+   # {0x3bb,0,0,0x68c} terminator; stay next page id 0x68c.
+   'camera.menu.navigation':(0x43bf0680,13*32)},
   # SYSCTL lifecycle: event table + dispatcher entry pinned against the original
   # image. Dispatcher FUN_40d60ec8 reads the event id at message+0x20 (ldrsw at
   # entry+0x18); its 16-byte entry window is four stack-push STPs (the same

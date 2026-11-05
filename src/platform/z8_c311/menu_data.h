@@ -3,10 +3,12 @@
 #include "fenestra.h"
 #define FX_Z8_MENU_ROWS 16u
 /* Original ordinary menu navigation for the SETUP page family. Pinned
- * against the C311 image at 0x43bf0680: 12 records (not the Zf/Z9 single
- * 18-event table); callbacks 0x403b1b74..0x403b1bb0 + 0x4054eae4/0x4054ea5c,
- * conditions 0x403b1c5c/0x403b1c7c, next page id 0x68c. The old 0x43014bb8
- * value was a Z9 reference that reads as high-entropy data on C311. */
+ * against the C311 image at 0x43bf0680: 13 records = 12 routes + the
+ * {0x3bb,0,0,0x68c} terminator (not the Zf/Z9 single 18-event table);
+ * route callbacks 0x403b1b74..0x403b1bb0 + 0x4054eae4/0x4054ea5c,
+ * conditions 0x403b1c5c (always-false: stock-disabled) / 0x403b1c7c
+ * (settings-gated), stay next page id 0x68c. The old 0x43014bb8 value
+ * was a Z9 reference that reads as high-entropy data on C311. */
 #define FX_Z8_MENU_NAVIGATION UINT64_C(0x43bf0680)
 typedef struct {uint32_t word[11];} FxZ8MenuRow;
 typedef struct {uint64_t event,callback,condition,next;} FxZ8MenuEvent;
@@ -24,7 +26,7 @@ typedef struct {
 typedef struct {
     FxZ8MenuPage page;FxZ8MenuDescriptor descriptor;uint8_t header[272];
     FxZ8MenuRow rows[FX_Z8_MENU_ROWS];uintptr_t events[FX_Z8_MENU_ROWS],callbacks[5];
-    FxZ8MenuEvent handlers[FX_Z8_MENU_ROWS][12];
+    FxZ8MenuEvent handlers[FX_Z8_MENU_ROWS][13];
 } FxZ8OwnedMenu;
 /* Constructs unpublished RAM metadata using the exact original C311 Setup
  * and navigation records. No allocation, root publication, label fabrication,

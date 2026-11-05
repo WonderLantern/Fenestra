@@ -45,7 +45,9 @@ class Z8MenuProfileOffline(unittest.TestCase):
         tables = PROFILES['z8-c311']['tables']
         addr, size = tables['camera.menu.navigation']
         self.assertEqual(addr, 0x43bf0680)
-        self.assertEqual(size, 12 * 32)
+        # 13 records = 12 routes + the {0x3bb,0,0,0x68c} terminator; the
+        # quintuple's terminal id and navigation_events bound both consume it.
+        self.assertEqual(size, 13 * 32)
         text = MENU_DATA.read_text()
         self.assertIn('#define FX_Z8_MENU_NAVIGATION UINT64_C(0x43bf0680)', text)
         self.assertNotRegex(text, r'#define FX_Z8_MENU_NAVIGATION UINT64_C\(0x43014bb8\)')

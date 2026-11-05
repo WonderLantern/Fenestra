@@ -8,12 +8,14 @@ fx_z8_menu_construct is still a dormant declaration, so this file pins the
 geometry contracts the future fixture will build on.
 
 Contracts:
-- FxZ8OwnedMenu carries 16 rows x 12 navigation handlers, matching the
-  12-record SETUP-family table pinned at 0x43bf0680 (profile
-  'camera.menu.navigation').
+- FxZ8OwnedMenu carries 16 rows x 13 navigation handlers, matching the
+  13-record SETUP-family table pinned at 0x43bf0680 (12 routes + the
+  0x3bb terminator; profile 'camera.menu.navigation').
 - The pinned navigation table's record shape is {event, callback,
   condition, next} with a shared next page id.
 - No Z9 navigation/table constants remain in the platform sources.
+- Draw completion (rectangle/dispatch/empty), the menu event quintuple and
+  the compositor submit tail are pinned to C311 values (validation 4b/4c).
 """
 import re
 import sys
@@ -45,9 +47,10 @@ class Z8MenuFirstOpenGeometry(unittest.TestCase):
                          'handler slots must match the pinned navigation table')
 
     def test_pinned_table_record_shape(self):
-        # The 12-record table: each record is {u64 event, callback,
-        # condition, next}; all records share the next page id 0x68c and
-        # route through the 0x403b1b74..0x4054ea5c callback family.
+        # The 13-record table: each record is {u64 event, callback,
+        # condition, next}; routes share the next page id 0x68c and the
+        # 0x403b1b74..0x4054ea5c callback family; record 12 is the
+        # terminator {0x3bb, 0, 0, 0x68c}.
         firmware = None
         for candidate in (ROOT / 'build' / 'verify-p1' / 'eg2070_0311b0.bi',
                           ROOT / 'build' / 'verify-p1' / 'eg2070-main-nocrc.bi'):
@@ -62,14 +65,16 @@ class Z8MenuFirstOpenGeometry(unittest.TestCase):
         import struct
         records = [struct.unpack_from('<4Q', data, addr - base + 32 * i)
                    for i in range(size // 32)]
-        self.assertEqual(len(records), 12)
+        self.assertEqual(len(records), 13)
         self.assertEqual(records[0][0], 0x27e, 'first event must be SETUP (638)')
+        self.assertEqual(records[12], (0x3bb, 0, 0, 0x68c),
+                         'record 12 must be the terminator')
         callbacks = {r[1] for r in records}
         conditions = {r[2] for r in records}
         self.assertEqual(callbacks, {0x403b1b74, 0x403b1b8c, 0x403b1ba4,
                                      0x403b1ba8, 0x403b1bb0, 0x4054eae4,
-                                     0x4054ea5c})
-        self.assertEqual(conditions, {0x403b1c5c, 0x403b1c7c})
+                                     0x4054ea5c, 0})
+        self.assertEqual(conditions, {0x403b1c5c, 0x403b1c7c, 0})
         for event, callback, condition, nxt in records:
             self.assertEqual(nxt, 0x68c)
 
@@ -119,11 +124,54 @@ class Z8RenderProfileContracts(unittest.TestCase):
         self.assertIn('0x40d2bf60', text)
         self.assertNotIn('0xa032dcb98', text)
 
-    def test_draw_degradation_is_explicit(self):
-        """rectangle/modal_id unpinned: draw_pair must reject and degrade."""
+    def test_draw_profile_fully_pinned(self):
+        """rectangle/dispatch/empty pinned from the stock pair site
+        FUN_4039e848; modal_id stays 0 (non-modal pages; documented
+        boundary)."""
         text = self._source()
-        self.assertIn('FxNativeMenuDrawProfile draw={0x403f1940u,0x40325a80u,0x403f0db8u,0u,0x40c7bea4u,0x40325b60u,0u,',
+        self.assertIn('FxNativeMenuDrawProfile draw={0x403f1940u,0x403f6388u,0x403f0db8u,0x40340d64u,0x40c7be74u,0x40325b60u,0u,',
                       text)
+
+
+class Z8DrawCompletionContracts(unittest.TestCase):
+    """Draw-completion pins: quintuple, submit tail, restore semantics."""
+
+    MENU_C = ROOT / 'src' / 'platform' / 'z8_c311' / 'menu.c'
+    STUBS_C = ROOT / 'src' / 'platform' / 'z8_c311' / 'v0_stubs.c'
+
+    def test_menu_quintuple_is_c311(self):
+        text = (self.MENU_C).read_text()
+        quint = '0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu'
+        self.assertEqual(text.count(quint), 3,
+                         'all three FxNativeMenuProfile literals must carry the C311 quintuple')
+        # The old Z9 quintuple combo must be gone; the individual ids
+        # (0x297/0x2b1/0x2c0/0x298) legitimately appear in the pinned C311
+        # ui_editor_events table, so only the combination is stale.
+        self.assertNotIn('0x3cau,0x297u,{0x298u', text)
+        self.assertNotIn('},0x6b8u', text)
+        self.assertNotIn('0x6b8u,', text)
+
+    def test_navigation_events_bound_is_13(self):
+        text = self.MENU_C.read_text()
+        self.assertEqual(text.count('0u},0x68cu,FENESTRA,13u}'), 1)
+        self.assertEqual(text.count('},0x68cu,'), 3)
+        self.assertNotIn('12u}', text)
+
+    def test_refresh_tail_submit_is_c311(self):
+        text = self.MENU_C.read_text()
+        self.assertEqual(text.count('FN(0x403efed8'), 2,
+                         'both refresh tails (module refresh + refresh_core) must submit via FUN_403efed8')
+        self.assertEqual(text.count('UINT64_C(0x403efe74)'), 2)
+        self.assertNotIn('FN(0x403eb0dc', text)
+        self.assertNotIn('UINT64_C(0x403eb078', text)
+
+    def test_v0_restore_stubs_return_empty(self):
+        """Backdrop/menu restore stubs must return FX_EMPTY (nothing to
+        restore) so the enabled image's draw path proceeds; FX_CAPABILITY
+        would fail fx_native_menu_draw for every non-modal page."""
+        text = self.STUBS_C.read_text()
+        self.assertIn('FxResult fx_native_menu_restore(const FxNativePage *page){(void)page;return FX_EMPTY;}', text)
+        self.assertIn('FxResult fx_native_backdrop_restore(const FxNativePage *page){(void)page;return FX_EMPTY;}', text)
 
 
 if __name__ == '__main__':

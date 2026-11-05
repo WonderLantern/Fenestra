@@ -9,8 +9,12 @@
 /* The generated build identity enters the core image; verify_build_identity
  * independently checks every linked copy. */
 const unsigned char *fx_z8_debug_identity_anchor(void){return fx_z8_debug_build;}
-FxResult fx_native_menu_restore(const FxNativePage *page){(void)page;return FX_CAPABILITY;}
-FxResult fx_native_backdrop_restore(const FxNativePage *page){(void)page;return FX_CAPABILITY;}
+FxResult fx_native_menu_restore(const FxNativePage *page){(void)page;return FX_EMPTY;}
+/* C311 v0: no backdrop capture exists, so there is never anything to
+ * restore. FX_EMPTY lets the enabled image's draw path proceed (the
+ * stock draw_pair treats "nothing restored" as FX_EMPTY); a capability
+ * failure here would fail every non-modal repaint. */
+FxResult fx_native_backdrop_restore(const FxNativePage *page){(void)page;return FX_EMPTY;}
 
 /* v0 headless capability stubs: display, scene, Linux bridge and PTP are
  * unavailable. Callers (panic pages, GUI refresh, the Linux bridge) either

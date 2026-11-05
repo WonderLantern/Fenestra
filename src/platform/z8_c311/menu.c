@@ -324,22 +324,27 @@ FxResult fx_native_ui_flush_owner(FxPlatformOwner *owner) {
             }
         }
         if(repaint && painted) {
-            /* C311 draw primitives: dirty FUN_403f1940 (colour fields +
-             * dirty bit +0x3c), dispatch FUN_40325a80 (container
-             * dispatcher: iterates children, calls widget+0x48, clears the
-             * dirty bit), device FUN_403f0db8 (context by id), empty
-             * FUN_40c7bea4 (zero-rect test). The rectangle clip-setup
-             * primitive and the modal body id are not yet pinned:
-             * draw_pair rejects a null rectangle, so the repaint degrades
-             * to repaint=0 until they land (documented boundary). */
-            FxNativeMenuDrawProfile draw={0x403f1940u,0x40325a80u,0x403f0db8u,0u,0x40c7bea4u,0x40325b60u,0u,(uintptr_t)fx_native_backdrop_restore};
+            /* C311 draw primitives, pinned from the stock pair site
+             * FUN_4039e848: dirty FUN_403f1940, pair dispatch FUN_403f6388
+             * (locks 0xa032bbd68, wraps raw dispatcher FUN_403262a0),
+             * device FUN_403f0db8 (context by id), rectangle clip-setup
+             * FUN_40340d64 (writes clip[4] int16 from surface+0x9c/+0x1f4),
+             * empty FUN_40c7be74 (degenerate-rect test). The modal body id
+             * is not pinned: modal pages are outside the constructed-page
+             * set, so modal_id stays 0 (the modal draw branch rejects with
+             * FX_ARGUMENT if ever reached; documented boundary). */
+            FxNativeMenuDrawProfile draw={0x403f1940u,0x403f6388u,0x403f0db8u,0x40340d64u,0x40c7be74u,0x40325b60u,0u,(uintptr_t)fx_native_backdrop_restore};
             if(changed&FX_NATIVE_UI_STRUCTURE)draw.restore=(uintptr_t)fx_native_menu_restore;
             if(fx_native_ui_trace(ui,9u,0u,fx_native_menu_draw(&draw,page))!=FX_OK)repaint=0;
         }
     }
     uint32_t revision=repaint?ui->revision:0u;
-    if(repaint && painted)FN(0x403eb0dc,void (*)(void *,uint32_t,uint32_t))
-        ((void *)(uintptr_t)UINT64_C(0x403eb078),3u,7u);
+    /* C311 compositor submit, pinned from the stock UP/DOWN handler tail
+     * (FUN_403b1424/FUN_403b1354 -> FUN_403efed8(FUN_403efe74,3,7)); the
+     * old 0x403eb0dc/0x403eb078 pair were Z9 references (0x403eb0dc is
+     * mid-function on C311). */
+    if(repaint && painted)FN(0x403efed8,void (*)(void *,uint32_t,uint32_t))
+        ((void *)(uintptr_t)UINT64_C(0x403efe74),3u,7u);
     if(repaint)(void)fx_native_ui_trace(ui,10u,0u,fx_native_ui_presented(ui,revision));
     FN(0x40d2bf60,void (*)(void *))(mutex);
     return repaint?FX_OK:refreshed==FX_OK?FX_BUSY:refreshed;
@@ -412,16 +417,15 @@ __attribute__((unused)) static void refresh_core(State *s) {
     int repaint=FN(0x403dbdb4,void *(*)(void))()==&s->core.page;
     if(repaint) {
         (void)page_opened(&s->core.page);
-        void *content=(void *)s->core.page.content;
         const FxNativeDescriptor *d=(const FxNativeDescriptor *)s->core.page.descriptor;
         const FxNativeRow *rows=(const FxNativeRow *)d->rows;
         for(uint32_t i=0;i<d->count;++i) {
-            void *row=FN(0x40325fac,void *(*)(uint32_t,void *))(rows[i].word[6],content);
+            void *row=FN(0x40325b60,void *(*)(uint32_t,void *))(rows[i].word[6],fx_native_page_rows(&s->core.page));
             if(!row)continue;
-            FN(0x403ec980,void (*)(void *,uint32_t))(row,1u);
+            FN(0x403f6228,void (*)(void *,uint32_t))(row,1u);
             if(rows[i].word[6]==0x7ff2u || rows[i].word[6]==0x7ff5u || rows[i].word[6]==0x7ff6u) {
                 void *value=fx_z8_child_lookup(row,0x4ba5u);
-                if(value)FN(0x403ec980,void (*)(void *,uint32_t))(value,1u);
+                if(value)FN(0x403f6228,void (*)(void *,uint32_t))(value,1u);
             }
         }
         /* Like module UI, use Nikon's dispatcher to bind each original
@@ -433,8 +437,8 @@ __attribute__((unused)) static void refresh_core(State *s) {
             (void)FN(0x40325a80,uint32_t (*)(void *,void *,void *))(canvases[i],0,0);
         }
     }
-    if(repaint)FN(0x403eb0dc,void (*)(void *,uint32_t,uint32_t))
-        ((void *)(uintptr_t)UINT64_C(0x403eb078),3u,7u);
+    if(repaint)FN(0x403efed8,void (*)(void *,uint32_t,uint32_t))
+        ((void *)(uintptr_t)UINT64_C(0x403efe74),3u,7u);
     FN(0x40d2bf60,void (*)(void *))(mutex);
 }
 static FxNativeUi *module_ui(uint32_t index,int create) {
@@ -482,10 +486,12 @@ static FxNativeUi *instance_ui(State *s,uint32_t index,const FxNativePage *paren
     FxNativeUi *u=allocate((uint32_t)sizeof(*u));if(!u)return 0;memset(u,0,sizeof(*u));
     fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_REQUESTED);
     FxNativeMenuProfile profile={parent,&s->rows[44],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-        /* terminal/back/select/stay ids are still Z9 references pending C311
- * pinning; the navigation_events bound (12) keeps the shared scans inside
- * the pinned 0x43bf0680 table. */
-        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,parent->identity>>16,12u};
+        /* C311 menu quintuple, pinned from the 0x43bf0680 table: terminal 0x3bb
+ * (terminator record), back 0x27f (cb 0x403b1bb0 -> family root),
+ * selects {0x286,0x28b,0x2ae} = the activation trio (151 child-table
+ * records route them to real sub-pages; fourth slot unused), stay
+ * 0x68c; the 13-record bound covers the terminator. */
+        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,parent->identity>>16,13u};
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
     uint32_t controls=0u,primary_pages=FX_NATIVE_UI_PAGES;int visible=0;
     if(fx_ui_presence(owner,&controls,&visible)==FX_OK && controls>FX_UI_CONTROLS)primary_pages=2u;
@@ -525,10 +531,12 @@ static FxNativePage *apps_page(State *s,uint32_t page) {
     if(!s->apps) {
         FxNativeApps *apps=&s->apps_storage;
     FxNativeMenuProfile profile={stock(2u,SETUP),&s->rows[44],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-        /* terminal/back/select/stay ids are still Z9 references pending C311
- * pinning; the navigation_events bound (12) keeps the shared scans inside
- * the pinned 0x43bf0680 table. */
-        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,SETUP,12u};
+        /* C311 menu quintuple, pinned from the 0x43bf0680 table: terminal 0x3bb
+ * (terminator record), back 0x27f (cb 0x403b1bb0 -> family root),
+ * selects {0x286,0x28b,0x2ae} = the activation trio (151 child-table
+ * records route them to real sub-pages; fourth slot unused), stay
+ * 0x68c; the 13-record bound covers the terminator. */
+        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,SETUP,13u};
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_apps_init(apps,&profile,callbacks,s,allocate,apps_count,apps_entry,apps_action,
             TEXT+1u,TEXT+21u,TEXT+22u,TEXT+5u,TEXT+4u,TEXT+24u,TEXT+25u)!=FX_OK)return 0;
@@ -896,10 +904,12 @@ static uint32_t manage_modules(void *p) {
         FxNativeModules *m=allocate((uint32_t)sizeof(*m));if(!m)return 0u;
         FxNativeMenuProfile profile={&s->core.page,&s->rows[44],
             (const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-            /* terminal/back/select/stay ids are still Z9 references pending C311
- * pinning; the navigation_events bound (12) keeps the shared scans inside
- * the pinned 0x43bf0680 table. */
-        0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,FENESTRA,12u};
+            /* C311 menu quintuple, pinned from the 0x43bf0680 table: terminal 0x3bb
+ * (terminator record), back 0x27f (cb 0x403b1bb0 -> family root),
+ * selects {0x286,0x28b,0x2ae} = the activation trio (151 child-table
+ * records route them to real sub-pages; fourth slot unused), stay
+ * 0x68c; the 13-record bound covers the terminator. */
+        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,FENESTRA,13u};
         uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
             (uintptr_t)noop,(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_modules_init(m,fx_platform_target(),&profile,allocate,
