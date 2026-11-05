@@ -33,18 +33,20 @@ MENU_DATA = ROOT / 'src' / 'platform' / 'z8_c311' / 'menu_data.h'
 def _owned_menu_dimensions():
     text = MENU_DATA.read_text()
     rows = int(re.search(r'#define FX_Z8_MENU_ROWS (\d+)u', text).group(1))
-    handlers = re.search(r'FxZ8MenuEvent handlers\[FX_Z8_MENU_ROWS\]\[(\d+)\];', text)
-    return rows, int(handlers.group(1))
+    handlers = re.search(r'FxZ8MenuEvent handlers\[FX_NATIVE_ROWS\]\[FX_NATIVE_EVENTS\];', text)
+    return rows, handlers is not None
 
 
 class Z8MenuFirstOpenGeometry(unittest.TestCase):
     def test_owned_menu_dimensions_match_pinned_table(self):
-        rows, handlers = _owned_menu_dimensions()
+        rows, shared_layout = _owned_menu_dimensions()
         addr, size = PROFILES['z8-c311']['tables']['camera.menu.navigation']
         records = size // 32
         self.assertEqual(rows, 16)
-        self.assertEqual(handlers, records,
-                         'handler slots must match the pinned navigation table')
+        self.assertTrue(shared_layout,
+                        'handler slots must use the shared menu layout '
+                        '(the C311 table fills 13 of the 18 slots)')
+        self.assertLessEqual(records, 18)
 
     def test_pinned_table_record_shape(self):
         # The 13-record table: each record is {u64 event, callback,

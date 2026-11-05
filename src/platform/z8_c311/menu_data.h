@@ -1,6 +1,7 @@
 #ifndef FX_Z8_C311_MENU_DATA_H
 #define FX_Z8_C311_MENU_DATA_H
 #include "fenestra.h"
+#include "fenestra_native_menu.h"
 #define FX_Z8_MENU_ROWS 16u
 /* Original ordinary menu navigation for the SETUP page family. Pinned
  * against the C311 image at 0x43bf0680: 13 records = 12 routes + the
@@ -24,9 +25,13 @@ typedef struct {
     uint32_t text_id,row_id,submenu,reserved;uintptr_t action;uint64_t next;
 } FxZ8MenuEntry;
 typedef struct {
-    FxZ8MenuPage page;FxZ8MenuDescriptor descriptor;uint8_t header[272];
-    FxZ8MenuRow rows[FX_Z8_MENU_ROWS];uintptr_t events[FX_Z8_MENU_ROWS],callbacks[5];
-    FxZ8MenuEvent handlers[FX_Z8_MENU_ROWS][13];
+    /* Layout-compatible prefix of the shared FxNativeMenu (asserted in
+     * menu_construct.c) so fx_native_menu_build can construct in place.
+     * The shared row/event slot counts are part of that layout; the C311
+     * table only fills 13 of the 18 handler slots. */
+    FxNativePage page;FxNativeDescriptor descriptor;uint8_t header[340];
+    FxNativeRow rows[FX_NATIVE_ROWS];uintptr_t events[FX_NATIVE_ROWS],callbacks[5];
+    FxZ8MenuEvent handlers[FX_NATIVE_ROWS][FX_NATIVE_EVENTS];
 } FxZ8OwnedMenu;
 /* Constructs unpublished RAM metadata using the exact original C311 Setup
  * and navigation records. No allocation, root publication, label fabrication,

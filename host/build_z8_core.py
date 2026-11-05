@@ -57,7 +57,7 @@ TARGET = 'z8-c311'
 # Z9 reference values and their exercise status are documented in
 # docs/validation-z8-c311.md (boundaries).
 PLATFORM = [f'src/platform/z8_c311/{s}' for s in (
-    'menu.c', 'services.c', 'task.c', 'card.c', 'module_stage.c', 'module_session.c',
+    'menu.c', 'menu_construct.c', 'services.c', 'task.c', 'card.c', 'module_stage.c', 'module_session.c',
     'module_worker.c', 'address_space.c', 'exec_context.c', 'ui_dispatch_profile.c',
     'lifecycle.c',
     'startup_files.c', 'rtos.c', 'private_call.S', 'user_call.S', 'v0_stubs.c', 'ptp_stub.c', 'system_trampoline.S',
@@ -85,7 +85,7 @@ COLD = {'src/platform.c', 'src/binding_store.c', 'src/native_ui.c', 'src/native_
 NAMES = COMMON + PLATFORM
 
 
-def build(firmware, output):
+def build(firmware, output, menu_enabled=False):
     profile, original = load(TARGET, firmware, require_condition=False)
     out = Path(output).resolve()
     if not out.is_relative_to(ROOT / 'build') or out.exists():
@@ -208,7 +208,7 @@ def build(firmware, output):
                  '-mgeneral-regs-only', '-mstrict-align', '-fno-stack-protector',
                  '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-ffunction-sections',
                  '-fdata-sections', '-DFX_FREESTANDING=1', '-DFX_PLATFORM_PROFILE=1',
-                 '-DFX_NATIVE_TASKS=1', '-DFX_Z8_HEADLESS=1', '-I', 'include', '-I', str(out / 'bindings'), '-I', str(out)]
+                 '-DFX_NATIVE_TASKS=1', *([] if menu_enabled else ['-DFX_Z8_HEADLESS=1']), '-I', 'include', '-I', str(out / 'bindings'), '-I', str(out)]
         if name.endswith('.S'):
             flags = ['--target=aarch64-none-elf', '-I', 'include', '-I', str(out)]
         dep = obj.with_suffix('.d')
@@ -287,7 +287,7 @@ def build(firmware, output):
     (out / 'core-report.json').write_text(json.dumps(dict(
         target=TARGET, sources=len(NAMES), core_bytes=len(extension),
         hooks=changes, hook_count=len(changes),
-        configuration='v0: UI-loop + sysctl + native-menu + font-request hooks; '
+        configuration=('menu-enabled: ' if menu_enabled else 'v0: ') + 'UI-loop + sysctl + native-menu + font-request hooks; '
                       'dormant until platform state initialises; render rectangle/modal, '
                       'font fallback, display, ptp/linux/usb unavailable',
         ui_dispatch=verify_ui(TARGET, original)), indent=1) + '\n')
@@ -299,5 +299,8 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--firmware', required=True)
     p.add_argument('--output-dir', required=True)
+    p.add_argument('--menu-enabled', action='store_true',
+                   help='build the menu-enabled image (no FX_Z8_HEADLESS: install-time '
+                        'menu construction + UI-pump loader; default stays v0 headless)')
     a = p.parse_args()
-    build(a.firmware, a.output_dir)
+    build(a.firmware, a.output_dir, a.menu_enabled)

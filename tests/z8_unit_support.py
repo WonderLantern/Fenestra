@@ -33,7 +33,7 @@ def find_tools():
     return clang, lld, qemu
 
 
-def build(workdir, fixture, platform_sources, name):
+def build(workdir, fixture, platform_sources, name, ld='tests/z8_unit_fixture.ld'):
     clang, lld, _ = find_tools()
     objects = []
     sources = ['tests/z8_unit_boot.S', fixture, *platform_sources, *C_SOURCES]
@@ -44,7 +44,7 @@ def build(workdir, fixture, platform_sources, name):
         subprocess.run(command, cwd=ROOT, check=True, timeout=120)
         objects.append(str(obj))
     elf = workdir / (name + '.elf')
-    subprocess.run([lld, '-m', 'aarch64elf', '-T', 'tests/z8_unit_fixture.ld',
+    subprocess.run([lld, '-m', 'aarch64elf', '-T', ld,
                     '--gc-sections', *objects, '-o', str(elf)],
                    cwd=ROOT, check=True, timeout=120)
     return elf
@@ -63,7 +63,7 @@ def run(qemu, workdir, elf):
     return result.returncode, result.stdout + result.stderr
 
 
-def build_and_run(fixture, platform_sources, pass_line):
+def build_and_run(fixture, platform_sources, pass_line, ld='tests/z8_unit_fixture.ld'):
     """Returns None (skipped) or (returncode, output, passed)."""
     tools = find_tools()
     if tools is None:
@@ -71,6 +71,6 @@ def build_and_run(fixture, platform_sources, pass_line):
     clang, lld, qemu = tools
     with tempfile.TemporaryDirectory(prefix='z8-unit-') as tmp:
         workdir = Path(tmp)
-        elf = build(workdir, fixture, platform_sources, 'unit')
+        elf = build(workdir, fixture, platform_sources, 'unit', ld=ld)
         rc, output = run(qemu, workdir, elf)
         return rc, output, (rc == 0 and pass_line in output)

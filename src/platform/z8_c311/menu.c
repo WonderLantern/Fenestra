@@ -65,6 +65,8 @@ typedef struct {
     _Atomic(FxNativeModules *) management;
     _Atomic uint32_t management_accounted,ui_vector_accounted;
     _Atomic uint32_t stack_accounted,panic_accounted;
+    /* Enabled-image loader tick bookkeeping (domain tick drives refresh). */
+    uint32_t last_tick_phase,last_tick_desired,last_tick_error;
     _Atomic(FxModuleBus *) bus;
     FxHookRegistry hooks;
     FxNativeMappingRegistry mappings;
@@ -115,7 +117,6 @@ static int text_ensure(State *s,uint32_t required) {
     atomic_store_explicit(&s->text_bank,bank,memory_order_seq_cst);
     fx_retained_account(fx_shared_text_account(&s->accounting),&bank->accounted,bank->bytes);return 1;
 }
-#ifdef FX_Z8_HEADLESS
 extern const FxStartupFileProfile fx_z8_startup_file_profile;
 /* Z9-style descriptor anchoring through the Z8 page-roots table.
  * Runtime values (verified in emulation): group 2 root = 0xa028f4cc0,
@@ -135,7 +136,6 @@ static State *state(void) {
     State *s = (State *)a;
     return s->magic == MAGIC && s->installed ? s : 0;
 }
-#endif /* FX_Z8_HEADLESS state */
 static void *allocate(uint32_t n) { return FN(0x40d2c408, void *(*)(uint32_t, uint32_t))(n, 0u); }
 FxPtp *fx_z8_menu_ptp(void) {State *s=state();return s?&s->ptp:0;}
 FxRtos *fx_z8_menu_rtos(void) {State *s=state();return s?&s->rtos:0;}
@@ -238,6 +238,9 @@ static const FxNativeTitleProfile ui_title={0x403dbdb4u,0x40325facu,0x4032be38u,
 static const FxNativeDialogStyle ui_dialog={
     (const FxNativeDescriptor *)(uintptr_t)UINT64_C(0xa028be460),
     (const FxNativeRow *)(uintptr_t)UINT64_C(0x42e9b81c),340u,2u};
+static void show_panic(State *s);
+static void install(void);
+static void refresh_core(State *s);
 #ifdef FX_Z8_HEADLESS
 void fx_z8_headless_install(void);
 FxNativeUiDispatch *fx_native_ui_dispatch_domain(void){
@@ -253,7 +256,36 @@ FxNativeUiDispatch *fx_native_ui_dispatch_domain(void){
     return s?&s->ui_dispatch:0;
 }
 #else
-FxNativeUiDispatch *fx_native_ui_dispatch_domain(void){State *s=state();return s?&s->ui_dispatch:0;}
+/* Enabled image: install is event-driven (startup-complete); every UI
+ * dispatch tick drives the startup service, panic surfaces and the
+ * refresh-on-change that the z9 loader task performed (C311 has no
+ * pinned task.create, so the UI pump owns the loader leg). */
+FxNativeUiDispatch *fx_native_ui_dispatch_domain(void){
+    State *s=state();
+    if(s){
+        fx_startup_service_tick(&s->startup);
+        fx_z8_ptp_poll();
+        uint32_t count=atomic_load_explicit(&s->modules,memory_order_acquire);
+        for(uint32_t i=0;i<count;++i)
+            if(s->workers[i]) {
+                if(atomic_load(&s->shutdown))fx_z8_worker_shutdown(s->workers[i]);
+                if(fx_z8_worker_phase(s->workers[i])==FX_Z8_WORKER_PANIC)
+                    fx_native_module_fault(&s->services[i]->platform,(FxResult)fx_z8_worker_error(s->workers[i]));
+            }
+        if(atomic_load(&s->startup.phase)==FX_STARTUP_FAULT) {
+            uint32_t error=atomic_load(&s->error);
+            fx_native_module_fault(0,(FxResult)(error?error:atomic_load(&s->startup.error)));
+        }
+        show_panic(s);
+        uint32_t phase=atomic_load(&s->startup.phase),desired=atomic_load(&s->startup.desired),
+            error=atomic_load(&s->startup.error);
+        if(!atomic_load(&s->startup.shutdown) &&
+           (phase!=s->last_tick_phase || desired!=s->last_tick_desired || error!=s->last_tick_error))
+            refresh_core(s);
+        s->last_tick_phase=phase;s->last_tick_desired=desired;s->last_tick_error=error;
+    }
+    return s?&s->ui_dispatch:0;
+}
 #endif
 const uint32_t fx_native_ui_dispatch_metadata[10]={0x46585544u,2u,offsetof(State,ui_dispatch),sizeof(FxNativeUiDispatch),
     offsetof(FxNativeUiDispatch,task),offsetof(FxNativeUiDispatch,pending),offsetof(FxNativeUiDispatch,running),
@@ -852,37 +884,6 @@ __attribute__((unused)) static void show_panic(State *s) {
     (void)fx_native_panic_poll(p);
 }
 #ifndef FX_Z8_HEADLESS
-static void loader(void *context) {
-    State *s = context;
-    for (;;) {
-        uint32_t old_phase=atomic_load(&s->startup.phase),old_desired=atomic_load(&s->startup.desired),
-            old_error=atomic_load(&s->startup.error);
-        fx_startup_service_tick(&s->startup);
-        fx_z8_ptp_poll();
-        uint32_t count = atomic_load_explicit(&s->modules, memory_order_acquire);
-        for (uint32_t i = 0; i < count; ++i)
-            if (s->workers[i]) {
-                if (atomic_load(&s->shutdown))
-                    fx_z8_worker_shutdown(s->workers[i]);
-                if (fx_z8_worker_phase(s->workers[i]) == FX_Z8_WORKER_PANIC) {
-                    fx_native_module_fault(&s->services[i]->platform,(FxResult)fx_z8_worker_error(s->workers[i]));
-                }
-            }
-        /* Prefer the originating worker snapshot over startup's summarized
-         * health result when both become visible in the same loader tick. */
-        if(atomic_load(&s->startup.phase)==FX_STARTUP_FAULT) {
-            uint32_t error=atomic_load(&s->error);
-            fx_native_module_fault(0,(FxResult)(error?error:atomic_load(&s->startup.error)));
-        }
-        show_panic(s);
-        if(!atomic_load(&s->startup.shutdown) &&
-           (old_phase!=atomic_load(&s->startup.phase) || old_desired!=atomic_load(&s->startup.desired) ||
-            old_error!=atomic_load(&s->startup.error)))refresh_core(s);
-        (void)fx_z8_task_delay_ticks(10u);
-    }
-}
-#endif /* !FX_Z8_HEADLESS loader */
-#ifndef FX_Z8_HEADLESS
 static uint32_t activate(void *p) {
     (void)p;
     State *s = state();
@@ -928,10 +929,90 @@ static uint32_t manage_modules(void *p) {
     (void)fx_native_modules_open(s->management);return 1u;
 }
 #endif /* !FX_Z8_HEADLESS menu callbacks */
-#ifdef FX_Z8_HEADLESS
+
+#ifndef FX_Z8_HEADLESS
+/* Enabled-install construction (the z9 install pattern with C311 values):
+ * build the Fenestra/WonderLantern pages and the auto/guard child menus
+ * from the stock SETUP page, link the two SETUP entry rows, grow the text
+ * bank for our ids and publish. All-or-nothing: nothing is published on
+ * failure and the install retries on the next startup-complete event. */
+static void construct_pages(State *s, FxNativePage *sp) {
+    const FxNativeDescriptor *d=(const FxNativeDescriptor *)sp->descriptor;
+    if(!d || !d->header || !d->rows || !d->events || d->count!=45u)return;
+    const FxNativeRow *rows=(const FxNativeRow *)d->rows;
+    s->setup=*d;
+    uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
+        UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
+    FxZ8MenuEntry core[]={
+        {TEXT+2u,0x7ff1u,0u,0u,(uintptr_t)activate,0x68cu},
+        {TEXT+3u,0x7ff2u,0u,1u,(uintptr_t)noop,0x68cu},
+        {TEXT+11u,0x7ff4u,1u,0u,(uintptr_t)manage_modules,FX_NATIVE_MANAGER_PAGE_BASE},
+        {TEXT+12u,0x7ff5u,1u,1u,(uintptr_t)noop,FX_NATIVE_STARTUP_AUTO_PAGE},
+        {TEXT+13u,0x7ff6u,1u,1u,(uintptr_t)noop,FX_NATIVE_STARTUP_GUARD_PAGE},
+        {TEXT+20u,0x7ff7u,0u,1u,(uintptr_t)usb_toggle,0x68cu},
+        {TEXT+4u,0x7ff3u,0u,0u,(uintptr_t)noop,638u},
+    };
+    FxZ8MenuEntry wonder[]={{TEXT+5u,0x7fc0u,0u,0u,(uintptr_t)noop,0x68cu},
+                            {TEXT+4u,0x7ff3u,0u,0u,(uintptr_t)noop,638u}};
+    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->core,(const FxZ8MenuPage *)(void *)sp,FENESTRA,TEXT,core,7u,callbacks)!=FX_OK)return;
+    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->wonder,(const FxZ8MenuPage *)(void *)sp,WONDER,TEXT+1u,wonder,2u,callbacks)!=FX_OK)return;
+    FxZ8MenuEntry automatic[]={{TEXT+14u,0x7fd0u,0u,0u,(uintptr_t)auto_on,FENESTRA},
+                               {TEXT+15u,0x7fd1u,0u,0u,(uintptr_t)auto_off,FENESTRA}};
+    FxZ8MenuEntry guard[]={{TEXT+17u,0x7fd2u,0u,0u,(uintptr_t)noop,FENESTRA},
+                           {TEXT+16u,0x7fd3u,0u,0u,(uintptr_t)clear_flag,FENESTRA}};
+    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->auto_menu,(const FxZ8MenuPage *)(void *)sp,FX_NATIVE_STARTUP_AUTO_PAGE,TEXT+12u,automatic,2u,callbacks)!=FX_OK)return;
+    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->guard_menu,(const FxZ8MenuPage *)(void *)sp,FX_NATIVE_STARTUP_GUARD_PAGE,TEXT+13u,guard,2u,callbacks)!=FX_OK)return;
+    memcpy(s->rows+2u,rows,45u*sizeof(*rows));
+    memcpy(s->events+2u,(const void *)(uintptr_t)d->events,45u*sizeof(uintptr_t));
+    for(uint32_t r=0u;r<2u;++r) {
+        s->rows[r]=rows[44];
+        s->rows[r].word[0]=TEXT+r;
+        s->rows[r].word[2]=65535u;
+        s->rows[r].word[6]=0x7ff0u+r;
+        if(fx_native_menu_link_bounded(s->entry_events[r],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
+            0x3bbu,(const uint32_t[4]){0x286u,0x28bu,0x2aeu,0u},(uintptr_t)noop,r?WONDER:FENESTRA,13u)!=FX_OK)return;
+        s->events[r]=(uintptr_t)s->entry_events[r];
+    }
+    s->setup.rows=(uintptr_t)s->rows;
+    s->setup.events=(uintptr_t)s->events;
+    s->setup.count=47u;
+    const uint8_t *fonts=*(const uint8_t *const *)(uintptr_t)UINT64_C(0xa02f2ac40);
+    const uintptr_t *attributes=*(const uintptr_t *const *)(uintptr_t)UINT64_C(0xa02f2ac50);
+    if(!fonts || !attributes)return;
+    for(uint32_t i=0u;i<LANGUAGES;++i)if(!attributes[i])return;
+    uint32_t font_id=rows[44].word[0],attribute_id=rows[0].word[0];
+    if(font_id>=TEXT || attribute_id>=TEXT)return;
+    FxNativeTextBank *bank=0;
+    if(fx_native_text_bank_create((FxIndexMemory){0,map_allocate,map_release},fonts,attributes,
+        TEXT,LANGUAGES,TEXT+TEXT_COUNT,fonts[font_id],((const uint8_t *)(uintptr_t)attributes[1])[attribute_id],&bank)!=FX_OK)return;
+    if(fx_text_regions_add(&s->text_regions,&s->state_text_region,s,sizeof(*s))!=FX_OK)return;
+    extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
+    if(fx_text_regions_add(&s->text_regions,&s->image_text_region,__fx_core_code_begin,
+        (uintptr_t)__fx_core_code_end-(uintptr_t)__fx_core_code_begin)!=FX_OK)return;
+    s->ui_dispatch.text_regions=&s->text_regions;
+    fx_startup_service_init(&s->startup,UINT32_C(0x00090538),
+        (FxStartupBackend){s,start_modules,startup_health,startup_stop,startup_token});
+    s->startup_files=(FxStartupFiles){.profile=&fx_z8_startup_file_profile,.shutdown=&s->startup.shutdown,
+        .cleanup_window=&s->startup.cleanup_window,.observer=fx_capacity_file_observer(&s->capacity_registry)};
+    (void)fx_startup_files(&s->startup.io,&s->startup_files);  /* Failure is non-fatal; the tick retries. */
+    s->magic=MAGIC;s->installed=1u;
+    __asm__ volatile("dmb ish":::"memory");
+    *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac40)=(uintptr_t)bank->fonts;
+    *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac50)=(uintptr_t)bank->attributes;
+    atomic_store_explicit(&s->text_bank,bank,memory_order_seq_cst);
+    fx_retained_account(fx_shared_text_account(&s->accounting),&bank->accounted,bank->bytes);
+    atomic_store_explicit((_Atomic uintptr_t *)&sp->descriptor,(uintptr_t)s,memory_order_release);
+    void *stack=allocate(65536u+16u);s->task_stack=stack;
+    if(stack)fx_retained_account(fx_shared_loader_account(&s->accounting),&s->stack_accounted,65536u+16u);
+    /* No dedicated loader task (C311 task.create is not pinned): the UI
+     * dispatch domain tick owns the startup service and refresh legs. */
+}
+#endif /* !FX_Z8_HEADLESS construct */
 /* Anchor first (descriptor write), initialise afterwards; initialisation is
  * fault-tolerant and retried. The page roots may not be populated yet when
- * install runs, so the descriptor write waits for them. */
+ * install runs, so the descriptor write waits for them. Headless keeps the
+ * early-publish v0 shape; the enabled image constructs everything before
+ * publishing once (z9 pattern). */
 static void install(void) {
     if (state())
         return;
@@ -951,6 +1032,10 @@ static void install(void) {
     if (!s)
         return;
     memset(s, 0, sizeof(*s));
+#ifndef FX_Z8_HEADLESS
+    construct_pages(s, sp);
+    return;
+#else
     /* Publish magic, installed and the descriptor first so state() is usable. */
     s->magic = MAGIC;
     s->installed = 1u;
@@ -964,10 +1049,11 @@ static void install(void) {
     (void)fx_startup_files(&s->startup.io,&s->startup_files);  /* Failure is non-fatal; the pump tick retries. */
     void *stack=allocate(65536u+16u);s->task_stack=stack;
     /* No dedicated task: the pump drives the loader. */
+#endif
 }
-#endif /* FX_Z8_HEADLESS install */
-#ifdef FX_Z8_HEADLESS
-/* Per-site wait wrappers installed at the displaced UI wait sites. */
+/* Per-site wait wrappers installed at the displaced UI wait sites (both
+ * configurations: the hook set is identical; the shared dispatch pump
+ * owns install-on-first-use in headless and the loader tick in enabled). */
 extern uint32_t fx_native_ui_wait_native(void);
 void fx_z8_headless_install(void);
 uint32_t fx_z8_wait_site(uint32_t site) {
@@ -992,7 +1078,6 @@ void fx_z8_headless_pump(void) {
                 fx_native_module_fault(&s->services[i]->platform,(FxResult)fx_z8_worker_error(s->workers[i]));
     }
 }
-#endif
 FxNativePage *fx_z8_menu_page(uint32_t group, uint32_t id) {
     id &= 65535u;
     State *s = state();
