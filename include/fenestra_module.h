@@ -8,7 +8,9 @@
 #define FX_MODULE_MEMORY_LIMIT (4u * 1024u * 1024u)
 /* Native package/image ceilings match the format; allocations use actual
  * preflight sizes, never a maximum-size buffer for every installed file. */
-#define FX_NATIVE_MODULE_PACKAGE_LIMIT (1024u * 1024u)
+#define FX_NATIVE_MODULE_PACKAGE_LIMIT (32u * 1024u * 1024u)
+#define FX_RESIDENT_IMAGE_LIMIT (64u * 1024u * 1024u)
+#define FX_RESIDENT_RELOCATIONS 65536u
 #define FX_NATIVE_MODULE_IMAGE_LIMIT (4u * 1024u * 1024u)
 #define FX_ISA_AARCH64 1u
 #define FX_MODULE_STACK_DEFAULT 65536u
@@ -21,17 +23,22 @@ static inline int fx_module_stacks_valid(FxModuleStacks s) {
         s.user_bytes>=FX_MODULE_USER_STACK_MIN && s.user_bytes<=FX_MODULE_STACK_MAX &&
         !((s.native_bytes|s.user_bytes)&4095u);
 }
-enum {FX_MODULE_ENTRY_LEGACY=0u,FX_MODULE_ENTRY_SERVICES=1u};
-/* v2/v3 declare the copied-service entry ABI at byte116. v3 declares native
+enum {FX_MODULE_ENTRY_LEGACY=0u,FX_MODULE_ENTRY_SERVICES=1u,FX_MODULE_ENTRY_NATIVE=2u};
+/* v2/v3 declare the copied-service entry ABI at byte116. v3 declares RTOS
  * and EL0 stack bytes at120/124; v1/v2 retain the original 64KiB defaults.
+ * v4 selects native resident entry ABI2 with both stack fields zero.
  * v1 SDK packages can
  * be recognized by their original service capability bits, never filename.
  * Zero-capability compute-only SDK modules must use the explicit v2 tag. */
 static inline uint32_t fx_module_header_entry(const uint8_t *p,uint32_t bytes) {
     if(!p || bytes<FX_MODULE_HEADER)return UINT32_MAX;
     uint32_t version=(uint32_t)p[8]|(uint32_t)p[9]<<8|(uint32_t)p[10]<<16|(uint32_t)p[11]<<24;
-    if(version!=1u && version!=2u && version!=3u)return UINT32_MAX;
+    if(version!=1u && version!=2u && version!=3u && version!=4u)return UINT32_MAX;
     if(version<3u)for(uint32_t i=version==2u?120u:116u;i<FX_MODULE_HEADER;++i)if(p[i])return UINT32_MAX;
+    if(version==4u) {
+        if(p[120] || p[121] || p[122] || p[123] || p[124] || p[125] || p[126] || p[127])return UINT32_MAX;
+        return ((uint32_t)p[116]|(uint32_t)p[117]<<8|(uint32_t)p[118]<<16|(uint32_t)p[119]<<24)==FX_MODULE_ENTRY_NATIVE?FX_MODULE_ENTRY_NATIVE:UINT32_MAX;
+    }
     if(version>=2u) {
         uint32_t kind=(uint32_t)p[116]|(uint32_t)p[117]<<8|(uint32_t)p[118]<<16|(uint32_t)p[119]<<24;
         return kind==FX_MODULE_ENTRY_SERVICES?kind:UINT32_MAX;

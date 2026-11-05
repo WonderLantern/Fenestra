@@ -184,6 +184,7 @@ FxResult fx_module_bus_stop(FxModuleBus *b,FxPlatformOwner *o) {
     unlock(b);return FX_OK;
 }
 FxResult fx_module_bus_destroy(FxModuleBus *b) {
+    if(b && atomic_load_explicit(&b->extensions,memory_order_acquire))return FX_BUSY;
     if(!b)return FX_ARGUMENT;
     if(!lock(b))return FX_BUSY;
     if(!b->endpoints.stride){unlock(b);return FX_STATE;}

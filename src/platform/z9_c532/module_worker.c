@@ -3,6 +3,7 @@
 #include "fenestra_platform.h"
 #include "fenestra_native_ui_callbacks.h"
 #include "fenestra_resources.h"
+#include "fenestra_extensions.h"
 #include "services.h"
 #include "fenestra_worker_wait.h"
 #include "fenestra_worker_pace.h"
@@ -80,6 +81,7 @@ static void run(void *context) {
     }
     for(;;) {
         uint64_t loop_ticket=fx_worker_wait_ticket(&w->wait);
+        if(atomic_load_explicit(&platform->extensions,memory_order_acquire))fx_extensions_pulse(platform,clock_ms());
         fx_service_fault_poll(&w->service);
         FxPlatformOwner *owner=&((FxZ9Services *)w->service.backend.context)->platform;
         fx_native_scene_poll(owner);
