@@ -63,8 +63,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6762,
-      "sha256": "eedb00db2976aa73a417dbf22e48bfcd847d16288145c21a8deaea5b4430a3c1",
+      "bytes": 7071,
+      "sha256": "db2da93b967fda90e01740f768c5201b217d213fadd0ffa07cb83cb46493bba9",
       "origin": "project-source",
       "snapshot_sha256": "ccee77bf6619d5747c065433c0ec84bc3524e690f1db8a5bc8d7a030a171fc29",
       "transformed": true,
@@ -73,8 +73,8 @@
     },
     {
       "path": "docs/api-reference.md",
-      "bytes": 9285,
-      "sha256": "fb9701aaf56c96d97bc781c267beec43ec916fa68d29ef7f35982be7a6e7c54a",
+      "bytes": 9667,
+      "sha256": "ef656c2746bc4fe9647574c7adee8bdec3153870e493fbeef51e93b23242496a",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": true,
@@ -90,6 +90,16 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "docs/audio.md",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 10039,
+      "sha256": "c8a50fd0620ae16bd3962dc6f350a37bc69fc527429522b7988c8a08033ba5ad"
     },
     {
       "path": "docs/debugging.md",
@@ -113,8 +123,8 @@
     },
     {
       "path": "docs/module-development.md",
-      "bytes": 5981,
-      "sha256": "eac7330a00279cb5b1ee6553f31afc868d0d360c268697e87896742d920ac726",
+      "bytes": 6383,
+      "sha256": "ca11df05f30d5253681d94d6c26f0a49cc7b436003ebd2499bb35dcdfabd15a3",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": true,
@@ -130,6 +140,16 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "docs/native-audio.md",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 7833,
+      "sha256": "f335161fd18b25b59675695d95100de806fe74e42947b267b93c2aff1969371a"
     },
     {
       "path": "docs/porting.md",
@@ -222,6 +242,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "examples/audio-tone/module.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4517,
+      "sha256": "3daad120e2f77664d1b2ccb4106df43615240daca0f3ab24d0ceba809dc37d74"
+    },
+    {
       "path": "examples/hello/module.c",
       "bytes": 1695,
       "sha256": "de999443d62b3488adf0904da09852b0ea154045d399e65f3fb3fe10c7e9a4dc",
@@ -243,8 +273,8 @@
     },
     {
       "path": "host/build_c110_menu.py",
-      "bytes": 36325,
-      "sha256": "725606f3fc75b88ddd2b086be90aa750b52a875a150d27ebaf5403894c61b7e7",
+      "bytes": 36425,
+      "sha256": "a835aef106a8d43f47510c8780a3ae73fb480afe7dc4e27b68a54e320cb8dd55",
       "origin": "project-source",
       "snapshot_sha256": "262fd42abd022e62dc04f4c06aec9ff0a577ef218395adbe80c8a2cbcab07744",
       "transformed": true,
@@ -273,8 +303,8 @@
     },
     {
       "path": "host/build_z9_core.py",
-      "bytes": 12678,
-      "sha256": "9a46c3f540e309cde33fd3d03f3851cca77ec5483802572665daca7b357dd628",
+      "bytes": 12775,
+      "sha256": "4546c8760275bf24e5c822ffaa6a1738b6a67bcf70a0d714e44333446da64bdc",
       "origin": "project-source",
       "snapshot_sha256": "41e35ef55be0023dce129c78b79b78be5d327be6166272d5804719506a113ef8",
       "transformed": true,
@@ -423,8 +453,8 @@
     },
     {
       "path": "host/platform_profiles.py",
-      "bytes": 22377,
-      "sha256": "1faaf055f0b887bf3905188e114b4b98d2fb4b98ad2125ccd131d42e8e24ee6a",
+      "bytes": 24179,
+      "sha256": "29898694f8ee16b73a1049578b1bed6cc93a46248ba523b489617447bad5d7c3",
       "origin": "project-source",
       "snapshot_sha256": "78a2f74229773e5ba8dbebcbdff0ce4035f3002b413d39d0c9331cd98fb310eb",
       "transformed": true,
@@ -622,6 +652,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "host/verify_native_audio.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 9740,
+      "sha256": "d0e439a1ab9444f88ee21ac3626c3eb80ccab66ef1ec033d799f48a5623ede34"
+    },
+    {
       "path": "host/verify_native_namespace.py",
       "bytes": 5472,
       "sha256": "c6f0f5a8a1897e0871426b5ae087bce22376808e551b99d09ab06d62c273403d",
@@ -730,6 +770,36 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "include/fenestra_audio.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1846,
+      "sha256": "0fdaeeabb4b879d6f157f260f6ebaf1d006468ddf69f4e7a7dbb96f4e9c6b230"
+    },
+    {
+      "path": "include/fenestra_audio_output.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3704,
+      "sha256": "7378c0eebfc7a85c94e11063058fb64991955cb8e918b86caa7a2266b1ba0a71"
+    },
+    {
+      "path": "include/fenestra_audio_sdk.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 1609,
+      "sha256": "e7b74c07f1eaa31ebffb0eda6b6c35307fd2acea5d383515557f0b0a8504fc4e"
     },
     {
       "path": "include/fenestra_binding_store.h",
@@ -1392,6 +1462,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "include/fenestra_native_sound.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 2544,
+      "sha256": "ba24552d30d8e0c851ecee376e084c76c501d6b883616921c106841936fcad16"
+    },
+    {
       "path": "include/fenestra_native_text.h",
       "bytes": 677,
       "sha256": "facb7e5b6867c785202cb25e473f32333d7153b63de7387020a480f68c4adb4d",
@@ -1982,6 +2062,16 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "src/audio.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 10931,
+      "sha256": "2ad7b976712edf84c2ffc223861e314b837d7a3b1c711b829c0467a98617d197"
+    },
+    {
       "path": "src/binding_store.c",
       "bytes": 13278,
       "sha256": "e27e46ff206d0be9762a9e01e2bf8e14979542535796d7b03357d099974e0195",
@@ -2140,6 +2230,26 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "src/native_audio.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 3519,
+      "sha256": "b2049c5c25a5a478cc140a5e5e189209cc3437074217bd7418f452ae876a2a0a"
+    },
+    {
+      "path": "src/native_audio_driver.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 7054,
+      "sha256": "254d42afd07a9e64df9710f40c731e13da9b3600a479221fac064c2e5485bdb8"
     },
     {
       "path": "src/native_call.c",
@@ -2330,6 +2440,16 @@
       "transformed": true,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "src/native_sound.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 9937,
+      "sha256": "30ebfd795e4da36df645e09a90e7139ab666e323951e57c7d4b1d7d70ee30e1e"
     },
     {
       "path": "src/native_tasks.c",
@@ -2563,8 +2683,8 @@
     },
     {
       "path": "src/platform/z9_c532/menu.c",
-      "bytes": 61318,
-      "sha256": "e86bb1f01bd56c08fba4b8ca3fff265a7dcde06af7efcf7877090fcac3edebc2",
+      "bytes": 61455,
+      "sha256": "7dc74b0d70c98f07488a74c28d9b33abaac8cb3b8385c05a022bc83645dc0fd0",
       "origin": "project-source",
       "snapshot_sha256": "2d50e23f8f39b31eedc4d8fcda8fe3545f1852bbc0c9fb72f35a399a0f0deea0",
       "transformed": true,
@@ -2933,8 +3053,8 @@
     },
     {
       "path": "src/platform/zr_c110/menu.c",
-      "bytes": 67504,
-      "sha256": "d65025b9f13f11bbfe2b04cd9fefdf0e244f7867ecc6d8400bf8ad2917695fa6",
+      "bytes": 67641,
+      "sha256": "929b50f0bf06dc71edf32af6611fa0eb380ad25beeed29e4e02917474135a4cf",
       "origin": "project-source",
       "snapshot_sha256": "c93e153170c6cb8931f5df589811fa397358171d4e3fa1ae5d7c97ef41a131dd",
       "transformed": true,
@@ -3442,6 +3562,36 @@
       "additional_permission": "EXCEPTIONS.md"
     },
     {
+      "path": "tests/audio_profile.h",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 136,
+      "sha256": "8cdd4630958a9679e8937ae8e4a0bfd51ffb13a3f6793f1e4ceda482676aa72a"
+    },
+    {
+      "path": "tests/test_audio.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 13672,
+      "sha256": "0fc4d8bec3dce76c0cada9a235a2e6e912636dd741bf5131d612e9288116b39e"
+    },
+    {
+      "path": "tests/test_audio.py",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 4904,
+      "sha256": "e86e0fa7f5f41ce0904d45c76244fbebee96ce37961a3403f41adee8c2813359"
+    },
+    {
       "path": "tests/test_cipher_patch.py",
       "bytes": 5861,
       "sha256": "5e122c7a6f27ac53495a9401c9f88e703f910b3a8e6de0d5913636236b792fbd",
@@ -3450,6 +3600,26 @@
       "transformed": false,
       "license": "CC-BY-NC-SA-4.0",
       "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/test_native_audio_driver.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 6713,
+      "sha256": "c6f80e75eb42b10c49bc5bc8c4b8e3c33b9f5cd634844bf76c0b7c69fdb9907c"
+    },
+    {
+      "path": "tests/test_native_sound.c",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md",
+      "bytes": 8520,
+      "sha256": "82a77d93817ac147c2b95f3a72280cebf9f06a4c52021376ced72bd654c5ccb7"
     },
     {
       "path": "tests/test_ptp.c",
