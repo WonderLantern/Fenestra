@@ -21,7 +21,7 @@ removal/shutdown into a lifecycle inbox; forcing the worker stop path is
 pending natural-context delivery), all validated under a matching
 Z8 emulator.
 
-Enabled: native menu trio, font request sites, the render-profile cluster, the menu quintuple and the page construction are pinned and hooked (validation sections 4b/4c). The menu-enabled build (`build_z8_core.py --menu-enabled`) constructs the Fenestra pages at install and menu-key navigation/module activation are verified in emulation; the default build keeps construction dormant (headless-equivalent)
+Enabled: native menu trio, font request sites, the render-profile cluster, the menu quintuple and the page construction are pinned and hooked (validation sections 4b/4c). The menu-enabled build (`build_z8_core.py --menu-enabled`) constructs the Fenestra pages at install and the construction + activation chain is verified in emulation (key-driven activation attribution pending an AUTO-off card run); the default build keeps construction dormant (headless-equivalent)
 pending), device-side PTP (the profile reports `FX_CAPABILITY`), Linux bridge,
 USB debug and fonts. Unsupported capabilities report `FX_CAPABILITY` rather than
 faking success; per-item evidence and boundaries live in
@@ -68,7 +68,7 @@ python host/build_sdk_module.py examples/hello/module.c --id hello --target z8-c
 
 Copy the produced `hello.wlm` to the card as `A:\FENESTRA\hello.wlm`. Activation
 currently goes through the startup-file service; native menu-driven activation
-is verified on the menu-enabled build (emulation boundary).
+was observed ACTIVE on the menu-enabled build; key-driven attribution pending an AUTO-off card run (emulation boundary).
 
 ## Local verification
 

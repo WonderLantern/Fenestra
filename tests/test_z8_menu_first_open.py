@@ -144,8 +144,9 @@ class Z8DrawCompletionContracts(unittest.TestCase):
     def test_menu_quintuple_is_c311(self):
         text = (self.MENU_C).read_text()
         quint = '0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu'
-        self.assertEqual(text.count(quint), 3,
-                         'all three FxNativeMenuProfile literals must carry the C311 quintuple')
+        self.assertEqual(text.count(quint), 4,
+                         'the three FxNativeMenuProfile literals and the construct-owned '
+                         'profile must carry the C311 quintuple')
         # The old Z9 quintuple combo must be gone; the individual ids
         # (0x297/0x2b1/0x2c0/0x298) legitimately appear in the pinned C311
         # ui_editor_events table, so only the combination is stale.
@@ -156,7 +157,7 @@ class Z8DrawCompletionContracts(unittest.TestCase):
     def test_navigation_events_bound_is_13(self):
         text = self.MENU_C.read_text()
         self.assertEqual(text.count('0u},0x68cu,FENESTRA,13u}'), 1)
-        self.assertEqual(text.count('},0x68cu,'), 3)
+        self.assertEqual(text.count('},0x68cu,'), 4)
         self.assertNotIn('12u}', text)
 
     def test_refresh_tail_submit_is_c311(self):

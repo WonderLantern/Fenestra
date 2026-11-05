@@ -48,6 +48,14 @@ class Z8MenuConstructSources(unittest.TestCase):
         text = BUILDER.read_text()
         self.assertIn('--menu-enabled', text)
 
+    def test_module_ui_templates_use_stock_row(self):
+        """I-2 fix: the module-UI/apps/management profile literals must use
+        the construct-copied stock row (&s->rows[2]); &s->rows[44] is zeroed
+        scratch on the 1-row C311 hub page."""
+        text = MENU_C.read_text()
+        self.assertNotIn('&s->rows[44]', text)
+        self.assertEqual(text.count('&s->rows[2]'), 3)
+
     def test_fixture_pins_real_table_shape(self):
         text = FIXTURE.read_text()
         self.assertIn('{0x3bb,0,0,0x68c}', text)

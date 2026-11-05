@@ -239,9 +239,16 @@ stream-fed window, qtest-primary evidence via `fx_z8_menu_metadata` v5;
 - navigate (enabled image): SETUP descriptor holds the State magic; the
   owned core page carries identity `0x7000<<16` with 7 rows; SETUP is
   rewritten to 3 rows with entry rows `0x7ff0/0x7ff1` (text id 3204).
-- activate (enabled image): original MCU key records (menu/ok/down/
-  down/ok/ok) drive module activation — activation requested, modules
-  > 0, worker magic `0x465A3957`, phase 2 (ACTIVE).
+- activate (enabled image): the original MCU key records (menu/ok/down/
+  down/ok/ok) are delivered through the external frame transport with the
+  guest stable and no unmodeled access, and the module activation chain
+  completes — activation requested, modules > 0, worker magic
+  `0x465A3957`, phase 2 (ACTIVE). Attribution caveat (review finding):
+  the card template's `FX_STARTUP_AUTO` flag auto-activates the hello
+  module through the startup-file service with ZERO keys (the navigate
+  legs are the counterfactual: they send no keys and reach the same
+  activation state), so menu-key-DRIVEN activation is NOT isolated by
+  this evidence; an AUTO-off card variant is the follow-up input.
 - negative (default image): the headless State installs (early publish)
   with construction dormant (no owned core page, no entry-row rewrite) —
   baseline equivalence, plus the full RE0 regression re-run
@@ -296,12 +303,15 @@ Boundaries (explicit): the rectangle clip-setup primitive, the modal body
 id, the text-editor slots (`value_lookup`/`set_disabled`/`set_text`/
 `release_text`/`value_bytes`/`set_alignment`/`measure`/`bounds`), the font
 fallback face (`open_font`/`select_font`/fallback data) and display restore
-remain unpinned. With `rectangle` null the shared `draw_pair` rejects the
-profile and the repaint degrades to `repaint=0`, so menu navigation and
-activation stay unexercised end to end; the reader/title/editor profiles
-retain Z9 references as documented residuals. Baseline equivalence holds:
-the patched image passes the full RE0 regression twice (`menu-reg-1`,
-`menu-reg-2`).
+remain unpinned **(superseded for the draw slots by the final round — see
+section 4b: rectangle `FUN_40340d64`, pair dispatch `FUN_403f6388`, empty
+`FUN_40c7be74`, submit `FUN_403efed8`; the table rows above predate those
+pins and are kept as the round's history)**. The reader/title/editor
+profiles retain Z9 references as documented residuals (plus the
+callbacks[2] placeholder `0x403b2748`, z9-verbatim and runtime-replaced
+from the stock page before use). Baseline equivalence holds: the patched
+image passes the full RE0 regression (`menu-reg-1/2`, re-run as
+`menu-reg-4/5/6` on every default-build revision).
 
 ## Unverified / not enabled (explicit boundaries)
 
@@ -309,12 +319,12 @@ the patched image passes the full RE0 regression twice (`menu-reg-1`,
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
-| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); menu-key navigation and module activation verified end to end on the enabled image (probe artifacts `menu-e2e-nav/act/neg-*`, 3/3 per phase); the default build keeps construction dormant (probe negative leg + RE0 regression). Boundary: hardware untested |
-| hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation verified on the enabled image (`menu-e2e-act-*`: worker magic + ACTIVE) |
+| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); construction verified on the enabled image (probe artifacts `menu-e2e-nav/neg-*`, 3/3 per phase) and the default build keeps construction dormant (negative leg + RE0); the activate leg exercises MCU key delivery with guest stability and observes the activation chain, but key-driven activation is not isolated from the card's auto-activate flag (see 4b caveat). Boundary: hardware untested |
+| hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; activation to ACTIVE also observed on the enabled image (`menu-e2e-act-*`: worker magic + phase 2), attribution per the 4b caveat (auto-activate flag not isolated) |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
 | task.create/resume/delay addresses | Z9 reference values | prologue probes exist; create/resume are not exercised by the validated configuration; the delay binding runs on the loader's yield path (all runs) and on the sysctl stop-handshake wait loop (forced-delivery context) |
-| GUI mutex trio (0xa032dcb98 / 0x40d30004 / 0x40d2ffb0) | Z9 reference values | exercised on the load/refresh path (`refresh_core`) in the validated chain and tolerated across all runs; the Z8 mutex is not pinned |
+| GUI mutex trio | pinned on Z8 | `0xa032b8044` / acquire `0x40d2bfb4` / release `0x40d2bf60`, used by both refresh paths and the pair dispatch wrapper `FUN_403f6388` (object `0xa032bbd68`); the former Z9 values (0xa032dcb98/0x40d30004/0x40d2ffb0) are absent from the sources |
 | FCB error codes / card_capacity BL chain | partial | loop signature verified; error paths and the call chain not pinned |
 | Hardware | **entirely unverified** | no device flashing; every conclusion in this file is emulation-boundary |
 

@@ -517,7 +517,10 @@ static FxNativeUi *instance_ui(State *s,uint32_t index,const FxNativePage *paren
     FxAllocationObserver observer=fx_platform_account_observer(owner,"ui.native");
     FxNativeUi *u=allocate((uint32_t)sizeof(*u));if(!u)return 0;memset(u,0,sizeof(*u));
     fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_REQUESTED);
-    FxNativeMenuProfile profile={parent,&s->rows[44],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
+    /* Row template = stock row 0, copied by construct_pages to s->rows[2]
+     * (the C311 SETUP hub has one stock row; the old z9 index 44 would be
+     * zeroed scratch on this geometry). */
+    FxNativeMenuProfile profile={parent,&s->rows[2],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
         /* C311 menu quintuple, pinned from the 0x43bf0680 table: terminal 0x3bb
  * (terminator record), back 0x27f (cb 0x403b1bb0 -> family root),
  * selects {0x286,0x28b,0x2ae} = the activation trio (151 child-table
@@ -562,7 +565,7 @@ static FxResult apps_action(void *context,uint32_t index){State *s=context;retur
 static FxNativePage *apps_page(State *s,uint32_t page) {
     if(!s->apps) {
         FxNativeApps *apps=&s->apps_storage;
-    FxNativeMenuProfile profile={stock(2u,SETUP),&s->rows[44],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
+    FxNativeMenuProfile profile={stock(2u,SETUP),&s->rows[2],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
         /* C311 menu quintuple, pinned from the 0x43bf0680 table: terminal 0x3bb
  * (terminator record), back 0x27f (cb 0x403b1bb0 -> family root),
  * selects {0x286,0x28b,0x2ae} = the activation trio (151 child-table
@@ -903,7 +906,7 @@ static uint32_t manage_modules(void *p) {
     (void)p;State *s=state();if(!s || atomic_load(&s->shutdown))return 0u;
     if(!s->management) {
         FxNativeModules *m=allocate((uint32_t)sizeof(*m));if(!m)return 0u;
-        FxNativeMenuProfile profile={&s->core.page,&s->rows[44],
+        FxNativeMenuProfile profile={&s->core.page,&s->rows[2],
             (const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
             /* C311 menu quintuple, pinned from the 0x43bf0680 table: terminal 0x3bb
  * (terminator record), back 0x27f (cb 0x403b1bb0 -> family root),
