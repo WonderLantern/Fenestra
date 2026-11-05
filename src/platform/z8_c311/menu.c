@@ -938,7 +938,9 @@ static uint32_t manage_modules(void *p) {
  * failure and the install retries on the next startup-complete event. */
 static void construct_pages(State *s, FxNativePage *sp) {
     const FxNativeDescriptor *d=(const FxNativeDescriptor *)sp->descriptor;
-    if(!d || !d->header || !d->rows || !d->events || d->count!=45u)return;
+    if(!d || !d->header || !d->rows || !d->events)return;
+    uint32_t stock=d->count;
+    if(!stock || stock>45u)return;   /* C311 SETUP root: 1 stock row (hub page) */
     const FxNativeRow *rows=(const FxNativeRow *)d->rows;
     s->setup=*d;
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
@@ -954,18 +956,22 @@ static void construct_pages(State *s, FxNativePage *sp) {
     };
     FxZ8MenuEntry wonder[]={{TEXT+5u,0x7fc0u,0u,0u,(uintptr_t)noop,0x68cu},
                             {TEXT+4u,0x7ff3u,0u,0u,(uintptr_t)noop,638u}};
-    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->core,(const FxZ8MenuPage *)(void *)sp,FENESTRA,TEXT,core,7u,callbacks)!=FX_OK)return;
-    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->wonder,(const FxZ8MenuPage *)(void *)sp,WONDER,TEXT+1u,wonder,2u,callbacks)!=FX_OK)return;
+    FxNativeMenuProfile owned={(const FxNativePage *)sp,&rows[stock-1u],
+        (const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
+        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,638u,13u};
+    if(fx_native_menu_build(&s->core,&owned,FENESTRA,TEXT,(const FxNativeEntry *)core,7u,callbacks)!=FX_OK)return;
+    if(fx_native_menu_build(&s->wonder,&owned,WONDER,TEXT+1u,(const FxNativeEntry *)wonder,2u,callbacks)!=FX_OK)return;
     FxZ8MenuEntry automatic[]={{TEXT+14u,0x7fd0u,0u,0u,(uintptr_t)auto_on,FENESTRA},
                                {TEXT+15u,0x7fd1u,0u,0u,(uintptr_t)auto_off,FENESTRA}};
     FxZ8MenuEntry guard[]={{TEXT+17u,0x7fd2u,0u,0u,(uintptr_t)noop,FENESTRA},
                            {TEXT+16u,0x7fd3u,0u,0u,(uintptr_t)clear_flag,FENESTRA}};
-    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->auto_menu,(const FxZ8MenuPage *)(void *)sp,FX_NATIVE_STARTUP_AUTO_PAGE,TEXT+12u,automatic,2u,callbacks)!=FX_OK)return;
-    if(fx_z8_menu_construct((FxZ8OwnedMenu *)(void *)&s->guard_menu,(const FxZ8MenuPage *)(void *)sp,FX_NATIVE_STARTUP_GUARD_PAGE,TEXT+13u,guard,2u,callbacks)!=FX_OK)return;
-    memcpy(s->rows+2u,rows,45u*sizeof(*rows));
-    memcpy(s->events+2u,(const void *)(uintptr_t)d->events,45u*sizeof(uintptr_t));
+    FxNativeMenuProfile child=owned;child.back=FENESTRA;
+    if(fx_native_menu_build(&s->auto_menu,&child,FX_NATIVE_STARTUP_AUTO_PAGE,TEXT+12u,(const FxNativeEntry *)automatic,2u,callbacks)!=FX_OK)return;
+    if(fx_native_menu_build(&s->guard_menu,&child,FX_NATIVE_STARTUP_GUARD_PAGE,TEXT+13u,(const FxNativeEntry *)guard,2u,callbacks)!=FX_OK)return;
+    memcpy(s->rows+2u,rows,stock*sizeof(*rows));
+    memcpy(s->events+2u,(const void *)(uintptr_t)d->events,stock*sizeof(uintptr_t));
     for(uint32_t r=0u;r<2u;++r) {
-        s->rows[r]=rows[44];
+        s->rows[r]=rows[stock-1u];
         s->rows[r].word[0]=TEXT+r;
         s->rows[r].word[2]=65535u;
         s->rows[r].word[6]=0x7ff0u+r;
@@ -975,12 +981,13 @@ static void construct_pages(State *s, FxNativePage *sp) {
     }
     s->setup.rows=(uintptr_t)s->rows;
     s->setup.events=(uintptr_t)s->events;
-    s->setup.count=47u;
+    s->setup.count=(uint16_t)(stock+2u);
     const uint8_t *fonts=*(const uint8_t *const *)(uintptr_t)UINT64_C(0xa02f2ac40);
     const uintptr_t *attributes=*(const uintptr_t *const *)(uintptr_t)UINT64_C(0xa02f2ac50);
     if(!fonts || !attributes)return;
-    for(uint32_t i=0u;i<LANGUAGES;++i)if(!attributes[i])return;
-    uint32_t font_id=rows[44].word[0],attribute_id=rows[0].word[0];
+    for(uint32_t i=0u;i<LANGUAGES;++i)
+        if(attributes[i]<UINT64_C(0x40000000) || attributes[i]>=UINT64_C(0x4e100000))return;
+    uint32_t font_id=rows[stock-1u].word[0],attribute_id=rows[stock-1u].word[0];
     if(font_id>=TEXT || attribute_id>=TEXT)return;
     FxNativeTextBank *bank=0;
     if(fx_native_text_bank_create((FxIndexMemory){0,map_allocate,map_release},fonts,attributes,
@@ -1270,7 +1277,7 @@ uint64_t fx_z8_system_dispatch(void *message, uint32_t sync) {
     return r;
 }
 const uint32_t fx_z8_menu_metadata[] = {MAGIC,
-                                        4u,
+                                        5u,
                                         sizeof(State),
                                         offsetof(State, magic),
                                         offsetof(State, phase),
@@ -1278,7 +1285,14 @@ const uint32_t fx_z8_menu_metadata[] = {MAGIC,
                                         offsetof(State, error),
                                         offsetof(State, modules),
                                         offsetof(State, workers),
-                                        offsetof(State, services),offsetof(State,management),offsetof(State,bus),offsetof(State,ui),offsetof(FxPlatformOwner,native_ui)};
+                                        offsetof(State, services),offsetof(State,management),offsetof(State,bus),offsetof(State,ui),offsetof(FxPlatformOwner,native_ui),
+                                        /* v5: construction observability for the emulation probe
+                                         * (qtest reads these offsets to verify install/construct). */
+                                        offsetof(State,setup),
+                                        offsetof(State,rows),
+                                        offsetof(State,core)+offsetof(FxNativeMenu,page)+offsetof(FxNativePage,identity),
+                                        offsetof(State,core)+offsetof(FxNativeMenu,descriptor)+offsetof(FxNativeDescriptor,count),
+                                        offsetof(State,core)+offsetof(FxNativeMenu,page)+offsetof(FxNativePage,descriptor)};
 const uint32_t fx_z8_startup_metadata[]={UINT32_C(0x46585339),1u,offsetof(State,startup),
     offsetof(FxStartupService,phase),offsetof(FxStartupService,desired),offsetof(FxStartupService,error),
     offsetof(FxStartupService,shutdown_done),offsetof(FxStartupService,flag_known),

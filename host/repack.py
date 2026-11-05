@@ -104,12 +104,13 @@ def rebuild(target, raw, plain, main, replacement, key, suffix, entry):
         raise ValueError('update package size changed')
     return candidate
 
-def build_core(target, firmware, output):
+def build_core(target, firmware, output, menu_enabled=False):
     output = Path(output).resolve()
     if not output.is_relative_to(ROOT/'build') or output.exists():
         raise ValueError('choose a new directory below build/')
     if target == 'z8-c311':
-        command = ['build_z8_core.py', '--firmware', str(firmware), '--output-dir', str(output)]
+        command = ['build_z8_core.py', '--firmware', str(firmware), '--output-dir', str(output)] + \
+            (['--menu-enabled'] if menu_enabled else [])
         candidate = output/'z8-core.main'
     elif target == 'zr-c110':
         command = ['build_c110_menu.py', '--firmware', str(firmware), '--output-dir', str(output),
@@ -123,7 +124,7 @@ def build_core(target, firmware, output):
                     '--firmware', str(firmware), '--build', str(output), '--output', str(output/'verification.json')], cwd=ROOT, check=True)
     return candidate
 
-def produce(target, firmware, key_file, suffix_file, work, patch, *, release='r3', envelope_key=None):
+def produce(target, firmware, key_file, suffix_file, work, patch, *, release='r3', envelope_key=None, menu_enabled=False):
     work, patch = Path(work).resolve(), Path(patch).resolve()
     if release == 'r3' and target == 'z8-c311':
         raise ValueError('Z8 has no pinned r3 release; use --release custom')
@@ -144,7 +145,7 @@ def produce(target, firmware, key_file, suffix_file, work, patch, *, release='r3
     work.mkdir(parents=True)
     original = work/'original-application.bin'
     original.write_bytes(main)
-    candidate_file = build_core(target, original, work/'core')
+    candidate_file = build_core(target, original, work/'core', menu_enabled=menu_enabled)
     release_receipt = None
     if release == 'r3':
         from release_exact import normalize

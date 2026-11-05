@@ -18,6 +18,7 @@ def main():
     make.add_argument('--digest-suffix', type=Path, help='ZR only: private 8-byte digest suffix file')
     make.add_argument('--envelope-key', type=Path, help='ZR r3: user RSA public/private PEM for exact envelope reproduction')
     make.add_argument('--release', choices=('r3', 'custom'), default='r3', help='r3 requires exact reference bytes; custom builds a different, unqualified result')
+    make.add_argument('--menu-enabled', action='store_true', help='Z8: build the menu-enabled core (construction active)')
     make.add_argument('--work', type=Path, required=True)
     make.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
@@ -27,7 +28,7 @@ def main():
         print(result)
     else:
         result = produce(args.target, args.firmware, args.key, args.digest_suffix, args.work, args.output,
-                         release=args.release, envelope_key=args.envelope_key)
+                         release=args.release, envelope_key=args.envelope_key, menu_enabled=args.menu_enabled)
         print(json.dumps(result, indent=2))
 
 if __name__ == '__main__':
