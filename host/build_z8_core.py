@@ -289,7 +289,7 @@ def build(firmware, output, menu_enabled=False):
         hooks=changes, hook_count=len(changes),
         configuration=('menu-enabled: ' if menu_enabled else 'v0: ') + 'UI-loop + sysctl + native-menu + font-request hooks; '
                       'dormant until platform state initialises; render rectangle/modal, '
-                      'font fallback, display, ptp/linux/usb unavailable',
+                      'modal id, font fallback, display, ptp/linux/usb unavailable',
         ui_dispatch=verify_ui(TARGET, original)), indent=1) + '\n')
     print(json.dumps(dict(status='BUILT', core_bytes=len(extension), hooks=len(changes),
                           output=str(out / 'z8-core.main'))))

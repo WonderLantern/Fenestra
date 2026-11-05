@@ -7,8 +7,11 @@
  * activation records are rewritten with the entry's action and the back
  * record routes to the parent page id.
  *
- * fx_z8_menu_construct is the installed-path entry point that reads the
- * navigation table from the pinned image address. */
+ * fx_z8_menu_construct reads the table from the pinned image address and is
+ * the fixture-visible entry point (tests/z8_menu_construct_fixture.c); the
+ * installed path (construct_pages in menu.c) calls fx_native_menu_build
+ * directly with the dynamic hub-page geometry. The row template here is
+ * likewise dynamic (last stock row), matching the installed behaviour. */
 #include "menu_data.h"
 #include "fenestra_native_menu.h"
 #include <stddef.h>
@@ -28,8 +31,11 @@ FxResult fx_z8_menu_construct_navigation(FxZ8OwnedMenu *out, const FxZ8MenuPage 
     if (!descriptor || !descriptor->rows)
         return FX_ARGUMENT;
     const FxNativeRow *rows = (const FxNativeRow *)(uintptr_t)descriptor->rows;
+    if (!descriptor->count || descriptor->count > 45u)
+        return FX_ARGUMENT;
     FxNativeMenuProfile profile = {
-        (const FxNativePage *)setup, &rows[44], (const FxNativeEvent *)navigation,
+        (const FxNativePage *)setup, &rows[descriptor->count - 1u],
+        (const FxNativeEvent *)navigation,
         /* C311 quintuple, pinned from the 0x43bf0680 table (see menu_data.h). */
         0x3bbu, 0x27fu, {0x286u, 0x28bu, 0x2aeu, 0u}, 0x68cu,
         setup->identity >> 16, 13u};

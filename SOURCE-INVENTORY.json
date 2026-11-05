@@ -153,8 +153,8 @@
     },
     {
       "path": "host/build_z8_core.py",
-      "bytes": 17824,
-      "sha256": "3a1c4e3b712affec542b61c08990f19d6a329f9695023d82eedc84da0152c50c"
+      "bytes": 17834,
+      "sha256": "20b156208fdb5a8aebf90002b66fb11d4981ee6fed9b0ec241f45568e9ead198"
     },
     {
       "path": "host/build_z9_core.py",
@@ -1323,8 +1323,8 @@
     },
     {
       "path": "src/platform/z8_c311/menu_construct.c",
-      "sha256": "955957ebee572893068608f046ef67932fe331d9bc1a84961f07e5ef078959a7",
-      "bytes": 2741
+      "sha256": "37bd28e35d0eba1e6846aa237984e7ad225b0f18eae7eae7b26c1ed015a0682a",
+      "bytes": 3099
     },
     {
       "path": "src/platform/z8_c311/menu_data.h",
@@ -1378,8 +1378,8 @@
     },
     {
       "path": "src/platform/z8_c311/ptp_stub.c",
-      "bytes": 570,
-      "sha256": "536f8a7b23a17f09aa353c6ab11ba5a476dfa6ca956d291624429af0ef1f0fdc"
+      "bytes": 654,
+      "sha256": "4288abb3f7e3c80b2f0de0cf18ae6e0863cbbf2e7ad1eedb1cdeb827ce3357c7"
     },
     {
       "path": "src/platform/z8_c311/rtos.c",
