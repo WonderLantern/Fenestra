@@ -208,7 +208,7 @@ T12 engineering record):
 | `camera.menu.open` | `0x403ad6d8` | the `(group, page)` open primitive (26 callers); the ported `0x403adbac` call was a Z9 reference landing mid-function on C311 and is replaced |
 | Text bank roots | `0xa0281cd5c` count, `0xa02f2ac38` pool, `0xa02f2ac40` fonts, `0xa02f2ac48` offsets, `0xa02f2ac50` attributes | registered by the firmware text init (`FUN_403edf3c` via `FUN_4032e05c/074/08c/0a4/104`); cluster order mirrors Z9 |
 | Font request sites | lock `0x402e5550` / unlock `0x402e5564` (mutex `0xa02e8c658`), 13 enter sites `0x402edc90..0x402f0248`, measure `0x4088bdac`, set_layout `0x4088c620`, line probe `0x402eeb28` | byte-verified pattern at all 13 sites (lock BL; orr w0,#2; register; event-op; orr w0,#2; wait; unlock BL at +28, the Z9 geometry); structural check in `emulation/native_font_sites.py:z8-c311` runs at build and verify time |
-| SETUP navigation table | `0x43bf0680` (12 records, next page id `0x68c`) | C311 uses one table per page family; the ported `0x43014bb8` (Z9 single 18-event table) reads as high-entropy data here |
+| SETUP navigation table | `0x43bf0680` (13 records = 12 routes + the `{0x3bb,0,0,0x68c}` terminator; stay next id `0x68c`) | C311 uses one table per page family; the ported `0x43014bb8` (Z9 single 18-event table) reads as high-entropy data here. Menu quintuple pinned from it: terminal `0x3bb`, back `0x27f` (cb `0x403b1bb0` -> family root), activation trio `0x286/0x28b/0x2ae` (151 child-table records route them to real sub-pages `0x68d-0x68f`), stay `0x68c`; cursor up/down `0x283/0x29d` and `0x284/0x29e`, view-5 pair `0x285/0x2a0`, value-notify `0x29f`, page-open route `0x27e`; conditions `0x403b1c5c` (always-false, stock-disabled) / `0x403b1c7c` (settings-gated) |
 
 Installation: page.get/text.get/navigate are plain-branch full replacements
 at their entries (stock semantics reimplemented; navigate keeps the
@@ -218,12 +218,45 @@ pure passthrough. Baseline equivalence: the patched image passes the full
 RE0 regression (FXBOOT1 + DCIM/NIKON/Z_8 + hello module present, no
 unmodeled MMIO; artifact `menu-reg-1` in the local evidence store).
 
-Boundaries (explicit): the render-profile cluster (ui_layout/ui_text/
-visibility/draw profiles, ~20 Z9 reference slots, all confirmed NOT
-function entries on C311), the font fallback face (open_font/select_font/
-fallback data) and display restore remain unpinned; the Fenestra page
-construction and draw paths stay dormant until they are pinned, so
-menu-driven navigation and activation are not yet exercised end to end.
+Construction and E2E (final round, all values pinned against the C311
+image): the draw profile completes from the stock pair site
+`FUN_4039e848` — rectangle clip-setup `FUN_40340d64` (writes clip[4]
+int16 from surface+0x9c/+0x1f4), pair dispatch `FUN_403f6388` (locks
+`0xa032bbd68`, wraps raw dispatcher `FUN_403262a0`), empty/degenerate
+test `FUN_40c7be74`; the compositor submit tail is
+`FUN_403efed8(FUN_403efe74,3,7)` (the Z9 `0x403eb0dc/0x403eb078` pair
+was a mid-function reference). `fx_z8_menu_construct` builds owned pages
+from the pinned quintuple (offset-asserted layout compatibility with the
+shared menu builder). The C311 SETUP page 638 is a 1-row hub page (stock
+row id `0x3793`), so the construction prepends the two Fenestra entry
+rows dynamically (setup.count = stock+2, template = last stock row) and
+grows the text bank from the runtime roots `0xa02f2ac40/0xa02f2ac50`
+(per-language attribute rows range-checked).
+
+Emulation E2E (probe `scripts/z8_menu_probe.py`, single boot per leg,
+stream-fed window, qtest-primary evidence via `fx_z8_menu_metadata` v5;
+3/3 runs per phase):
+- navigate (enabled image): SETUP descriptor holds the State magic; the
+  owned core page carries identity `0x7000<<16` with 7 rows; SETUP is
+  rewritten to 3 rows with entry rows `0x7ff0/0x7ff1` (text id 3204).
+- activate (enabled image): original MCU key records (menu/ok/down/
+  down/ok/ok) drive module activation — activation requested, modules
+  > 0, worker magic `0x465A3957`, phase 2 (ACTIVE).
+- negative (default image): the headless State installs (early publish)
+  with construction dormant (no owned core page, no entry-row rewrite) —
+  baseline equivalence, plus the full RE0 regression re-run
+  (`menu-reg-4/5/6`) on every default-build revision.
+
+Boundaries (explicit): the modal body id is not pinned (constructed pages
+are non-modal; the modal draw branch rejects with FX_ARGUMENT if ever
+reached), the text-editor slots, the font fallback face (the C311 font
+subsystem uses a face cache with 2-arg create/bind — `FUN_40881888`/
+`FUN_40880d74` — and vtable configs `0x44b82608/0x44b82748`, an ABI
+change from Z9 recorded for T15) and the display profile (VG library
+verified unmoved at the Z9 addresses, 24 fns; the GUI cluster shifted,
+anchor map in the local evidence store) remain unpinned. The loader runs
+on the UI dispatch domain tick (C311 `task.create` is not pinned); no
+loader task exists in the enabled image.
 
 ## 4c. Render-profile cluster (T12, second round)
 
@@ -276,8 +309,8 @@ the patched image passes the full RE0 regression twice (`menu-reg-1`,
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
-| Native menu registration (menu reachability) | bindings + render profiles enabled, navigation E2E pending | menu trio, font sites, layout/visibility/draw bindings pinned and hooked (sections 4b/4c); the residual set (draw rectangle/modal id, text-editor slots, fallback face, display restore, the Z9 event-id quintuple in the menu profiles) keeps construction dormant, so SETUP navigation is not yet exercised |
-| hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation (module management entry) still pending |
+| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); menu-key navigation and module activation verified end to end on the enabled image (probe artifacts `menu-e2e-nav/act/neg-*`, 3/3 per phase); the default build keeps construction dormant (probe negative leg + RE0 regression). Boundary: hardware untested |
+| hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; menu-driven activation verified on the enabled image (`menu-e2e-act-*`: worker magic + ACTIVE) |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
 | task.create/resume/delay addresses | Z9 reference values | prologue probes exist; create/resume are not exercised by the validated configuration; the delay binding runs on the loader's yield path (all runs) and on the sysctl stop-handshake wait loop (forced-delivery context) |

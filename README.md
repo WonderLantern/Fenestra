@@ -12,7 +12,7 @@ This repository contains the core, module SDK, host debugging tools, firmware pa
 | --- | --- | --- | --- |
 | `zr-c110` | Nikon ZR C1.10 | Core, SDK, native menus, and PTP debugging | Not available |
 | `z9-c532` | Nikon Z9 C5.32 | Core, SDK, native menus, and PTP debugging | Available |
-| `z8-c311` | Nikon Z8 C 3.11 | Core, SDK, startup-file module loading, sysctl lifecycle events and native menu bindings (navigation E2E pending) | Not available |
+| `z8-c311` | Nikon Z8 C 3.11 | Core, SDK, startup-file module loading, sysctl lifecycle events and native menu bindings with construction (menu-key navigation and module activation verified in emulation on the menu-enabled build; the default build stays headless-equivalent) | Not available |
 
 The [Z8 C 3.11 guide](docs/z8-c311-port.md) covers the core build, local update-package generation, the hello module and reproducible session verification.
 
