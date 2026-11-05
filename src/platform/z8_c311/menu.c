@@ -939,10 +939,21 @@ static uint32_t manage_modules(void *p) {
  * validated BEFORE the State allocation, so a not-yet-ready boot retries
  * without allocating (the z9 install performs its equivalent checks ahead
  * of its allocate; construct_pages re-checks as defense in depth). */
+#define FX_Z8_SETUP_LIST_PAGE 663u   /* wrench-tab root list (44 stock rows,
+                                       * first row "Format memory card"; located
+                                       * by the pages probe + text match) */
 static int construct_ready(FxNativePage *sp) {
     const FxNativeDescriptor *d=(const FxNativeDescriptor *)sp->descriptor;
     if(!d || !d->header || !d->rows || !d->events)return 0;
     if(!d->count || d->count>45u)return 0;
+    if(sp->identity>>16!=638u)return 0;
+    {
+        uintptr_t root=((volatile uintptr_t *)(uintptr_t)UINT64_C(0xa032b50c8))[2];
+        FxNativePage *list=(FxNativePage *)(root+FX_Z8_SETUP_LIST_PAGE*96u);
+        const FxNativeDescriptor *ld=(const FxNativeDescriptor *)list->descriptor;
+        if(!ld || !ld->header || !ld->rows || !ld->events)return 0;
+        if(ld->count<30u || ld->count>45u)return 0;
+    }
     const uint8_t *fonts=*(const uint8_t *const *)(uintptr_t)UINT64_C(0xa02f2ac40);
     const uintptr_t *attributes=*(const uintptr_t *const *)(uintptr_t)UINT64_C(0xa02f2ac50);
     if(!fonts || !attributes)return 0;
@@ -957,10 +968,17 @@ static int construct_ready(FxNativePage *sp) {
  * bank for our ids and publish. All-or-nothing: nothing is published on
  * failure and the install retries on the next startup-complete event. */
 static void construct_pages(State *s, FxNativePage *sp) {
-    const FxNativeDescriptor *d=(const FxNativeDescriptor *)sp->descriptor;
+    /* C311 has TWO pages in play: 638 (a 1-row hub, the state() anchor) and
+     * 663 (the wrench-tab root list the user actually sees, 44 stock rows
+     * starting with "Format memory card"). The entry rows are prepended to
+     * the 663 row set and the rewritten descriptor is published on the 663
+     * page object; 638 keeps carrying the State anchor. */
+    uintptr_t root=((volatile uintptr_t *)(uintptr_t)UINT64_C(0xa032b50c8))[2];
+    FxNativePage *list_page=(FxNativePage *)(root+FX_Z8_SETUP_LIST_PAGE*96u);
+    const FxNativeDescriptor *d=(const FxNativeDescriptor *)list_page->descriptor;
     if(!d || !d->header || !d->rows || !d->events)return;
     uint32_t stock=d->count;
-    if(!stock || stock>45u)return;   /* C311 SETUP root: 1 stock row (hub page) */
+    if(stock<30u || stock>45u)return;
     const FxNativeRow *rows=(const FxNativeRow *)d->rows;
     s->setup=*d;
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
@@ -1028,6 +1046,10 @@ static void construct_pages(State *s, FxNativePage *sp) {
     *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac50)=(uintptr_t)bank->attributes;
     atomic_store_explicit(&s->text_bank,bank,memory_order_seq_cst);
     fx_retained_account(fx_shared_text_account(&s->accounting),&bank->accounted,bank->bytes);
+    /* The wrench list renders from the 663 page object: publish the
+     * rewritten descriptor there; 638 keeps the State anchor for state(). */
+    atomic_store_explicit((_Atomic uintptr_t *)&list_page->descriptor,
+        (uintptr_t)&s->setup,memory_order_release);
     atomic_store_explicit((_Atomic uintptr_t *)&sp->descriptor,(uintptr_t)s,memory_order_release);
     void *stack=allocate(65536u+16u);s->task_stack=stack;
     if(stack)fx_retained_account(fx_shared_loader_account(&s->accounting),&s->stack_accounted,65536u+16u);
