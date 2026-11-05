@@ -56,6 +56,15 @@ class Z8MenuConstructSources(unittest.TestCase):
         self.assertNotIn('&s->rows[44]', text)
         self.assertEqual(text.count('&s->rows[2]'), 3)
 
+    def test_shared_routes_use_bounded_link(self):
+        """M-3: the shared route rewriter must consume the profile's
+        navigation record count (C311 tables are 13 records; the legacy
+        18-record bound only holds by terminator luck)."""
+        text = (ROOT / 'src' / 'native_ui_routes.c').read_text()
+        self.assertNotIn('result=fx_native_menu_link(program->events', text)
+        self.assertIn('fx_native_menu_link_bounded(program->events', text)
+        self.assertIn('u->profile.navigation_events', text)
+
     def test_fixture_pins_real_table_shape(self):
         text = FIXTURE.read_text()
         self.assertIn('{0x3bb,0,0,0x68c}', text)

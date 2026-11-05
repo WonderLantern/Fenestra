@@ -33,7 +33,7 @@ FxResult fx_native_ui_routes_prepare(FxNativeUi *u,uint32_t count,FxNativeRowPro
         if(row==UINT32_MAX){result=FX_INTEGRITY;goto failed;}
         const FxNativeEvent *events=(const FxNativeEvent *)menu->events[row];
         uint64_t target=destination(u,next,slot);uint32_t replace=!same(old,next);
-        for(uint32_t e=0u;e<FX_NATIVE_EVENTS;++e) {
+        for(uint32_t e=0u;e<(u->profile.navigation_events?u->profile.navigation_events:FX_NATIVE_EVENTS);++e) {
             uint32_t code=(uint32_t)events[e].event&65535u;
             if(code==u->profile.terminal)break;
             for(uint32_t k=0u;k<4u;++k)if(code==u->profile.select_events[k])replace|=events[e].next!=target;
@@ -42,11 +42,15 @@ FxResult fx_native_ui_routes_prepare(FxNativeUi *u,uint32_t count,FxNativeRowPro
         FxNativeRowProgram *program=fx_native_ui_allocate(u,(uint32_t)sizeof(*program));
         if(!program){result=FX_BUDGET;goto failed;}
         pending[slot]=program;
-        result=fx_native_menu_link(program->events,u->profile.navigation,u->profile.terminal,
-            u->profile.select_events,u->actions[slot],target);
+        /* Bounded by the profile's navigation record count: C311 tables
+         * are 13 records; the legacy FX_NATIVE_EVENTS bound only held by
+         * terminator luck. Zero keeps the historical 18-record bound. */
+        result=fx_native_menu_link_bounded(program->events,u->profile.navigation,u->profile.terminal,
+            u->profile.select_events,u->actions[slot],target,
+            u->profile.navigation_events?u->profile.navigation_events:FX_NATIVE_EVENTS);
         if(result!=FX_OK)goto failed;
         program->menu=menu;program->row=u->row_base+slot;program->control=next?next->id:0u;
-        for(uint32_t e=0u;e<FX_NATIVE_EVENTS;++e) {
+        for(uint32_t e=0u;e<(u->profile.navigation_events?u->profile.navigation_events:FX_NATIVE_EVENTS);++e) {
             uint32_t code=(uint32_t)program->events[e].event&65535u;
             if(code==u->profile.terminal)break;
             for(uint32_t k=0u;k<4u;++k)if(code==u->profile.select_events[k]) {
