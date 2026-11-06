@@ -45,7 +45,25 @@ PROFILES={
    # SETUP-family navigation event table: 13 records of
    # {event, callback, condition, next} = 12 routes + the
    # {0x3bb,0,0,0x68c} terminator; stay next page id 0x68c.
-   'camera.menu.navigation':(0x43bf0680,13*32)},
+   'camera.menu.navigation':(0x43bf0680,13*32),
+   # Stock 663 row-0 event table (T2): the wrench-tab row-ok consumer
+   # resolves navigation through THIS 59-record family (58 routes + the
+   # 0x3bb terminator; per-row tables tight-packed at 0x760). The select
+   # trio {0x286,0x28b,0x2ae} carries the pushed page id in record.next
+   # (stock row 0: next=0x298, cb=0x403b1ba8 plain-ret).
+   'camera.menu.row-events.663':(0x43d745c0,59*32),
+   # Borrowed row-id stock families (T2/T3 BORROW): own pages borrow
+   # 0x46e8-0x46f4 from the 14-row language/region array; module-manager
+   # and paged module UIs share the 0x4600 family inside the 99-row array
+   # (offsets 0..15 control, 16..23 pickers, 40/41 back/notice).
+   'camera.menu.rows.language-region':(0x43f142dc,14*44),
+   'camera.menu.rows.manager':(0x43cf133c,99*44),
+   # Page-descriptor template array (T4b occupancy audit): id-indexed,
+   # stride 0x50, valid templates for ids 0..0x4c2 (663 = 0x297 at
+   # 0x44d35040, count 44); the kind-2 gate bound 0x68c sits beyond the
+   # array's live span. Band [0x4c3,0x68b] has no templates: those slots
+   # are runtime scaffolds only (identity (id<<16)|2, page_count 0).
+   'camera.menu.descriptor-templates':(0x44d28110,0x4c3*0x50)},
   # SYSCTL lifecycle: event table + dispatcher entry pinned against the original
   # image. Dispatcher FUN_40d60ec8 reads the event id at message+0x20 (ldrsw at
   # entry+0x18); its 16-byte entry window is four stack-push STPs (the same

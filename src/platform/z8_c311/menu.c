@@ -35,8 +35,31 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
 #include "fenestra_native_panic.h"
 #define FN(a, t) ((t)(uintptr_t)UINT64_C(a))
 #define SETUP 638u
-#define FENESTRA FX_NATIVE_FENESTRA_PAGE
-#define WONDER FX_NATIVE_WONDER_PAGE
+/* C311 kind-2 navigation gate (T4a): FUN_403af53c drops every list
+ * target >= 0x68c (cmp w22,w20 @0x403af654 + b.ls @0x403af658) BEFORE
+ * page.get runs, so the shared 0x7000-family ids can never be pushed
+ * from wrench-tab row navigation. The four own pages that row navigation
+ * must reach are therefore built at stock page ids from the audited free
+ * window [0x61c,0x65d] (nearest stock references: 0x61b/0x65e page-id
+ * immediates at open/navigation call sites). Audit = descriptor-template
+ * census (ROM array 0x44d28110 stride 0x50 ends at id 0x4c2) + row-table
+ * next values (descriptor walk over every template) + page-id immediates
+ * at all 739 static calls into the page.get/open/continuation family +
+ * the live group-2 roots dump (band slots are empty scaffolds: identity
+ * (id<<16)|2, page_count 0, never rebuilt through a boot+wrench soak;
+ * roots-audit.json in build/re-runs/t4b-audit-r2). The ids are matched
+ * EXACTLY in fx_z8_menu_page only: the extension NULL interval and the
+ * navigate-hook interval stay [FX_NATIVE_FENESTRA_PAGE,
+ * FX_NATIVE_EXTENSION_PAGE_LIMIT) -- widening them past 0x7000 hijacks
+ * the 68 stock dialog templates in [0x5e0,0x7000) (the t4a s2 crash).
+ * The module manager/UI pages keep their 0x7000-family ids and stay
+ * above the gate (documented boundary, see validation-z8-c311.md). */
+#define FX_Z8_PAGE_FENESTRA 0x63cu
+#define FX_Z8_PAGE_WONDER 0x63du
+#define FX_Z8_PAGE_AUTO 0x63eu
+#define FX_Z8_PAGE_GUARD 0x63fu
+#define FENESTRA FX_Z8_PAGE_FENESTRA
+#define WONDER FX_Z8_PAGE_WONDER
 #define TEXT 3204u
 #define UI_PAGE_BASE FX_NATIVE_MODULE_PAGE_BASE
 #define UI_TEXT_BASE (TEXT + 26u)
@@ -45,7 +68,40 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
 #define TEXT_COUNT (MODULE_TEXT_BASE-TEXT)
 #define LANGUAGES 29u
 #define MAGIC UINT32_C(0x465a384d)
+/* C311 row ids for our own pages must be REGISTERED stock ids: the
+ * open-path rebuild silently aborts the whole row build on an unknown id
+ * (T12 P3), and the registry is the static ROM id pool with no runtime
+ * registration API (T3 BORROW decision). We borrow from two stock row
+ * families whose owning pages are never open at the same time as ours
+ * (co-open pages are stack ancestors; neither family belongs to the
+ * wrench-tab ancestry):
+ *   - own pages (core/wonder/auto/guard): 0x46e8-0x46f4, the 14-row
+ *     language/region array at 0x43f142dc (byte-verified in the mirror);
+ *   - module-manager and paged module UIs (one shared row base): 0x4600
+ *     family, offsets 0..15 control slots, 16..23 pickers, 40/41 back and
+ *     notice rows, all members of the 99-row array at 0x43cf133c.
+ * Ids are unique per page and globally distinct across our pages (auto and
+ * guard stay open above core; wonder opens beside 663), and disjoint from
+ * the 663 entry-row borrows 0x2d1c/0x2d1d (page 25's stock family). */
+#define FX_Z8_CORE_ACTIVATE_ID 0x46e8u
+#define FX_Z8_CORE_STATUS_ID 0x46e9u
+#define FX_Z8_CORE_MODULES_ID 0x46eau
+#define FX_Z8_CORE_AUTOSTART_ID 0x46ebu
+#define FX_Z8_CORE_GUARDFLAG_ID 0x46ecu
+#define FX_Z8_CORE_USB_ID 0x46edu
+#define FX_Z8_CORE_BACK_ID 0x46eeu
+#define FX_Z8_WONDER_ROW_ID 0x46efu
+#define FX_Z8_WONDER_BACK_ID 0x46f0u
+#define FX_Z8_AUTOMENU_ON_ID 0x46f1u
+#define FX_Z8_AUTOMENU_OFF_ID 0x46f2u
+#define FX_Z8_GUARDMENU_ROW_ID 0x46f3u
+#define FX_Z8_GUARDMENU_CLEAR_ID 0x46f4u
+#define FX_Z8_MANAGER_ROW_BASE 0x4600u
 typedef FxNativePanicPage PanicPage;
+/* Records in one stock 663 row event table (stock row 0's table at
+ * 0x43d745c0: 58 route records + the 0x3bb terminator; tables are
+ * tight-packed at 0x760 = 59*32 bytes). */
+#define FX_Z8_ROW_EVENT_RECORDS 59u
 typedef struct {
     /* The firmware descriptor is 0x50 bytes: the stock ROM template at
      * 0x44d35040 (stride 0x50) carries a record-table pointer at +0x40 and
@@ -60,7 +116,15 @@ typedef struct {
     _Atomic uint32_t activation, phase, error, shutdown, retry;
     FxNativeRow rows[47];
     uintptr_t events[47];
-    FxNativeEvent entry_events[2][18];
+    /* Entry-row and own-page row event tables: the wrench-tab row-ok
+     * consumer walks the FULL stock row-table family (59 records incl.
+     * the 0x3bb terminator; stock row 0's table at 0x43d745c0), not the
+     * 13-record 0x43bf0680 navigation family. Own-page menus are built
+     * with the shared builder (18-slot handlers) and then rebound to
+     * these full-shape tables, 13 rows = core 7 + wonder 2 + auto 2 +
+     * guard 2. */
+    FxNativeEvent entry_events[2][FX_Z8_ROW_EVENT_RECORDS];
+    FxNativeEvent owned_events[13][FX_Z8_ROW_EVENT_RECORDS];
     FxNativeMenu core, wonder;
     _Atomic(FxNativeTextBank *) text_bank;
     FxZ8TaskScope task;
@@ -425,19 +489,19 @@ __attribute__((unused)) static uint32_t page_opened(void *context) {
         if (u)
             value = fx_native_ui_value(u, row, &enabled);
         else if(row>=0x7b00u && row<=0x7b14u)value=fx_native_apps_value(s->apps,page,row,&enabled);
-        else if (row == 0x7ff1u)
+        else if (row == FX_Z8_CORE_ACTIVATE_ID)
             enabled = !atomic_load(&s->activation) &&
                 (atomic_load(&s->startup.phase)==FX_STARTUP_READY || atomic_load(&s->startup.phase)==FX_STARTUP_IO_ERROR);
-        else if (row == 0x7ff2u)
+        else if (row == FX_Z8_CORE_STATUS_ID)
             value = TEXT + 10u;
-        else if(row==0x7ff5u) {
+        else if(row==FX_Z8_CORE_AUTOSTART_ID) {
             value=TEXT+((atomic_load(&s->startup.desired)&FX_STARTUP_AUTO)?14u:15u);
             uint32_t phase=atomic_load(&s->startup.phase);
             enabled=phase==FX_STARTUP_READY || phase==FX_STARTUP_ABNORMAL || phase==FX_STARTUP_RUNNING;
-        } else if(row==0x7ff6u) {
+        } else if(row==FX_Z8_CORE_GUARDFLAG_ID) {
             value=TEXT+(atomic_load(&s->startup.phase)==FX_STARTUP_ABNORMAL?19u:18u);
             enabled=atomic_load(&s->startup.phase)==FX_STARTUP_ABNORMAL && atomic_load(&s->startup.flag_known);
-        } else if(row==0x7ff7u) {
+        } else if(row==FX_Z8_CORE_USB_ID) {
             value=TEXT+(atomic_load(&s->ptp.enabled)?14u:15u);
             enabled=fx_z8_menu_ptp_active();
         }
@@ -463,7 +527,8 @@ __attribute__((unused)) static void refresh_core(State *s) {
             void *row=FN(0x40325b60,void *(*)(uint32_t,void *))(rows[i].word[6],fx_native_page_rows(&s->core.page));
             if(!row)continue;
             FN(0x403f6228,void (*)(void *,uint32_t))(row,1u);
-            if(rows[i].word[6]==0x7ff2u || rows[i].word[6]==0x7ff5u || rows[i].word[6]==0x7ff6u) {
+            if(rows[i].word[6]==FX_Z8_CORE_STATUS_ID || rows[i].word[6]==FX_Z8_CORE_AUTOSTART_ID ||
+               rows[i].word[6]==FX_Z8_CORE_GUARDFLAG_ID) {
                 void *value=fx_z8_child_lookup(row,0x4ba5u);
                 if(value)FN(0x403f6228,void (*)(void *,uint32_t))(value,1u);
             }
@@ -925,7 +990,7 @@ static uint32_t manage_modules(void *p) {
         uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
             (uintptr_t)noop,(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_modules_init(m,fx_platform_target(),&profile,allocate,
-            UI_TEXT_BASE,0x7d00u,callbacks,
+            UI_TEXT_BASE,FX_Z8_MANAGER_ROW_BASE,callbacks,
             atomic_load(&s->activation)!=0u)!=FX_OK){map_release(0,m);return 0u;}
         m->ui.retained_account=fx_shared_ui_account(&s->accounting);
         m->ui.editor_profile=&ui_editor_profile;
@@ -963,6 +1028,61 @@ static uint32_t manage_modules(void *p) {
 #define FX_Z8_LIST_ROW0_TEXT 0x280u    /* "Format memory card" (clone row) */
 #define FX_Z8_LIST_ROW43_TEXT 0x662u   /* last stock row sentinel */
 #define FX_Z8_HUB_STOCK_DESCRIPTOR UINT64_C(0xa028c9870)
+/* Stock row 0's full event table (59 records; the per-row tables behind
+ * desc->events on 663). The wrench-tab row-ok consumer resolves the
+ * selected row's navigation through THIS table family: the stock probe
+ * round okchain-t2-stock1 proved the pushed page id equals the selected
+ * row's 0x286-record `next` (row 41 -> 0x2de) with NO call through the
+ * open primitive FUN_403ad6d8 or the navigation continuation
+ * FUN_403af53c -- the view framework consumes `next` directly. */
+#define FX_Z8_LIST_STOCK_ROW_EVENTS UINT64_C(0x43d745c0)
+/* C311 select routing (T1 CHAIN_BROKEN follow-up): the wrench-tab row ok
+ * carries its target in the select trio's record.next of the FULL stock
+ * row-table family -- the 13-record 0x43bf0680 navigation family used by
+ * the Z9-style rewrite is never consulted for wrench rows, which is why
+ * the rewritten trio was inert (T1 rounds + okchain-t2-r1/r2/r3). Fix:
+ * copy a stock row table verbatim per row and rewrite ONLY the trio
+ * (cb = the row's Fenestra action when it has one, condition 0 = the
+ * stock row value, next = the target page id). Everything else -- back,
+ * cursor, submenu and widget-event records -- stays byte-exact stock. */
+static void link_row_table(FxNativeEvent out[FX_Z8_ROW_EVENT_RECORDS],
+                           uintptr_t action, uint64_t next) {
+    memcpy(out,(const void *)(uintptr_t)FX_Z8_LIST_STOCK_ROW_EVENTS,
+           FX_Z8_ROW_EVENT_RECORDS*sizeof(*out));
+    for(uint32_t i=0u;i<FX_Z8_ROW_EVENT_RECORDS;++i) {
+        uint32_t event=(uint32_t)out[i].event;
+        if(event!=0x286u && event!=0x28bu && event!=0x2aeu)continue;
+        if(action)out[i].callback=action;
+        out[i].condition=0;
+        out[i].next=next;
+    }
+}
+/* Own-page rows are re-bound to full-shape tables after the shared build
+ * (the shared 18-slot handlers stay allocated but unreferenced, the
+ * documented rebind pattern). */
+static void adopt_row_tables(FxNativeMenu *menu,FxNativeEvent tables[][FX_Z8_ROW_EVENT_RECORDS],
+                             uint32_t first,const FxZ8MenuEntry *entries,uint32_t count) {
+    for(uint32_t r=0u;r<count;++r) {
+        link_row_table(tables[first+r],entries[r].action,entries[r].next);
+        /* The event-table pointer must address the r-th TABLE, not the
+         * r-th record of the first table: the row-ok consumer indexes
+         * desc->events[selected+scroll] (FUN_40508bd4: ldrh [page+0x32] +
+         * ldrh [page+0x58]) and walks 0x20-stride records from whatever
+         * the slot points at -- a record-shifted view silently resolves
+         * the ok trio of the WRONG row (t4b-diag-auto-r1: ok on the
+         * autostart row staged ACTIVATE's next 0x68c). FxZ8MenuEntry and
+         * FxNativeEntry share the layout (ABI asserted in
+         * menu_construct.c). */
+        menu->events[r]=(uintptr_t)tables[first+r];
+    }
+}
+/* The visible Back rows pop through the stock back control (0x68d), the
+ * same route the stock back-key handler 0x403b1bb0 takes; record.next
+ * cannot express a pop (an ancestor id is deduped by the stack push). */
+static uint32_t navigate_back(void *p) {
+    (void)p;
+    return (uint32_t)FN(0x403af53c,uint64_t (*)(uint32_t))(0x68du);
+}
 static int construct_ready(FxNativePage *sp) {
     const FxNativeDescriptor *d=(const FxNativeDescriptor *)sp->descriptor;
     if(!d || !d->header || !d->rows || !d->events)return 0;
@@ -1023,36 +1143,45 @@ static void construct_pages(State *s, FxNativePage *sp) {
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
         UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
     FxZ8MenuEntry core[]={
-        {TEXT+2u,0x7ff1u,0u,0u,(uintptr_t)activate,0x68cu},
-        {TEXT+3u,0x7ff2u,0u,1u,(uintptr_t)noop,0x68cu},
-        {TEXT+11u,0x7ff4u,1u,0u,(uintptr_t)manage_modules,FX_NATIVE_MANAGER_PAGE_BASE},
-        {TEXT+12u,0x7ff5u,1u,1u,(uintptr_t)noop,FX_NATIVE_STARTUP_AUTO_PAGE},
-        {TEXT+13u,0x7ff6u,1u,1u,(uintptr_t)noop,FX_NATIVE_STARTUP_GUARD_PAGE},
-        {TEXT+20u,0x7ff7u,0u,1u,(uintptr_t)usb_toggle,0x68cu},
-        {TEXT+4u,0x7ff3u,0u,0u,(uintptr_t)noop,638u},
+        {TEXT+2u,FX_Z8_CORE_ACTIVATE_ID,0u,0u,(uintptr_t)activate,0x68cu},
+        {TEXT+3u,FX_Z8_CORE_STATUS_ID,0u,1u,(uintptr_t)noop,0x68cu},
+        {TEXT+11u,FX_Z8_CORE_MODULES_ID,1u,0u,(uintptr_t)manage_modules,FX_NATIVE_MANAGER_PAGE_BASE},
+        {TEXT+12u,FX_Z8_CORE_AUTOSTART_ID,1u,1u,(uintptr_t)noop,FX_Z8_PAGE_AUTO},
+        {TEXT+13u,FX_Z8_CORE_GUARDFLAG_ID,1u,1u,(uintptr_t)noop,FX_Z8_PAGE_GUARD},
+        {TEXT+20u,FX_Z8_CORE_USB_ID,0u,1u,(uintptr_t)usb_toggle,0x68cu},
+        {TEXT+4u,FX_Z8_CORE_BACK_ID,0u,0u,(uintptr_t)navigate_back,0x68cu},
     };
-    FxZ8MenuEntry wonder[]={{TEXT+5u,0x7fc0u,0u,0u,(uintptr_t)noop,0x68cu},
-                            {TEXT+4u,0x7ff3u,0u,0u,(uintptr_t)noop,638u}};
+    FxZ8MenuEntry wonder[]={{TEXT+5u,FX_Z8_WONDER_ROW_ID,0u,0u,(uintptr_t)noop,0x68cu},
+                            {TEXT+4u,FX_Z8_WONDER_BACK_ID,0u,0u,(uintptr_t)navigate_back,0x68cu}};
     FxNativeMenuProfile owned={(const FxNativePage *)sp,clone,
         (const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
         0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,638u,13u};
     if(fx_native_menu_build(&s->core,&owned,FENESTRA,TEXT,(const FxNativeEntry *)core,7u,callbacks)!=FX_OK)return;
     if(fx_native_menu_build(&s->wonder,&owned,WONDER,TEXT+1u,(const FxNativeEntry *)wonder,2u,callbacks)!=FX_OK)return;
-    FxZ8MenuEntry automatic[]={{TEXT+14u,0x7fd0u,0u,0u,(uintptr_t)auto_on,FENESTRA},
-                               {TEXT+15u,0x7fd1u,0u,0u,(uintptr_t)auto_off,FENESTRA}};
-    FxZ8MenuEntry guard[]={{TEXT+17u,0x7fd2u,0u,0u,(uintptr_t)noop,FENESTRA},
-                           {TEXT+16u,0x7fd3u,0u,0u,(uintptr_t)clear_flag,FENESTRA}};
+    FxZ8MenuEntry automatic[]={{TEXT+14u,FX_Z8_AUTOMENU_ON_ID,0u,0u,(uintptr_t)auto_on,FENESTRA},
+                               {TEXT+15u,FX_Z8_AUTOMENU_OFF_ID,0u,0u,(uintptr_t)auto_off,FENESTRA}};
+    FxZ8MenuEntry guard[]={{TEXT+17u,FX_Z8_GUARDMENU_ROW_ID,0u,0u,(uintptr_t)noop,FENESTRA},
+                           {TEXT+16u,FX_Z8_GUARDMENU_CLEAR_ID,0u,0u,(uintptr_t)clear_flag,FENESTRA}};
     FxNativeMenuProfile child=owned;child.back=FENESTRA;
-    if(fx_native_menu_build(&s->auto_menu,&child,FX_NATIVE_STARTUP_AUTO_PAGE,TEXT+12u,(const FxNativeEntry *)automatic,2u,callbacks)!=FX_OK)return;
-    if(fx_native_menu_build(&s->guard_menu,&child,FX_NATIVE_STARTUP_GUARD_PAGE,TEXT+13u,(const FxNativeEntry *)guard,2u,callbacks)!=FX_OK)return;
+    if(fx_native_menu_build(&s->auto_menu,&child,FX_Z8_PAGE_AUTO,TEXT+12u,(const FxNativeEntry *)automatic,2u,callbacks)!=FX_OK)return;
+    if(fx_native_menu_build(&s->guard_menu,&child,FX_Z8_PAGE_GUARD,TEXT+13u,(const FxNativeEntry *)guard,2u,callbacks)!=FX_OK)return;
+    /* Rebind every own-page row to a full-shape stock row table: the
+     * wrench-tab consumer resolves row navigation from THIS family (see
+     * link_row_table); the shared 18-slot copies stay as inert backing. */
+    adopt_row_tables(&s->core,s->owned_events,0u,core,7u);
+    adopt_row_tables(&s->wonder,s->owned_events,7u,wonder,2u);
+    adopt_row_tables(&s->auto_menu,s->owned_events,9u,automatic,2u);
+    adopt_row_tables(&s->guard_menu,s->owned_events,11u,guard,2u);
     /* C311 row-id space: the open-path rebuild silently aborts the whole
      * row build when a row's id (word[6]) is not a registered stock row id
      * -- the Z9-style 0x7ff0-family ids kill the build at that row (probe
      * rounds p3-r13/r14: zero rows built, black panel; p3-r15/r16 proved a
      * registered stock id passes). Ids are validated against a GLOBAL
      * registry, so ids borrowed from another page's stock row family work
-     * while staying unique within 663. 0x2d1c/0x2d1d are page 25's first
-     * rows (verified in the offline mirror). */
+     * while staying unique within the page. 0x2d1c/0x2d1d are page 25's
+     * first rows (verified in the offline mirror); the own pages borrow
+     * the 0x46e8/0x4600 families (see the id block at the top of this
+     * file). */
 #define FX_Z8_ENTRY_ROW_ID0 0x2d1cu
 #define FX_Z8_ENTRY_ROW_ID1 0x2d1du
     memcpy(s->rows+2u,rows,stock*sizeof(*rows));
@@ -1062,8 +1191,10 @@ static void construct_pages(State *s, FxNativePage *sp) {
         s->rows[r].word[0]=TEXT+r;
         s->rows[r].word[2]=65535u;
         s->rows[r].word[6]=r?FX_Z8_ENTRY_ROW_ID1:FX_Z8_ENTRY_ROW_ID0;
-        if(fx_native_menu_link_bounded(s->entry_events[r],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-            0x3bbu,(const uint32_t[4]){0x286u,0x28bu,0x2aeu,0u},(uintptr_t)noop,r?WONDER:FENESTRA,13u)!=FX_OK)return;
+        /* Entry rows keep the stock row-table callbacks verbatim (the
+         * stock select callback is the plain 0x403b1ba8 ret thunk); only
+         * the trio's next carries FENESTRA/WONDER. */
+        link_row_table(s->entry_events[r],0u,r?WONDER:FENESTRA);
         s->events[r]=(uintptr_t)s->entry_events[r];
     }
     s->setup.rows=(uintptr_t)s->rows;
@@ -1196,14 +1327,21 @@ void fx_z8_headless_pump(void) {
 FxNativePage *fx_z8_menu_page(uint32_t group, uint32_t id) {
     id &= 65535u;
     State *s = state();
-    if (group == 2u && id >= FENESTRA && id < FX_NATIVE_EXTENSION_PAGE_LIMIT && !s)
+    /* Interval bounds stay on the shared namespace constants (0x7000
+     * family): routed ids are exact matches below, never range members --
+     * see the FX_Z8_PAGE_* block for why the range must not move. */
+    if (group == 2u && id >= FX_NATIVE_FENESTRA_PAGE && id < FX_NATIVE_EXTENSION_PAGE_LIMIT && !s)
         return 0;
     if (group == 2u && s) {
-        if(id==FX_NATIVE_STARTUP_AUTO_PAGE) {
+        if (id == FENESTRA)
+            return &s->core.page;
+        if (id == WONDER)
+            return &s->wonder.page;
+        if(id==FX_Z8_PAGE_AUTO) {
             s->auto_menu.page.selected=(uint16_t)((atomic_load(&s->startup.desired)&FX_STARTUP_AUTO)?0u:1u);
             return &s->auto_menu.page;
         }
-        if(id==FX_NATIVE_STARTUP_GUARD_PAGE) {s->guard_menu.page.selected=0;return &s->guard_menu.page;}
+        if(id==FX_Z8_PAGE_GUARD) {s->guard_menu.page.selected=0;return &s->guard_menu.page;}
         if(id>=FX_NATIVE_MANAGER_PAGE_BASE && id<FX_NATIVE_MANAGER_PAGE_BASE+FX_NATIVE_UI_PAGES) {
             FxNativeUi *u=module_ui(UINT32_MAX,0);return u?fx_native_ui_page(u,id):0;
         }
@@ -1211,10 +1349,8 @@ FxNativePage *fx_z8_menu_page(uint32_t group, uint32_t id) {
             FxNativeUi *u = fx_ui_dispatch_find_page(&s->ui_dispatch,id);
             return u ? fx_native_ui_page(u, id) : 0;
         }
-        if (id == FENESTRA)
-            return &s->core.page;
         if(fx_native_apps_is_page(id))return apps_page(s,id);
-        if(id>=FENESTRA && id<FX_NATIVE_EXTENSION_PAGE_LIMIT)return 0;
+        if(id>=FX_NATIVE_FENESTRA_PAGE && id<FX_NATIVE_EXTENSION_PAGE_LIMIT)return 0;
 
     }
     return stock(group, id);
@@ -1351,7 +1487,7 @@ extern uint64_t fx_z8_navigate_original(uint64_t, void *);
  * stock open request; Fenestra pages go through the C311 open-page
  * primitive FUN_403ad6d8 (the old 0x403adbac call was a Z9 address). */
 uint64_t fx_z8_menu_navigate(uint64_t page, void *context) {
-    if(page>=FENESTRA && page<FX_NATIVE_EXTENSION_PAGE_LIMIT)
+    if(page>=FX_NATIVE_FENESTRA_PAGE && page<FX_NATIVE_EXTENSION_PAGE_LIMIT)
         return FN(0x403ad6d8,uint64_t (*)(uint32_t,uint32_t))(2u,(uint32_t)page);
     return fx_z8_navigate_original(page, context);
 }

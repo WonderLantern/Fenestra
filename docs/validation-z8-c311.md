@@ -237,8 +237,9 @@ Emulation E2E (probe `scripts/z8_menu_probe.py`, single boot per leg,
 stream-fed window, qtest-primary evidence via `fx_z8_menu_metadata` v5;
 3/3 runs per phase):
 - navigate (enabled image): SETUP descriptor holds the State magic; the
-  owned core page carries identity `0x7000<<16` with 7 rows; SETUP is
-  rewritten to 3 rows with entry rows `0x7ff0/0x7ff1` (text id 3204).
+  owned core page carries identity `0x63c<<16` (routed id, section 4e) with
+  7 rows; SETUP is rewritten to stock+2 rows with entry rows
+  `0x2d1c/0x2d1d` (text ids 3204/3205).
 - activate (enabled image): the original MCU key records (menu/ok/down/
   down/ok/ok) are delivered through the external frame transport with the
   guest stable and no unmodeled access, and the module activation chain
@@ -394,16 +395,97 @@ Caveats (explicit, in addition to the boundaries table below):
   `0xa1559b00` are recorded as **tolerance boundaries**: not modeled, not
   "fixed". The corresponding z8-qemu fixtures (`syscon-semaphore-model`,
   `syscon-semaphore-trace`, `mailbox-trace`) are default-off, forensics-only.
-- The ok-key activation chain (entry row 13-record event table, activation
-  trio rewrites) is accepted by the page build but NOT verified end-to-end;
-  the milestone covers build + render only.
-- The platform's OWN menu pages (core/wonder/apps/auto/guard) still carry
-  `0x7ff1`-family row ids and will hit the same registry rejection when
-  opened through the stock open path; borrowing registered ids the same way
-  is the recorded follow-up.
+- The ok-key activation chain is verified end-to-end (section 4e): the
+  entry-row ok pushes the routed Fenestra page through the stock open path
+  and the page renders (probe artifacts `t4b-okc-fen-r2` etc.). The
+  ACTIVATE row's `activate` callback attribution stays as the 4b caveat
+  (the card's auto-activate flag is not isolated).
+- The platform's OWN menu pages carry borrowed registered row ids
+  (`0x46e8-0x46f4` language/region family, `0x4600` manager family — T3
+  BORROW) and routed page ids below the kind-2 gate (`0x63c-0x63f`,
+  section 4e); the module-manager/UI/apps pages keep their `0x7000`-family
+  ids and stay above the gate (recorded boundary below).
 - Borrowed-id ownership: `0x2d1c`/`0x2d1d` belong to page 25's stock rows.
   Page 25 and 663 were not open simultaneously in any observed flow; a
   simultaneous rebuild collision is an open observation item.
+
+## 4e. Own-page routing: kind-2 gate bypassed by audited id renumbering (T4b)
+
+The wrench-tab row-ok navigation carrier (T2: the selected row's select
+trio `next` in the full 59-record stock row-table family) resolves its
+target through the stock navigation continuation `FUN_403af53c`, which
+**drops every list target `>= 0x68c` before `page.get` runs** when the
+context page is a kind-2 list: `movz w8,#0x68c; csel w22,w8,wzr,eq` at
+`0x403af570-74` (context kind `u16&0xfffe==2`), `cmp w22,w20` at
+`0x403af654` + `b.ls 0x403af680` at `0x403af658` (shared silent-return
+epilogue). Instruction-window sha256[:16]: `0x403af654` = `b2988f806fb25268`,
+`0x403af658` = `cbe0381ecab8774d`. This is a pure numeric range gate — no
+registry, no stock-page validation — so the former `0x7000`-family page ids
+could never be pushed from wrench rows (probe `okchain-t4a-f5`: target
+`0x7000` reached the continuation and the whole open chain stayed silent).
+
+Fix (option A of the T4a evaluation): the four navigable own pages are built
+under stock page ids from the audited free window inside `[0x61c,0x65d]`,
+matched EXACTLY in `fx_z8_menu_page`; every other id keeps its stock()
+arithmetic, and the extension NULL interval and the navigate-hook interval
+stay `[FX_NATIVE_FENESTRA_PAGE, FX_NATIVE_EXTENSION_PAGE_LIMIT)` — widening
+them is what crashed the t4a `s2` probe round (68 stock dialog templates
+live in `[0x5e0,0x7000)` and were hijacked by the shifted interval).
+
+| Page | Routed id | Reached from | Probe artifact |
+ | --- | --- | --- | --- |
+ | Fenestra core | `0x63c` | 663 entry row 0 ok | `t4b-okc-fen-r2` |
+ | WonderLantern | `0x63d` | 663 entry row 1 ok | `t4b-okc-wonder-r3` |
+ | Auto activate | `0x63e` | core Autostart row ok | `t4b-okc-auto-r2` |
+ | Shutdown guard | `0x63f` | core Guardflag row ok | `t4b-okc-guard-r1` |
+
+Occupancy audit for the window (four independent sources; scripts and raw
+sets under `build/re-runs/t4b-audit-r2/roots-audit.json` and the T4b
+report):
+
+- Descriptor-template census: the id-indexed ROM template array
+  `0x44d28110` (stride `0x50`; 663 = `0x297` at `0x44d35040`, count 44)
+  carries valid templates only for ids `0..0x4c2` — `[0x4c3,0x68b]` has
+  none.
+- Row-table next census: walking every template's events array (5012 row
+  tables) yields 741 distinct navigation targets; the densest free band
+  below the gate is `[0x5d4,0x68b]` (reproduces the T4a scan).
+- Call-site immediates: back-tracking argument registers at all 739 static
+  calls into the `page.get`/open/continuation family finds hardcoded opens
+  at `0x5d7/0x5d8` (the runtime-observed kind-5 dialog), `0x61a/0x61b`,
+  `0x65e/0x660`, `0x665-0x675`, `0x679-0x67b`, `0x684/0x688/0x68b` — the
+  chosen window `[0x61c,0x65d]` keeps >= 5 ids of margin on both sides
+  (nearest references `0x61b` and `0x65e`).
+- Live roots dump (`--roots-audit`, boot + wrench soak): every group-2
+  slot in `[0x4c3,0x68b]` holds a boot-time scaffold (identity
+  `(id<<16)|2`, pool descriptor, `page_count` 0 — never rebuilt), i.e. no
+  stock flow opens these ids; 1498 constructed pages exist elsewhere in
+  `[0x100,0x700)`.
+
+Also fixed in the same change (exposed by the now-reachable own pages): the
+T2 `adopt_row_tables` rebind wrote `&tables[first][r]` — the r-th RECORD of
+the first table — instead of the r-th table, so the row-ok consumer
+resolved the ok trio of the wrong row (probe `t4b-diag-auto-r1`: ok on the
+Autostart row staged the Activate row's `next 0x68c`). The consumer indexes
+`desc->events[selected + scroll]` (`FUN_40508bd4`: `ldrh [page+0x32]` +
+`ldrh [page+0x58]`), confirming the per-table pointer semantics.
+
+Evidence (probe `--phase okchain`, enabled image, one round per page):
+
+- Fenestra: `CHAIN_WORKS` + ownpage `RENDERED` with every probe check true
+  (stack 2->3, top `0x63c0002`; live page `page_count` 7, 64 content
+  widgets including the borrowed row ids `0x46e8-0x46ed`, title id 3204;
+  final frame black fraction 0.041 / 351 colours; wrench classification
+  stays `milestone` in the same round).
+- Wonder/Auto/Guard: `CHAIN_WORKS` + `RENDERED` each (top `0x63d0002` /
+  `0x63e0002` / `0x63f0002`; ancestry `[root, 663, Fenestra, child]` for
+  the core-child legs; `page_count` 2, title ids 3205/3216/3217). The
+  whole-frame black-fraction cutoff would misjudge these 2-row pages, so
+  the probe's own-page frame check is density-aware (lit top bands on a
+  fresh frame; `frame_band_fractions` in `okchain-ownpage.json`).
+- Regression control: `--phase wrench` re-run stays `milestone` with every
+  check true and page 25 keeps rebuilding (`page_count` 45, descriptor not
+  ours); `--default-image` control stays `rendered_stock`.
 
 ## Unverified / not enabled (explicit boundaries)
 
@@ -411,7 +493,7 @@ Caveats (explicit, in addition to the boundaries table below):
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
-| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); construction verified on the enabled image (probe artifacts `menu-e2e-nav/neg-*`, 3/3 per phase) and the default build keeps construction dormant (negative leg + RE0); the activate leg exercises MCU key delivery with guest stability and observes the activation chain, but key-driven activation is not isolated from the card's auto-activate flag (see 4b caveat). Wrench-tab milestone (4d): the constructed SETUP list page (663) rebuilds and renders with the entry rows visible alongside stock; ok-key activation unverified. Boundary: hardware untested |
+| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); construction verified on the enabled image (probe artifacts `menu-e2e-nav/neg-*`, 3/3 per phase) and the default build keeps construction dormant (negative leg + RE0); the activate leg exercises MCU key delivery with guest stability and observes the activation chain, but key-driven activation is not isolated from the card's auto-activate flag (see 4b caveat). Wrench-tab milestone (4d): the constructed SETUP list page (663) rebuilds and renders with the entry rows visible alongside stock. Own-page routing (4e): entry-row and own-row ok navigation pushes the routed Fenestra/Wonder/Auto/Guard pages and they render (`t4b-okc-*`, all probe checks true); the module-manager and module-UI/apps pages keep `0x7000`-family ids and remain unreachable from wrench rows (kind-2 gate, recorded boundary). Boundary: hardware untested |
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; activation to ACTIVE also observed on the enabled image (`menu-e2e-act-*`: worker magic + phase 2), attribution per the 4b caveat (auto-activate flag not isolated) |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
