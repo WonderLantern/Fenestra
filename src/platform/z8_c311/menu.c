@@ -47,7 +47,15 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
 #define MAGIC UINT32_C(0x465a384d)
 typedef FxNativePanicPage PanicPage;
 typedef struct {
+    /* The firmware descriptor is 0x50 bytes: the stock ROM template at
+     * 0x44d35040 (stride 0x50) carries a record-table pointer at +0x40 and
+     * a small word at +0x48, both read by the open-path rebuild
+     * (FUN_403a5b90 reads the record table at desc+0x38..+0x40). The shared
+     * FxNativeDescriptor model ends at +0x40, so the published descriptor
+     * must continue with the stock tail copied verbatim; magic/installed
+     * therefore sit AFTER the tail, never inside the published 0x50 bytes. */
     FxNativeDescriptor setup;
+    uint64_t setup_tail[2];
     uint32_t magic, installed;
     _Atomic uint32_t activation, phase, error, shutdown, retry;
     FxNativeRow rows[47];
@@ -942,6 +950,19 @@ static uint32_t manage_modules(void *p) {
 #define FX_Z8_SETUP_LIST_PAGE 663u   /* wrench-tab root list (44 stock rows,
                                        * first row "Format memory card"; located
                                        * by the pages probe + text match) */
+/* Exact-stock pins for the live 663 descriptor (re-verified against the
+ * artifacts wrench-padtest/p1a-default-* and the offline mirror before
+ * pinning; ROM template at 0x44d35040 carries the same header/rows/events).
+ * Upstream strictness (Z9 install, Zf PR#3, Z63 PR#4): the construct must
+ * only ever build on the byte-exact stock list page. */
+#define FX_Z8_LIST_STOCK_DESCRIPTOR UINT64_C(0xa028ca040)
+#define FX_Z8_LIST_STOCK_COUNT 44u
+#define FX_Z8_LIST_STOCK_HEADER UINT64_C(0x43d595c8)
+#define FX_Z8_LIST_STOCK_ROWS UINT64_C(0x43d596d8)
+#define FX_Z8_LIST_STOCK_EVENTS UINT64_C(0x43d59e68)
+#define FX_Z8_LIST_ROW0_TEXT 0x280u    /* "Format memory card" (clone row) */
+#define FX_Z8_LIST_ROW43_TEXT 0x662u   /* last stock row sentinel */
+#define FX_Z8_HUB_STOCK_DESCRIPTOR UINT64_C(0xa028c9870)
 static int construct_ready(FxNativePage *sp) {
     const FxNativeDescriptor *d=(const FxNativeDescriptor *)sp->descriptor;
     if(!d || !d->header || !d->rows || !d->events)return 0;
@@ -950,9 +971,13 @@ static int construct_ready(FxNativePage *sp) {
     {
         uintptr_t root=((volatile uintptr_t *)(uintptr_t)UINT64_C(0xa032b50c8))[2];
         FxNativePage *list=(FxNativePage *)(root+FX_Z8_SETUP_LIST_PAGE*96u);
+        if((uintptr_t)list->descriptor!=FX_Z8_LIST_STOCK_DESCRIPTOR)return 0;
         const FxNativeDescriptor *ld=(const FxNativeDescriptor *)list->descriptor;
-        if(!ld || !ld->header || !ld->rows || !ld->events)return 0;
-        if(ld->count<30u || ld->count>45u)return 0;
+        if(ld->count!=FX_Z8_LIST_STOCK_COUNT || ld->header!=FX_Z8_LIST_STOCK_HEADER ||
+           ld->rows!=FX_Z8_LIST_STOCK_ROWS || ld->events!=FX_Z8_LIST_STOCK_EVENTS)return 0;
+        const FxNativeRow *rows=(const FxNativeRow *)(uintptr_t)ld->rows;
+        if(rows[0].word[0]!=FX_Z8_LIST_ROW0_TEXT ||
+           rows[FX_Z8_LIST_STOCK_COUNT-1u].word[0]!=FX_Z8_LIST_ROW43_TEXT)return 0;
     }
     const uint8_t *fonts=*(const uint8_t *const *)(uintptr_t)UINT64_C(0xa02f2ac40);
     const uintptr_t *attributes=*(const uintptr_t *const *)(uintptr_t)UINT64_C(0xa02f2ac50);
@@ -975,12 +1000,26 @@ static void construct_pages(State *s, FxNativePage *sp) {
      * page object; 638 keeps carrying the State anchor. */
     uintptr_t root=((volatile uintptr_t *)(uintptr_t)UINT64_C(0xa032b50c8))[2];
     FxNativePage *list_page=(FxNativePage *)(root+FX_Z8_SETUP_LIST_PAGE*96u);
+    if((uintptr_t)list_page->descriptor!=FX_Z8_LIST_STOCK_DESCRIPTOR)return;
     const FxNativeDescriptor *d=(const FxNativeDescriptor *)list_page->descriptor;
     if(!d || !d->header || !d->rows || !d->events)return;
+    if(d->count!=FX_Z8_LIST_STOCK_COUNT || d->header!=FX_Z8_LIST_STOCK_HEADER ||
+       d->rows!=FX_Z8_LIST_STOCK_ROWS || d->events!=FX_Z8_LIST_STOCK_EVENTS)return;
     uint32_t stock=d->count;
-    if(stock<30u || stock>45u)return;
     const FxNativeRow *rows=(const FxNativeRow *)d->rows;
+    if(rows[0].word[0]!=FX_Z8_LIST_ROW0_TEXT ||
+       rows[stock-1u].word[0]!=FX_Z8_LIST_ROW43_TEXT)return;
+    /* Pinned clone row: stock row 0 (plain 0x00101040 list row, verified
+     * plain shape in the mirror); upstream never clones a generic last row. */
+    const FxNativeRow *const clone=&rows[0];
     s->setup=*d;
+    /* Copy the stock descriptor tail (beyond the shared struct model) so the
+     * published 0x50-byte descriptor stays byte-faithful to stock. */
+    s->setup_tail[0]=*(const uint64_t *)(const void *)((uintptr_t)d+0x40);
+    s->setup_tail[1]=*(const uint64_t *)(const void *)((uintptr_t)d+0x48);
+    if((s->setup_tail[0] && (s->setup_tail[0]<UINT64_C(0x40160000) ||
+                             s->setup_tail[0]>=UINT64_C(0x4e100000))) ||
+       s->setup_tail[1]>0xffffu)return;
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
         UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
     FxZ8MenuEntry core[]={
@@ -994,7 +1033,7 @@ static void construct_pages(State *s, FxNativePage *sp) {
     };
     FxZ8MenuEntry wonder[]={{TEXT+5u,0x7fc0u,0u,0u,(uintptr_t)noop,0x68cu},
                             {TEXT+4u,0x7ff3u,0u,0u,(uintptr_t)noop,638u}};
-    FxNativeMenuProfile owned={(const FxNativePage *)sp,&rows[stock-1u],
+    FxNativeMenuProfile owned={(const FxNativePage *)sp,clone,
         (const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
         0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,638u,13u};
     if(fx_native_menu_build(&s->core,&owned,FENESTRA,TEXT,(const FxNativeEntry *)core,7u,callbacks)!=FX_OK)return;
@@ -1006,13 +1045,23 @@ static void construct_pages(State *s, FxNativePage *sp) {
     FxNativeMenuProfile child=owned;child.back=FENESTRA;
     if(fx_native_menu_build(&s->auto_menu,&child,FX_NATIVE_STARTUP_AUTO_PAGE,TEXT+12u,(const FxNativeEntry *)automatic,2u,callbacks)!=FX_OK)return;
     if(fx_native_menu_build(&s->guard_menu,&child,FX_NATIVE_STARTUP_GUARD_PAGE,TEXT+13u,(const FxNativeEntry *)guard,2u,callbacks)!=FX_OK)return;
+    /* C311 row-id space: the open-path rebuild silently aborts the whole
+     * row build when a row's id (word[6]) is not a registered stock row id
+     * -- the Z9-style 0x7ff0-family ids kill the build at that row (probe
+     * rounds p3-r13/r14: zero rows built, black panel; p3-r15/r16 proved a
+     * registered stock id passes). Ids are validated against a GLOBAL
+     * registry, so ids borrowed from another page's stock row family work
+     * while staying unique within 663. 0x2d1c/0x2d1d are page 25's first
+     * rows (verified in the offline mirror). */
+#define FX_Z8_ENTRY_ROW_ID0 0x2d1cu
+#define FX_Z8_ENTRY_ROW_ID1 0x2d1du
     memcpy(s->rows+2u,rows,stock*sizeof(*rows));
     memcpy(s->events+2u,(const void *)(uintptr_t)d->events,stock*sizeof(uintptr_t));
     for(uint32_t r=0u;r<2u;++r) {
-        s->rows[r]=rows[stock-1u];
+        s->rows[r]=*clone;
         s->rows[r].word[0]=TEXT+r;
         s->rows[r].word[2]=65535u;
-        s->rows[r].word[6]=0x7ff0u+r;
+        s->rows[r].word[6]=r?FX_Z8_ENTRY_ROW_ID1:FX_Z8_ENTRY_ROW_ID0;
         if(fx_native_menu_link_bounded(s->entry_events[r],(const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
             0x3bbu,(const uint32_t[4]){0x286u,0x28bu,0x2aeu,0u},(uintptr_t)noop,r?WONDER:FENESTRA,13u)!=FX_OK)return;
         s->events[r]=(uintptr_t)s->entry_events[r];
@@ -1020,12 +1069,14 @@ static void construct_pages(State *s, FxNativePage *sp) {
     s->setup.rows=(uintptr_t)s->rows;
     s->setup.events=(uintptr_t)s->events;
     s->setup.count=(uint16_t)(stock+2u);
+#undef FX_Z8_ENTRY_ROW_ID0
+#undef FX_Z8_ENTRY_ROW_ID1
     const uint8_t *fonts=*(const uint8_t *const *)(uintptr_t)UINT64_C(0xa02f2ac40);
     const uintptr_t *attributes=*(const uintptr_t *const *)(uintptr_t)UINT64_C(0xa02f2ac50);
     if(!fonts || !attributes)return;
     for(uint32_t i=0u;i<LANGUAGES;++i)
         if(attributes[i]<UINT64_C(0x40000000) || attributes[i]>=UINT64_C(0x4e100000))return;
-    uint32_t font_id=rows[stock-1u].word[0],attribute_id=rows[stock-1u].word[0];
+    uint32_t font_id=clone->word[0],attribute_id=clone->word[0];
     if(font_id>=TEXT || attribute_id>=TEXT)return;
     FxNativeTextBank *bank=0;
     if(fx_native_text_bank_create((FxIndexMemory){0,map_allocate,map_release},fonts,attributes,
@@ -1040,17 +1091,28 @@ static void construct_pages(State *s, FxNativePage *sp) {
     s->startup_files=(FxStartupFiles){.profile=&fx_z8_startup_file_profile,.shutdown=&s->startup.shutdown,
         .cleanup_window=&s->startup.cleanup_window,.observer=fx_capacity_file_observer(&s->capacity_registry)};
     (void)fx_startup_files(&s->startup.io,&s->startup_files);  /* Failure is non-fatal; the tick retries. */
+    /* The wrench list renders from the 663 page object: publish the
+     * rewritten descriptor there, but ONLY while the live descriptor still
+     * equals the pinned stock pointer (CAS publish, Zf PR#3 pattern).
+     * Residual race: a firmware store between the gate above and this CAS
+     * loses the CAS and the construct stays dormant (nothing published);
+     * a firmware store between this CAS and the 638 anchor below leaves
+     * 663 live with a well-formed stock-copy descriptor while state()
+     * stays dormant -- entry callbacks null-guard on state(), so that
+     * state is inert, never corrupting. */
+    uintptr_t list_expected=FX_Z8_LIST_STOCK_DESCRIPTOR;
+    if(!atomic_compare_exchange_strong_explicit((_Atomic uintptr_t *)&list_page->descriptor,
+            &list_expected,(uintptr_t)&s->setup,memory_order_release,memory_order_acquire))return;
     s->magic=MAGIC;s->installed=1u;
     __asm__ volatile("dmb ish":::"memory");
     *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac40)=(uintptr_t)bank->fonts;
     *(volatile uintptr_t *)(uintptr_t)UINT64_C(0xa02f2ac50)=(uintptr_t)bank->attributes;
     atomic_store_explicit(&s->text_bank,bank,memory_order_seq_cst);
     fx_retained_account(fx_shared_text_account(&s->accounting),&bank->accounted,bank->bytes);
-    /* The wrench list renders from the 663 page object: publish the
-     * rewritten descriptor there; 638 keeps the State anchor for state(). */
-    atomic_store_explicit((_Atomic uintptr_t *)&list_page->descriptor,
-        (uintptr_t)&s->setup,memory_order_release);
-    atomic_store_explicit((_Atomic uintptr_t *)&sp->descriptor,(uintptr_t)s,memory_order_release);
+    /* 638 keeps the State anchor for state() (guarded the same way). */
+    uintptr_t hub_expected=FX_Z8_HUB_STOCK_DESCRIPTOR;
+    if(!atomic_compare_exchange_strong_explicit((_Atomic uintptr_t *)&sp->descriptor,
+            &hub_expected,(uintptr_t)s,memory_order_release,memory_order_acquire))return;
     void *stack=allocate(65536u+16u);s->task_stack=stack;
     if(stack)fx_retained_account(fx_shared_loader_account(&s->accounting),&s->stack_accounted,65536u+16u);
     /* No dedicated loader task (C311 task.create is not pinned): the UI

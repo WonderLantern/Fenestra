@@ -1318,8 +1318,8 @@
     },
     {
       "path": "src/platform/z8_c311/menu.c",
-      "bytes": 74071,
-      "sha256": "9d9e764a0a04b964b2cc3d62b936218c7635e7b72e4e32376d426b5b4c9d5d57"
+      "bytes": 79673,
+      "sha256": "b38ac5a9f1ae0db3afaf541c10278f0541f93cf63343a65a27bada735f660563"
     },
     {
       "path": "src/platform/z8_c311/menu_construct.c",
