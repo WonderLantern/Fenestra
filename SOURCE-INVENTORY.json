@@ -83,8 +83,8 @@
     },
     {
       "path": "docs/validation-z8-c311.md",
-      "bytes": 36711,
-      "sha256": "74c31a350a4eff881a8f040b9b8be65e5bc4bb7bc552af6785bef301f04edf62"
+      "bytes": 36836,
+      "sha256": "ec5b013ec537e367885c21cdf9dd5e084392d352587f3cd77250e95c6a554b0b"
     },
     {
       "path": "docs/validation.md",
@@ -233,8 +233,8 @@
     },
     {
       "path": "host/platform_profiles.py",
-      "bytes": 27054,
-      "sha256": "0efa21163fe82d54747e2aad666783bfe859f3e08250389d155eb6d734c9185c"
+      "bytes": 27131,
+      "sha256": "881034887e3398208e9f7bb56b98dbc6cb2a06e7cfff8393b6120d36412275f8"
     },
     {
       "path": "host/ptp_client.py",
@@ -1318,8 +1318,8 @@
     },
     {
       "path": "src/platform/z8_c311/menu.c",
-      "bytes": 87869,
-      "sha256": "088fef0bcc0026272d1b08fb3f149a02b17475e7951a79adcfa9cfaab309b13c"
+      "bytes": 87936,
+      "sha256": "770f028b39a53e65c9300f6e7846f4e954af8af0a95ed3289eab3116ada2abba"
     },
     {
       "path": "src/platform/z8_c311/menu_construct.c",

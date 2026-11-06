@@ -46,7 +46,8 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
  * next values (descriptor walk over every template) + page-id immediates
  * at all 739 static calls into the page.get/open/continuation family +
  * the live group-2 roots dump (band slots are empty scaffolds: identity
- * (id<<16)|2, page_count 0, never rebuilt through a boot+wrench soak;
+ * (id<<16)|kind, mixed across the band and uniformly |5 in the routed
+ * window, page_count 0, never rebuilt through a boot+wrench soak;
  * roots-audit.json in build/re-runs/t4b-audit-r2). The ids are matched
  * EXACTLY in fx_z8_menu_page only: the extension NULL interval and the
  * navigate-hook interval stay [FX_NATIVE_FENESTRA_PAGE,

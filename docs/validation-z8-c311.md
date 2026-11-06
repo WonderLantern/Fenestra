@@ -457,10 +457,11 @@ report):
   chosen window `[0x61c,0x65d]` keeps >= 5 ids of margin on both sides
   (nearest references `0x61b` and `0x65e`).
 - Live roots dump (`--roots-audit`, boot + wrench soak): every group-2
-  slot in `[0x4c3,0x68b]` holds a boot-time scaffold (identity
-  `(id<<16)|2`, pool descriptor, `page_count` 0 — never rebuilt), i.e. no
-  stock flow opens these ids; 1498 constructed pages exist elsewhere in
-  `[0x100,0x700)`.
+  slot in `[0x4c3,0x68b]` holds a boot-time scaffold (pool descriptor,
+  `page_count` 0 — never rebuilt; the default identity is `(id<<16)|kind`,
+  mixed across the band and uniformly `|5` in the routed window), i.e. no
+  stock flow opens these ids; 1505 nonzero-identity slots (mixed kinds)
+  exist elsewhere in `[0x100,0x700)` per the original image.
 
 Also fixed in the same change (exposed by the now-reachable own pages): the
 T2 `adopt_row_tables` rebind wrote `&tables[first][r]` — the r-th RECORD of

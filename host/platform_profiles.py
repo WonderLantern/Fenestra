@@ -62,7 +62,8 @@ PROFILES={
    # stride 0x50, valid templates for ids 0..0x4c2 (663 = 0x297 at
    # 0x44d35040, count 44); the kind-2 gate bound 0x68c sits beyond the
    # array's live span. Band [0x4c3,0x68b] has no templates: those slots
-   # are runtime scaffolds only (identity (id<<16)|2, page_count 0).
+   # are runtime scaffolds only (default identity (id<<16)|kind, mixed
+   # across the band and uniformly |5 in the routed window; page_count 0).
    'camera.menu.descriptor-templates':(0x44d28110,0x4c3*0x50)},
   # SYSCTL lifecycle: event table + dispatcher entry pinned against the original
   # image. Dispatcher FUN_40d60ec8 reads the event id at message+0x20 (ldrsw at
