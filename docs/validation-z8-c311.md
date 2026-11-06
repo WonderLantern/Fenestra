@@ -324,13 +324,94 @@ from the stock page before use). Baseline equivalence holds: the patched
 image passes the full RE0 regression (`menu-reg-1/2`, re-run as
 `menu-reg-4/5/6` on every default-build revision).
 
+## 4d. Wrench-tab milestone: the constructed SETUP list renders (T12, third round)
+
+Verified in emulation on 2026-11-06 (probe legs `wrench-p3-r17`, `wrench-p3-final`,
+and the P4 confirmation pair `wrench-p4-v1/v2` with the control `wrench-p4-ctl`,
+local evidence store). With the constructed descriptor live on the wrench-tab
+list page (663) at open time, the stock open-path rebuild now completes and
+the panel renders the stock rows plus the two Fenestra entry rows.
+
+Root cause of the former black panel (fixed in the platform commit carrying
+this section): the C311 open-path rebuild (`FUN_403a5b90` row loop) validates
+each row's id (row word[6]) against a **global registry of registered stock
+row ids** and silently aborts the whole page build on an unregistered id —
+zero rows, no exception, black panel. The Z9-style `0x7ff0`-family entry-row
+ids were all rejected (probe rounds `wrench-p3-r13/r14`: single entry row,
+count 45, zero rows built). The registry is global, so ids borrowed from
+another page's stock rows pass: the entry rows now carry `0x2d1c`/`0x2d1d`
+(page 25's first-row family, verified in the offline mirror; unique within
+663; duplicate ids are tolerated by the rebuild but avoided for lookup
+unambiguity).
+
+Shipped together with the fix (upstream strictness absorbed, single commit):
+
+| Measure | Value | Notes |
+| --- | --- | --- |
+| Exact stock gate | page-663 descriptor pointer `0xa028ca040`, count 44, header `0x43d595c8`, rows `0x43d596d8`, events `0x43d59e68`, row text sentinels `0x280`/`0x662` | checked in `construct_ready` and again in `construct_pages` (defense in depth; Z9/Zf/Z63 pattern) |
+| CAS publish guards | 663 and 638 anchors swap only while the live pointer still equals the pinned stock pointer | residual race windows documented in-source (a lost CAS leaves the construct dormant, never corrupt) |
+| Pinned clone row | stock `rows[0]` (plain `0x00101040` list row) | the generic last-row clone is gone |
+| Descriptor tail fidelity | descriptors are 0x50 bytes: `+0x40` record-table pointer `0x43ed1398`, `+0x48` = 8 | `State.setup_tail` copies the stock tail verbatim; the former 64-byte struct copy exposed `State.magic` at `+0x40` and broke surface/content allocation |
+
+Milestone evidence (probe `--phase wrench`, enabled image, two fresh runs of
+the SAME image plus the committed P3 confirmation):
+
+- Image fingerprints identical across `wrench-p4-v1`, `wrench-p4-v2` and
+  `wrench-p3-final` (core sha256 `1ea16836...8622f2`, debug identity
+  `7e57d94a...9d0fc`, MAIN sha256 `830a7932...36ba2`); both P4 runs classify
+  `outcome == milestone` with every probe check true (published, rebuilt,
+  fresh frame with content, entry-row ids/text verified: `setup_entry_rows`).
+- Rebuild state at freeze: page 663 `page_count` 41, content children 524/520
+  (run variance; the entry rows' `0x2d1c`/`0x2d1d` widget objects are the
+  first two rows), descriptor ours with count 46 (44 stock + 2 entry),
+  `setup_count` 46, `row0_id` `0x2d1c`.
+- Final-frame content: 348 distinct colours, black fraction 0.0396 — byte-
+  stable across v1/v2/final (the freeze moment is host-load sensitive; stock
+  has measured 224-394 across days, so verdicts are judged on settle frames
+  and repeat runs, never on a single colour count).
+- Pixel reading of the rendered panel (pure-Python PPM analysis, no vision
+  model): yellow SET UP header bar (`fbd624`), left tab strip with the wrench
+  tab selected (view globals report view 5), top status bar; the first list
+  row reads "Fenestra" and the second "WonderLantern" (rendered by the stock
+  font/text pipeline from our text bank ids 3204/3205); the stock rows below
+  are pixel-identical to the control run's rows at the one-row offset
+  (column-signature Jaccard 1.00), i.e. the construct added rows without
+  perturbing stock rendering.
+- Control (`--default-image`, `wrench-p4-ctl`): `outcome == rendered_stock`
+  (394 colours, stock descriptor live on 663, `page_count` 39, 496 content
+  children, construction dormant) — baseline equivalence preserved.
+
+Caveats (explicit, in addition to the boundaries table below):
+
+- Emulation-only. No device flashing; z8-qemu is the sole execution
+  environment for every claim in this section.
+- The boot-time service park is present in EVERY run, stock included, and is
+  causally unrelated to the construct (the P2' investigation established
+  this): cpu3 is handed to a DRAM driver module at `0x0a02ab0000` during boot
+  and parks on a never-granted hardware semaphore (`0x0d151404` read via the
+  service-SRAM acquire `0x082013c8`, parking PC `0x082013d4`; service-request
+  mailbox `0x15595b00-ff` never sees traffic). `0x0d151404` / `0x082013c8` /
+  `0xa1559b00` are recorded as **tolerance boundaries**: not modeled, not
+  "fixed". The corresponding z8-qemu fixtures (`syscon-semaphore-model`,
+  `syscon-semaphore-trace`, `mailbox-trace`) are default-off, forensics-only.
+- The ok-key activation chain (entry row 13-record event table, activation
+  trio rewrites) is accepted by the page build but NOT verified end-to-end;
+  the milestone covers build + render only.
+- The platform's OWN menu pages (core/wonder/apps/auto/guard) still carry
+  `0x7ff1`-family row ids and will hit the same registry rejection when
+  opened through the stock open path; borrowing registered ids the same way
+  is the recorded follow-up.
+- Borrowed-id ownership: `0x2d1c`/`0x2d1d` belong to page 25's stock rows.
+  Page 25 and 663 were not open simultaneously in any observed flow; a
+  simultaneous rebuild collision is an open observation item.
+
 ## Unverified / not enabled (explicit boundaries)
 
 | Item | State | Notes |
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
-| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); construction verified on the enabled image (probe artifacts `menu-e2e-nav/neg-*`, 3/3 per phase) and the default build keeps construction dormant (negative leg + RE0); the activate leg exercises MCU key delivery with guest stability and observes the activation chain, but key-driven activation is not isolated from the card's auto-activate flag (see 4b caveat). Boundary: hardware untested |
+| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); construction verified on the enabled image (probe artifacts `menu-e2e-nav/neg-*`, 3/3 per phase) and the default build keeps construction dormant (negative leg + RE0); the activate leg exercises MCU key delivery with guest stability and observes the activation chain, but key-driven activation is not isolated from the card's auto-activate flag (see 4b caveat). Wrench-tab milestone (4d): the constructed SETUP list page (663) rebuilds and renders with the entry rows visible alongside stock; ok-key activation unverified. Boundary: hardware untested |
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; activation to ACTIVE also observed on the enabled image (`menu-e2e-act-*`: worker magic + phase 2), attribution per the 4b caveat (auto-activate flag not isolated) |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
