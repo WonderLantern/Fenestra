@@ -6,6 +6,11 @@
 #define FX_NATIVE_UI_TITLE UINT32_C(0x40000000)
 #define FX_NATIVE_UI_NOTICE UINT32_C(0x20000000)
 #define FX_NATIVE_UI_PAGES (FX_UI_CONTROLS+2u)
+/* Default back/notice row offsets from the UI row base (stock layout:
+ * control rows 0..23, then back at +40 and notice at +41). Targets
+ * whose borrowed row family cannot spare the +40 gap install a packed
+ * offset via the profile/table after fx_native_ui_init. */
+#define FX_NATIVE_UI_NAV_ROW 40u
 #define FX_NATIVE_UI_ROW_LABELS (FX_UI_CONTROLS*2u+FX_UI_OPTIONS)
 #define FX_NATIVE_UI_ROW_VALUES (FX_NATIVE_UI_ROW_LABELS+FX_UI_CONTROLS)
 #define FX_NATIVE_UI_BACK_TEXT (FX_NATIVE_UI_ROW_VALUES+FX_UI_CONTROLS)
@@ -79,6 +84,7 @@ typedef struct FxNativeUi {
     FxAllocationObserver observer;FxRetainedAccount retained_account;
     _Atomic uint32_t page_accounted[FX_NATIVE_UI_PAGES],editor_accounted,reader_accounted;
     const FxNativeUiSource *source;void *source_context;uint32_t picker_page;
+    uint32_t nav_row_offset; /* Back/notice rows at row_base+off/+1; stock 40. */
     uint32_t projection_pending;uint64_t return_focus;
     /* Optional retained-view presentation port, installed before publication.
      * The owning original-UI loop consumes requests; input never allocates. */

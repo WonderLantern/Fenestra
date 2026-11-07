@@ -57,7 +57,6 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
 #define FENESTRA FX_Z8_PAGE_FENESTRA
 #define WONDER FX_Z8_PAGE_WONDER
 #define FX_Z8_MANAGER_PAGES FX_NATIVE_UI_PAGES
-#define FX_Z8_APPS_PAGES 2u
 #define TEXT 3204u
 #define UI_PAGE_BASE FX_NATIVE_MODULE_PAGE_BASE
 #define UI_TEXT_BASE (TEXT + 26u)
@@ -77,10 +76,11 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
  *     language/region array at 0x43f142dc (byte-verified in the mirror);
  *   - manager UI, apps pages and module UIs: the 99-row array at
  *     0x43cf133c (ids 0x45cf..0x4631), assigned by the route table
- *     (menu_route.c): manager keeps base 0x4600 (offsets 0..15 controls,
- *     16..23 pickers, 40/41 back and notice), apps pages take base
- *     0x461a (offsets 0..9 app rows, 0x10..0x14 navigation/notice rows)
- *     and the bounded module-UI slots take base 0x45cf (manager shape).
+ *     (menu_route.c): manager keeps the T2 offset shape at base 0x4603
+ *     (offsets 0..15 controls, 16..23 pickers, 40/41 back and notice),
+ *     apps pages take base 0x461d (offsets 0..9 app rows, 0x10..0x14
+ *     navigation/notice rows) and the two packed module-UI slots take
+ *     bases 0x45cf/0x45e9 with back/notice at +24/+25.
  * Ids are unique per page and globally distinct across our pages (auto
  * and guard stay open above core), and disjoint from the 663 entry-row
  * borrows 0x2d1c/0x2d1d (page 25's stock family). */
@@ -562,14 +562,30 @@ static FxNativeUi *module_ui(uint32_t index,int create) {
 static FxResult ui_space_text(void *context,uint32_t required) {
     return text_ensure(context,required)?FX_OK:FX_BUDGET;
 }
+/* Routed-page descriptor tail (T12-①): the C311 open-path staged
+ * visible-row builder (FUN_403b01f0) dereferences *(descriptor+0x40) as
+ * {ushort count, content array at +8} -- a real field of the stock
+ * 0x50-byte descriptor (ROM template 0x44d35040 stride 0x50 carries a
+ * record-table pointer there; the SETUP construct already copies its
+ * stock tail verbatim). Shared-built routed pages publish an empty
+ * staging vector: the builder's loop is skipped and the open path
+ * completes without the unmapped read the copied header bytes caused
+ * (x23=0x600000000 = header words {0,6}). */
+static const struct { uint16_t count; uint16_t pad[3]; uintptr_t content; }
+    fx_z8_empty_staging = {0u, {0u, 0u, 0u}, 0u};
+static const uint64_t fx_z8_descriptor_tail[2] =
+    {(uint64_t)(uintptr_t)&fx_z8_empty_staging, 0u};
 static FxResult ui_space_ready(State *s) {
     return fx_native_ui_space_init(&s->ui_space,&s->ui_dispatch,(FxIndexMemory){0,map_allocate,map_release},
         s,ui_space_text,fx_z8_route.module_page_first,fx_z8_route.module_page_limit,MODULE_TEXT_BASE,MODULE_TEXT_STRIDE,
         MODULE_TEXT_BASE+FX_NATIVE_UI_OWNERS*MODULE_TEXT_STRIDE);
 }
 static void ui_pager_if_needed(State *s,FxNativeUi *u) {
+    /* Every routed module UI sub-allocates its pages on demand (T12):
+     * the pager provides the two-page views for deeper navigation, so
+     * the 18-id window hosts multiple concurrent module UIs. */
     uint32_t count=0u;int visible=0;
-    if(!u || u->source || fx_ui_presence(u->owner,&count,&visible)!=FX_OK || count<=FX_UI_CONTROLS)return;
+    if(!u || u->source || fx_ui_presence(u->owner,&count,&visible)!=FX_OK)return;
     if(ui_space_ready(s)==FX_OK)(void)fx_native_ui_pager_enable(u,&s->ui_space);
 }
 static FxResult instance_ui(State *s,uint32_t index,const FxNativePage *parent,FxNativeUi **created) {
@@ -611,10 +627,15 @@ static FxResult instance_ui(State *s,uint32_t index,const FxNativePage *parent,F
  * selects {0x286,0x28b,0x2ae} = the activation trio (151 child-table
  * records route them to real sub-pages; fourth slot unused), stay
  * 0x68c; the 13-record bound covers the terminator. */
-        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,parent->identity>>16,13u};
+        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,parent->identity>>16,13u,fx_z8_descriptor_tail};
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
-    uint32_t controls=0u,primary_pages=FX_NATIVE_UI_PAGES;int visible=0;
-    if(fx_ui_presence(owner,&controls,&visible)==FX_OK && controls>FX_UI_CONTROLS)primary_pages=2u;
+    /* On-demand page sub-allocation (T12): every routed module UI takes
+     * its primary+picker pair from the shared window and lets the native
+     * pager supply two-page views for deeper navigation as opened -- the
+     * first module no longer exhausts the window, and two concurrent
+     * module UIs each get their pages (window/page exhaustion stays an
+     * explicit FX_CAPABILITY through fx_native_ui_space_take). */
+    uint32_t primary_pages=2u;
     uint32_t physical=0u;
     if(fx_native_ui_space_take(&s->ui_space,primary_pages,&physical)!=FX_OK){
         map_release(0,u);fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_FREE_PENDING);
@@ -622,7 +643,7 @@ static FxResult instance_ui(State *s,uint32_t index,const FxNativePage *parent,F
     }
     if(fx_native_ui_init(u,owner,&profile,allocate,physical,
         MODULE_TEXT_BASE+slot*MODULE_TEXT_STRIDE,row_base,fx_native_ui_actions,fx_native_ui_options,callbacks)!=FX_OK){fx_native_ui_space_rollback(&s->ui_space,physical,primary_pages);map_release(0,u);fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_FREE_PENDING);return FX_BUDGET;}
-    if(primary_pages==2u)u->picker_page=physical+1u;
+    u->picker_page=physical+1u;u->nav_row_offset=fx_z8_route.module_nav_row_offset;
     u->dialog=&ui_dialog;u->editor_profile=&ui_editor_profile;u->reader_profile=&ui_reader_profile;
     u->request_refresh=fx_native_ui_refresh_owner;
     if(fx_ui_dispatch_bind_page(&s->ui_dispatch,u)!=FX_OK){fx_native_ui_space_rollback(&s->ui_space,physical,primary_pages);map_release(0,u);fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_FREE_PENDING);return FX_BUDGET;}
@@ -663,7 +684,7 @@ static FxNativePage *apps_page(State *s,uint32_t page) {
  * 0x68c; the 13-record bound covers the terminator. The back target is
  * the 663 wrench list (the page the entry rows live on), not the 638
  * hub. */
-        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,FX_Z8_SETUP_LIST_PAGE,13u};
+        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,FX_Z8_SETUP_LIST_PAGE,13u,fx_z8_descriptor_tail};
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_apps_init(apps,&profile,callbacks,s,allocate,apps_count,apps_entry,apps_action,
             TEXT+1u,TEXT+21u,TEXT+22u,TEXT+5u,TEXT+4u,TEXT+24u,TEXT+25u,
@@ -1026,7 +1047,7 @@ static FxNativeModules *ensure_management(State *s) {
  * selects {0x286,0x28b,0x2ae} = the activation trio (151 child-table
  * records route them to real sub-pages; fourth slot unused), stay
  * 0x68c; the 13-record bound covers the terminator. */
-            0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,FENESTRA,13u};
+            0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,FENESTRA,13u,fx_z8_descriptor_tail};
         uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
             (uintptr_t)noop,(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_modules_init(m,fx_platform_target(),&profile,allocate,
@@ -1198,7 +1219,7 @@ static void construct_pages(State *s, FxNativePage *sp) {
      * pair the static T4b page did, and with modules it lists them. */
     FxNativeMenuProfile owned={(const FxNativePage *)sp,clone,
         (const FxNativeEvent *)(uintptr_t)FX_Z8_MENU_NAVIGATION,
-        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,638u,13u};
+        0x3bbu,0x27fu,{0x286u,0x28bu,0x2aeu,0u},0x68cu,638u,13u,0};
     if(fx_native_menu_build(&s->core,&owned,FENESTRA,TEXT,(const FxNativeEntry *)core,7u,callbacks)!=FX_OK)return;
     FxZ8MenuEntry automatic[]={{TEXT+14u,FX_Z8_AUTOMENU_ON_ID,0u,0u,(uintptr_t)auto_on,FENESTRA},
                                {TEXT+15u,FX_Z8_AUTOMENU_OFF_ID,0u,0u,(uintptr_t)auto_off,FENESTRA}};

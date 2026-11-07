@@ -75,7 +75,7 @@ uint64_t fx_native_ui_window_focus(const FxNativeUi *u) {
     const FxNativeMenu *menu=u->pages[0];uint32_t index=fx_native_page_row_index(&menu->page);
     if(index>=menu->descriptor.count)return 0u;
     uint32_t row=menu->rows[index].word[6],slot=row-u->row_base;
-    if(row==u->row_base+40u)return UINT64_C(1)<<32;
+    if(row==u->row_base+u->nav_row_offset)return UINT64_C(1)<<32;
     if(slot>=u->count)return 0u;
     const FxUiControl *c=&u->controls[slot];
     return c->id?c->id:c->kind==FX_UI_PAGE && !(c->flags&FX_UI_ROOT)?UINT64_C(2)<<32:0u;
@@ -83,14 +83,14 @@ uint64_t fx_native_ui_window_focus(const FxNativeUi *u) {
 void fx_native_ui_window_restore(FxNativeUi *u,uint64_t focus) {
     if(!u->source || !u->pages[0])return;
     FxNativeMenu *menu=u->pages[0];uint32_t target=UINT32_MAX,selected=UINT32_MAX;
-    if(focus==UINT64_C(1)<<32)target=u->row_base+40u;
+    if(focus==UINT64_C(1)<<32)target=u->row_base+u->nav_row_offset;
     else for(uint32_t i=0u;i<u->count;++i) {
         const FxUiControl *c=&u->controls[i];
         if((focus && focus<=UINT32_MAX && c->id==(uint32_t)focus) ||
            (focus==UINT64_C(2)<<32 && !c->id && c->kind==FX_UI_PAGE && !(c->flags&FX_UI_ROOT)))target=u->row_base+i;
     }
     if(target==UINT32_MAX || !fx_native_ui_row_visible(u,u->page_base,target)) {
-        target=u->row_base+40u;
+        target=u->row_base+u->nav_row_offset;
         for(uint32_t i=0u;i<u->count;++i) {
             uint32_t slot=u->order[i];
             if(slot<u->count && fx_native_ui_row_visible(u,u->page_base,u->row_base+slot)) {

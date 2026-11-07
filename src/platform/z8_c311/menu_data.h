@@ -26,6 +26,11 @@
 #define FX_Z8_PAGE_WONDER 0x63du
 #define FX_Z8_PAGE_AUTO 0x63eu
 #define FX_Z8_PAGE_GUARD 0x63fu
+/* Apps list pages (T12-③): ordinal 0 is the wonder root; ordinals 1..N
+ * are list pages at apps_list_base.. The routed window's free segment
+ * 0x636..0x63b hosts six list pages = 60 visible apps; a larger module
+ * count still surfaces the shared apps budget notice. */
+#define FX_Z8_APPS_PAGES 7u
 typedef struct {uint32_t word[11];} FxZ8MenuRow;
 typedef struct {uint64_t event,callback,condition,next;} FxZ8MenuEvent;
 typedef struct {
@@ -44,7 +49,8 @@ typedef struct {
      * menu_construct.c) so fx_native_menu_build can construct in place.
      * The shared row/event slot counts are part of that layout; the C311
      * table only fills 13 of the 18 handler slots. */
-    FxNativePage page;FxNativeDescriptor descriptor;uint8_t header[340];
+    FxNativePage page;FxNativeDescriptor descriptor;uint64_t descriptor_tail[2];
+    uint8_t header[340];
     FxNativeRow rows[FX_NATIVE_ROWS];uintptr_t events[FX_NATIVE_ROWS],callbacks[5];
     FxZ8MenuEvent handlers[FX_NATIVE_ROWS][FX_NATIVE_EVENTS];
 } FxZ8OwnedMenu;

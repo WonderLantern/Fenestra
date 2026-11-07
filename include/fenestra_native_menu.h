@@ -28,7 +28,14 @@ static inline uint32_t fx_native_page_row_index(const FxNativePage *p) {
 }
 typedef struct {uint32_t image,width,height,error;uintptr_t surface;} FxNativeBackdrop;
 typedef struct FxNativeMenu {
-    FxNativePage page;FxNativeDescriptor descriptor;uint8_t header[340];
+    FxNativePage page;FxNativeDescriptor descriptor;
+    /* Stock 0x50-byte descriptor tail: the staged visible-row vector
+     * pointer at +0x40 and the small word at +0x48 (Z8 FUN_403b01f0 reads
+     * *(desc+0x40) as {count,content}; the ROM template 0x44d35040 carries
+     * a real table there). Published after the shared 64-byte descriptor;
+     * profiles supply the pair or leave zeros. */
+    uint64_t descriptor_tail[2];
+    uint8_t header[340];
     FxNativeRow rows[FX_NATIVE_ROWS];uintptr_t events[FX_NATIVE_ROWS],callbacks[5];
     FxNativeEvent handlers[FX_NATIVE_ROWS][FX_NATIVE_EVENTS];
     FxNativeBackdrop backdrop;
@@ -47,6 +54,10 @@ typedef struct {
      * positional-initialiser default on older profiles) keeps the
      * historical FX_NATIVE_EVENTS bound; C311 supplies 12. */
     uint32_t navigation_events;
+    /* Two quads published verbatim at descriptor+0x40..+0x4f. Platforms
+     * whose open-path rebuild dereferences the tail pass a pointer to a
+     * {vector pointer, small word} pair; NULL publishes zeros. */
+    const uint64_t *descriptor_tail;
 } FxNativeMenuProfile;
 /* Link a row into an existing stock page. Preserve its original Back, Menu,
  * scrolling and conditional routes; only the four enter actions are replaced.

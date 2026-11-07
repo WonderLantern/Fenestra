@@ -168,6 +168,7 @@ FxResult fx_native_ui_init(FxNativeUi *u, FxPlatformOwner *owner, const FxNative
     u->page_base = page;
     u->text_base = text;
     u->row_base = row;
+    u->nav_row_offset = FX_NATIVE_UI_NAV_ROW;
     u->editing = UINT32_MAX;
     memcpy(u->actions, actions, sizeof(u->actions));
     memcpy(u->options, options, sizeof(u->options));
@@ -245,10 +246,10 @@ static FxNativePage *build_page(FxNativeUi *u,uint32_t slot,const FxNativePage *
         }
     }
     if(!dialog && u->request_refresh)entries[count++] = (FxNativeEntry){
-        u->text_base + FX_NATIVE_UI_NOTICE_TEXT,u->row_base+41u,0u,0u,u->actions[0],u->profile.stay};
+        u->text_base + FX_NATIVE_UI_NOTICE_TEXT,u->row_base+u->nav_row_offset+1u,0u,0u,u->actions[0],u->profile.stay};
     /* A native Back row also makes an empty/finished page navigable. */
     if(!dialog)entries[count++] = (FxNativeEntry){
-        u->text_base + FX_NATIVE_UI_BACK_TEXT, u->row_base + 40u, 0, 0, u->callbacks[4], u->profile.back};
+        u->text_base + FX_NATIVE_UI_BACK_TEXT, u->row_base + u->nav_row_offset, 0, 0, u->callbacks[4], u->profile.back};
     if (!menu) {
         menu = fx_native_ui_allocate(u,(uint32_t)sizeof(*menu));
         if (!menu)
@@ -268,7 +269,7 @@ static FxNativePage *build_page(FxNativeUi *u,uint32_t slot,const FxNativePage *
         return 0;
     /* Selection can navigate only after its copied intent was accepted.
      * A notification callback's return value is not a navigation condition. */
-    for(uint32_t row=0u;row<count;++row)if(entries[row].row!=u->row_base+40u)
+    for(uint32_t row=0u;row<count;++row)if(entries[row].row!=u->row_base+u->nav_row_offset)
         for(uint32_t e=0u;e<FX_NATIVE_EVENTS;++e) {
             uint32_t event=(uint32_t)menu->handlers[row][e].event&65535u;
             if(event==profile.terminal)break;
@@ -409,8 +410,8 @@ FxResult fx_native_ui_order_page(FxNativeUi *u,FxNativePage *page) {
         if(u->source || !(u->controls[slot].flags&FX_UI_RETIRED))desired[count++]=(uint8_t)slot;
     }
     for(uint32_t i=u->count;i<FX_UI_CONTROLS;++i)desired[count++]=(uint8_t)i;
-    if(u->request_refresh)desired[count++]=41u;
-    desired[count++]=40u; /* Retained native Back identity. */
+    if(u->request_refresh)desired[count++]=(uint8_t)(u->nav_row_offset+1u);
+    desired[count++]=(uint8_t)u->nav_row_offset; /* Retained native Back identity. */
     uint32_t focus=fx_native_page_row_index(page),focused=focus<m->descriptor.count?m->rows[focus].word[6]:0u;
     for(uint32_t i=0;i<count;++i) {
         uint32_t row=u->row_base+desired[i],j=0u;
@@ -439,7 +440,7 @@ FxResult fx_native_ui_order_page(FxNativeUi *u,FxNativePage *page) {
         page->selected=0u;page->tail=(page->tail&~UINT64_C(0xffff))|selected;
     }
     if(u->recovery_focus && u->recovery_page==id) {
-        for(uint32_t i=0u;i<count;++i)if(m->rows[i].word[6]==u->row_base+41u) {
+        for(uint32_t i=0u;i<count;++i)if(m->rows[i].word[6]==u->row_base+u->nav_row_offset+1u) {
             page->selected=0u;page->tail=(page->tail&~UINT64_C(0xffff))|i;break;
         }
     } else if(u->recovery_restore) {
@@ -461,7 +462,7 @@ static void recovery_note(FxNativeUi *u,uint32_t page,uint32_t kind,FxResult err
     if(u->recovery_notice!=kind || u->recovery_page!=page || u->recovery_error!=error) {
         if(!u->recovery_notice && kind==FX_NATIVE_UI_RECOVER_UPDATE) {
             FxNativeMenu *m=u->pages[fx_native_ui_slot(u,page)];uint32_t at=fx_native_page_row_index(&m->page);
-            u->recovery_return=u->source?fx_native_ui_window_focus(u):at<m->descriptor.count?m->rows[at].word[6]:u->row_base+40u;
+            u->recovery_return=u->source?fx_native_ui_window_focus(u):at<m->descriptor.count?m->rows[at].word[6]:u->row_base+u->nav_row_offset;
         }
         u->recovery_notice=kind;u->recovery_page=page;u->recovery_error=error;
         u->recovery_dirty=u->recovery_focus=1u;u->recovery_restore=0u;
@@ -556,7 +557,7 @@ FxResult fx_native_ui_event(FxNativeUi *u,const FxNativePage *page,const FxNativ
         if(!selection)return FX_EMPTY;
         uint32_t ident=menu->rows[row].word[6];
         if(!fx_native_ui_row_visible(u,id,ident))return FX_EMPTY;
-        if(ident==u->row_base+41u) {
+        if(ident==u->row_base+u->nav_row_offset+1u) {
             if(!u->request_refresh || !u->recovery_notice || u->owner->phase!=FX_OWNER_RUNNING)return FX_STATE;
             if(u->recovery_notice==FX_NATIVE_UI_RECOVER_NAVIGATION)u->navigation_pending=1u;
             u->request_refresh(u->owner);return FX_BUSY;
@@ -586,8 +587,8 @@ int fx_native_ui_row_submenu(const FxNativeUi *u,uint32_t row) {
 int fx_native_ui_row_visible(const FxNativeUi *u,uint32_t page,uint32_t row) {
     uint32_t slot=fx_native_ui_slot(u,page);
     if(!u || slot>=FX_NATIVE_UI_PAGES)return 0;
-    if(row==u->row_base+40u)return 1;
-    if(row==u->row_base+41u)return u->request_refresh && u->recovery_notice && u->recovery_page==page;
+    if(row==u->row_base+u->nav_row_offset)return 1;
+    if(row==u->row_base+u->nav_row_offset+1u)return u->request_refresh && u->recovery_notice && u->recovery_page==page;
     uint32_t index=row-u->row_base;
     if(slot==FX_NATIVE_UI_PAGES-1u)return u->editing<u->count && index>=FX_UI_CONTROLS &&
         index-FX_UI_CONTROLS<picker_count(&u->controls[u->editing]) &&
@@ -665,7 +666,7 @@ FxResult fx_native_ui_close(FxNativeUi *u, uint32_t page) {
 }
 uint32_t fx_native_ui_value(FxNativeUi *u, uint32_t row, int *enabled) {
     if (!u || !enabled || row < u->row_base)return 0;
-    if(row==u->row_base+41u){*enabled=u->owner->phase==FX_OWNER_RUNNING;return 0u;}
+    if(row==u->row_base+u->nav_row_offset+1u){*enabled=u->owner->phase==FX_OWNER_RUNNING;return 0u;}
     uint32_t i = row - u->row_base;
     if(i>=FX_UI_CONTROLS && i<FX_UI_CONTROLS+FX_UI_OPTIONS && u->editing<u->count) {
         *enabled=(u->controls[u->editing].flags&(FX_UI_ENABLED|FX_UI_VISIBLE))==(FX_UI_ENABLED|FX_UI_VISIBLE) &&

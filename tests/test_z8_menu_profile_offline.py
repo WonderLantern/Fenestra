@@ -132,9 +132,13 @@ class Z8MenuIdsOffline(unittest.TestCase):
         # 0x46ef/0x46f0 wonder rows left the language family with the
         # static page (the apps root now owns the wonder id).
         route = (ROOT / 'src' / 'platform' / 'z8_c311' / 'menu_route.c').read_text()
-        for name, value in (('.manager_row_base', 0x4600), ('.apps_row_base', 0x461a)):
+        # T12: the manager base moved to 0x4603 (two packed module slots
+        # now live below it) and the apps family follows at 0x461d.
+        for name, value in (('.manager_row_base', 0x4603), ('.apps_row_base', 0x461d)):
             self.assertIn(f'{name} = 0x{value:x}u', route)
-        self.assertIn('.module_row_base = {0x45cfu}', route)
+        self.assertIn('.module_row_base = {0x45cfu, 0x45e9u}', route)
+        self.assertIn('.manager_nav_row_offset = 40u', route)
+        self.assertIn('.module_nav_row_offset = 24u', route)
         # Entry rows stay the page-25 borrow; the 0x7ff0 family must not
         # return (unregistered: aborts the row rebuild).
         self.assertIn('#define FX_Z8_ENTRY_ROW_ID0 0x2d1cu', text)

@@ -68,6 +68,8 @@ FxResult fx_native_menu_build_style(FxNativeMenu *out, const FxNativeMenuProfile
     fx_native_page_initialize(&out->page,p->page,(page<<16)|(p->page->identity&65535u),
                               (uintptr_t)&out->descriptor,out->callbacks,style!=0);
     out->descriptor = *source;
+    out->descriptor_tail[0] = p->descriptor_tail ? p->descriptor_tail[0] : 0;
+    out->descriptor_tail[1] = p->descriptor_tail ? p->descriptor_tail[1] : 0;
     memset(out->header,0,sizeof(out->header));
     memcpy(out->header, (const void *)source->header, style?style->header_bytes:272u);
     memcpy(out->header + 68u, &title, sizeof(title));

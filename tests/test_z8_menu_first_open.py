@@ -156,7 +156,7 @@ class Z8DrawCompletionContracts(unittest.TestCase):
 
     def test_navigation_events_bound_is_13(self):
         text = self.MENU_C.read_text()
-        self.assertEqual(text.count('0u},0x68cu,FENESTRA,13u}'), 1)
+        self.assertEqual(text.count('0u},0x68cu,FENESTRA,13u,fx_z8_descriptor_tail}'), 1)
         self.assertEqual(text.count('},0x68cu,'), 4)
         self.assertNotIn('12u}', text)
 

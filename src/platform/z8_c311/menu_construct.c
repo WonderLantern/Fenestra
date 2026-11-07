@@ -38,7 +38,7 @@ FxResult fx_z8_menu_construct_navigation(FxZ8OwnedMenu *out, const FxZ8MenuPage 
         (const FxNativeEvent *)navigation,
         /* C311 quintuple, pinned from the 0x43bf0680 table (see menu_data.h). */
         0x3bbu, 0x27fu, {0x286u, 0x28bu, 0x2aeu, 0u}, 0x68cu,
-        setup->identity >> 16, 13u};
+        setup->identity >> 16, 13u, 0};
     return fx_native_menu_build((FxNativeMenu *)(uintptr_t)out, &profile, page_id, title_id,
                                 (const FxNativeEntry *)entries, count,
                                 (const uintptr_t *)callbacks);

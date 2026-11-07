@@ -249,7 +249,7 @@ static FxNativeUi *make_view(Page *page) {
     if(fx_native_ui_init(u,p->root->owner,&profile,p->root->allocate,page->physical,text,p->root->row_base,
         p->root->actions,p->root->options,p->root->callbacks)!=FX_OK)goto failed;
     u->dialog=p->root->dialog;u->editor_profile=p->root->editor_profile;u->reader_profile=p->root->reader_profile;
-    u->source_context=page;u->picker_page=page->physical+1u;u->observer=p->observer;
+    u->source_context=page;u->picker_page=page->physical+1u;u->nav_row_offset=p->root->nav_row_offset;u->observer=p->observer;
     u->input_ready=p->root->input_ready;u->text_regions=p->root->text_regions;
     u->request_refresh=p->root->request_refresh;
     memcpy(u->contribution_title,p->root->contribution_title,sizeof(u->contribution_title));

@@ -32,12 +32,16 @@ ROW_FAMILY_FIRST, ROW_FAMILY_LAST = 0x45cf, 0x4631
 def table():
     """Parses the shipped fx_z8_route values from menu_route.c; own-page
     fields reference the menu_data.h macros, so those resolve first."""
-    macros = dict(re.findall(r'#define (FX_Z8_PAGE_\w+) (0x[0-9a-fA-F]+)u', MENU_DATA.read_text()))
+    macros = dict((m[0], int(m[1], 0)) for m in re.findall(
+        r'#define (FX_Z8_[A-Z_0-9]+) ((?:0x[0-9a-fA-F]+|[0-9]+))u?', MENU_DATA.read_text()))
     text = ROUTE_C.read_text()
     values = {}
     for key, value in re.findall(r'\.(\w+)\s*=\s*([A-Za-z_0-9]+)u?,', text):
-        values[key] = int(macros.get(value, value.rstrip('u')), 0)
-    values['module_row_base[0]'] = int(re.search(r'\.module_row_base\s*=\s*\{(0x[0-9a-fA-F]+)u', text).group(1), 0)
+        resolved = macros.get(value)
+        values[key] = resolved if resolved is not None else int(value.rstrip('u'), 0)
+    bases = re.search(r'\.module_row_base\s*=\s*\{(0x[0-9a-fA-F]+)u,\s*(0x[0-9a-fA-F]+)u\}', text)
+    values['module_row_base[0]'] = int(bases.group(1), 0)
+    values['module_row_base[1]'] = int(bases.group(2), 0)
     return values
 
 
@@ -55,8 +59,9 @@ class Z8RouteSources(unittest.TestCase):
 
     def test_routed_windows_inside_audited_band(self):
         t = table()
+        apps_pages = int(re.search(r'#define FX_Z8_APPS_PAGES (\d+)u', MENU_DATA.read_text()).group(1))
         pages = [(t['fenestra_page'], 1), (t['wonder_page'], 1), (t['auto_page'], 1),
-                 (t['guard_page'], 1), (t['apps_list_base'], 1),
+                 (t['guard_page'], 1), (t['apps_list_base'], apps_pages - 1),
                  (t['manager_base'], 18),
                  (t['module_page_first'], t['module_page_limit'] - t['module_page_first'])]
         for first, count in pages:
@@ -72,12 +77,24 @@ class Z8RouteSources(unittest.TestCase):
         # = 18 ids) and the module window can host at least a paged UI.
         self.assertEqual(t['manager_base'] + 18 - t['manager_base'], 18)
         self.assertGreaterEqual(t['module_page_limit'] - t['module_page_first'], 2)
+        # T12: two module row slots and the on-demand page model -- the
+        # shared default (18 reserved pages) must be gone from menu.c.
+        self.assertEqual(t['module_row_count'], 2)
+        menu = MENU_C.read_text()
+        self.assertNotIn('primary_pages=FX_NATIVE_UI_PAGES', menu)
+        self.assertIn('u->nav_row_offset=fx_z8_route.module_nav_row_offset', menu)
+        # The packed module back/notice pair sits right after the rows.
+        self.assertEqual(t['module_nav_row_offset'], 24)
+        self.assertEqual(t['manager_nav_row_offset'], 40)
 
     def test_borrowed_row_bases_inside_stock_family(self):
         t = table()
-        spans = [(t['manager_row_base'], 24), (t['manager_row_base'] + 40, 2),
+        # Two packed module slots: controls/pickers 0..23 and back/notice
+        # at +module_nav_row_offset; the manager keeps the T2 +40 layout.
+        spans = [(t['manager_row_base'], 24), (t['manager_row_base'] + t['manager_nav_row_offset'], 2),
                  (t['apps_row_base'], 10), (t['apps_row_base'] + 0x10, 5),
-                 (t['module_row_base[0]'], 24), (t['module_row_base[0]'] + 40, 2)]
+                 (t['module_row_base[0]'], 24), (t['module_row_base[0]'] + t['module_nav_row_offset'], 2),
+                 (t['module_row_base[1]'], 24), (t['module_row_base[1]'] + t['module_nav_row_offset'], 2)]
         for first, count in spans:
             self.assertGreaterEqual(first, ROW_FAMILY_FIRST)
             self.assertLessEqual(first + count - 1, ROW_FAMILY_LAST)
@@ -126,9 +143,14 @@ class Z8RouteSources(unittest.TestCase):
         self.assertEqual(routed['apps_list'], t['apps_list_base'])
         self.assertEqual(routed['manager'], t['manager_base'])
         self.assertEqual(routed['module_pages'], (t['module_page_first'], t['module_page_limit']))
+        apps_pages = int(re.search(r'#define FX_Z8_APPS_PAGES (\d+)u', MENU_DATA.read_text()).group(1))
+        self.assertEqual(routed.get('apps_pages'), apps_pages)
         self.assertEqual(routed['rows']['manager'], t['manager_row_base'])
+        self.assertEqual(routed['rows']['manager_nav'], t['manager_nav_row_offset'])
         self.assertEqual(routed['rows']['apps'], t['apps_row_base'])
-        self.assertEqual(routed['rows']['modules'], [t['module_row_base[0]']])
+        self.assertEqual(routed['rows']['module_nav'], t['module_nav_row_offset'])
+        self.assertEqual(routed['rows']['modules'],
+                         [t['module_row_base[0]'], t['module_row_base[1]']])
 
 
 class Z8RouteFixture(unittest.TestCase):

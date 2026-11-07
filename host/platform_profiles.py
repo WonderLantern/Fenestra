@@ -63,8 +63,9 @@ PROFILES={
    'camera.menu.row-events.663':(0x43d745c0,59*32),
    # Borrowed row-id stock families (T2/T3 BORROW): own pages borrow
    # 0x46e8-0x46f4 from the 14-row language/region array; module-manager
-   # and paged module UIs share the 0x4600 family inside the 99-row array
-   # (offsets 0..15 control, 16..23 pickers, 40/41 back/notice).
+   # and paged module UIs share the 99-row family (0x45cf..0x4631)
+   # (offsets 0..15 control, 16..23 pickers; manager back/notice at
+   # +40/+41, packed module slots at +24/+25 -- T12).
    'camera.menu.rows.language-region':(0x43f142dc,14*44),
    'camera.menu.rows.manager':(0x43cf133c,99*44),
    # Page-descriptor template array (T4b occupancy audit): id-indexed,
@@ -74,18 +75,21 @@ PROFILES={
    # are runtime scaffolds only (default identity (id<<16)|kind, mixed
    # across the band and uniformly |5 in the routed window; page_count 0).
    'camera.menu.descriptor-templates':(0x44d28110,0x4c3*0x50)},
-  # T5 routed page/row allocation (mirrors src/platform/z8_c311/menu_route.c,
+  # T5/T12 routed page/row allocation (mirrors src/platform/z8_c311/menu_route.c,
   # the value the firmware build compiles; offline tests cross-check the two
   # stay identical): every navigable Fenestra page id must sit inside the
   # audited free window with >=margin spare ids at both ends and below the
   # kind-2 gate; borrowed row bases stay inside the 99-row stock family
   # 0x45cf..0x4631 (0x43cf133c). Manager window = one shared UI window
-  # (FX_NATIVE_UI_PAGES=18); module UIs take dynamic page ids from
-  # [module_pages) by load order with one bounded row base.
+  # (FX_NATIVE_UI_PAGES=18); the apps root plus six list pages (0x636..0x63b)
+  # host 60 apps; module UIs take dynamic page ids from [module_pages) by
+  # load order with two bounded row bases (module slots pack back/notice
+  # at +24/+25; the manager keeps the T2 +40/+41 layout).
   routed_pages=dict(window=(0x61c,0x65d),margin=5,gate=0x68c,
    own_pages=(0x63c,0x63d,0x63e,0x63f),apps_root=0x63d,apps_list=0x636,
-   manager=0x624,manager_pages=18,module_pages=(0x640,0x652),
-   rows=dict(manager=0x4600,apps=0x461a,modules=[0x45cf],family=(0x45cf,0x4631))),
+   apps_pages=7,manager=0x624,manager_pages=18,module_pages=(0x640,0x652),
+   rows=dict(manager=0x4603,manager_nav=40,apps=0x461d,modules=[0x45cf,0x45e9],
+             module_nav=24,family=(0x45cf,0x4631))),
   # SYSCTL lifecycle: event table + dispatcher entry pinned against the original
   # image. Dispatcher FUN_40d60ec8 reads the event id at message+0x20 (ldrsw at
   # entry+0x18); its 16-byte entry window is four stack-push STPs (the same
