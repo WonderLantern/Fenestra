@@ -111,13 +111,25 @@
 - The full patched-image regression stayed green in three consecutive
   gate-enabled runs (reg-t13a/b/c: FXBOOT1 record valid, DCIM/NIKON/Z_8
   created, no unmodeled MMIO outside the ISP boundary block).
-- Probe-evidence withdrawal: the earlier `probe-r2-eject` result ("no
-  dispatch, no word change within 25 s") is withdrawn as invalid evidence
-  caused by a probe defect, not firmware behavior: the session had already
-  parked the VM on the ISP soak boundary (sticky `Z8_UNKNOWN` + default
-  `continue_past_boundary=False`), freezing virtual time so the 50 ms
-  poller sampled nothing during the toggle window. The corrected
-  qtest-only observation template is z8-qemu `.local/runs/e2b-run3/`. The
+- Probe-evidence withdrawal (root cause revised twice, final): the earlier
+  `probe-r2-eject` result ("no dispatch, no word change within 25 s") is
+  withdrawn as invalid evidence caused by a probe defect, not firmware
+  behavior. Final root cause (L2 forensics, 2026-11-08,
+  `.superpowers/sdd/2026-11-07-agroup-v2/reports/l2-sysprobe-stall.md`):
+  the probe's own software breakpoints left armed at hot entry points
+  re-trap with zero instructions executed on every QMP continue (QEMU
+  gdbstub has no step-over-on-resume), so the keep_gate observation
+  windows livelocked at the event-34-hammered gate entry and never
+  sampled the toggles. The first sticky-`Z8_UNKNOWN` soak-boundary
+  explanation does not apply to this leg (its stderr has no Z8_UNKNOWN
+  lines). The probe-side fixes landed afterwards (T10/T10b: one-shot
+  breakpoints, keep_gate escape, vt-only liveness witness, ch8/9 service
+  clocking; `scripts/z8_sysctl_probe.py`), and with the fixed probe the
+  eject leg now classifies NATURAL on both the probe-built image
+  (`build/re-runs/probe-t10b-eject-fin`) and the t9-exempt image
+  (`--patched-main` leg) — a positive result that supersedes the
+  withdrawn negative. The corrected qtest-only observation template is
+  z8-qemu `.local/runs/e2b-run3/`. The
   EX-boot structural caveat (boot-cleanup event 23 latching sticky shutdown
   before the module chain can load; host-peer boots order 19 after mount
   and carry the verdict) is documented in the E2c report
