@@ -96,9 +96,11 @@
   at the allocation, phase ACTIVE=2 before injection), the worker REMAINED
   ACTIVE after injection and no `fx_z8_worker_shutdown` call was observed
   through the end of the run: **the pre-authored stop handshake does not
-  propagate under forced delivery, and worker-stop on card removal is
-  unproven** (an earlier revision of this section claimed a worker shutdown
-  flag observation; that evidence read a wrong pointer and is withdrawn).
+  propagate under forced delivery** (an earlier revision of this section
+  claimed a worker shutdown flag observation; that evidence read a wrong
+  pointer and is withdrawn). Superseded by the worker-stop verdict on
+  natural delivery below: the forced gdbstub re-entry path never reaches
+  the stop-handshake code the natural dispatch task exercises.
 - Forced event-7 re-entry (probe artifact `probe-r2-e7`): the word moves
   `0x303→0x705` — exactly `STOP|STOP_PENDING` set with `CARD` cleared —
   and STOP is terminal: a direct `fx_z8_after_startup_complete` call
@@ -109,21 +111,49 @@
 - The full patched-image regression stayed green in three consecutive
   gate-enabled runs (reg-t13a/b/c: FXBOOT1 record valid, DCIM/NIKON/Z_8
   created, no unmodeled MMIO outside the ISP boundary block).
-- Natural delivery attempt (probe artifact `probe-r2-eject`): a runtime
-  `cfexpress-card-present` QMP toggle (the modeled detect line,
-  `0x17a00044` bit 1) produced no dispatch and no word change within 25 s.
-  No direct reference to that register was found anywhere in the image:
-  Ghidra cross-references 0 (analyzed functions only), a full-image
-  byte-level ADRP+LDR pattern scan 0, literal-constant scan 0 — computed
-  or indirect addressing is not covered by the scans; the runtime toggle
-  covers the dynamic path. Natural card events therefore need a model
-  extension (the Z 6III qemu documents the equivalent slot with a 50 ms
-  firmware poll; the Z8's detect path is presumably MCU-linked).
+- Probe-evidence withdrawal: the earlier `probe-r2-eject` result ("no
+  dispatch, no word change within 25 s") is withdrawn as invalid evidence
+  caused by a probe defect, not firmware behavior: the session had already
+  parked the VM on the ISP soak boundary (sticky `Z8_UNKNOWN` + default
+  `continue_past_boundary=False`), freezing virtual time so the 50 ms
+  poller sampled nothing during the toggle window. The corrected
+  qtest-only observation template is z8-qemu `.local/runs/e2b-run3/`. The
+  EX-boot structural caveat (boot-cleanup event 23 latching sticky shutdown
+  before the module chain can load; host-peer boots order 19 after mount
+  and carry the verdict) is documented in the E2c report
+  (`.superpowers/sdd/2026-11-07-followup-arcs/reports/e2c-natural-delivery.md`)
+  with the Fenestra-side fix direction (pre-activation 23 exemption) left
+  as an open work item.
+- Natural delivery (E2b/E2c, 2026-11-07): the runtime
+  `cfexpress-card-present` QMP toggle (bit 1 of `0x17a00044`) is the live
+  source of MAIN's storage-slot poller — task loop `0x4031b2d8`, enable
+  byte `0xa02f28da0` set once at service init and never cleared, per-slot
+  presence byte `0xa02f28da5+slot*0xc`, read every 50.18 ms median from pc
+  `0x402b5458` (slot 0/CFe via `0x4028fc8c`→`0x402b542c`; slot 1/SD reads
+  `0x17a0000c` bit 0 the same way). The earlier image scans found no
+  reference because the register is reached through a driver
+  halfword-offset table (`0xa02808508`), not ADRP immediates. Toggling
+  delivers the natural events end to end: card-out → ring `0xa0341f2e0`
+  id 23 (CardRemove) + word `0x303→0x301`; card-in → ids 22 + 24
+  (CardInsert + CardMountComplete, closing the id-24 delivery-bridge open
+  item) with a 769-read mount rescan and word back to `0x303`. Legs: stock
+  MAIN mapping/control/re-run/equivalence (z8-qemu
+  `.local/runs/e2b-run{3,4-ctl,5-map,6-equiv}`), patched menu-enabled MAIN
+  delivery/re-run/control with zero unmodeled MMIO (`.local/runs/e2c-run{1,2}`,
+  `.local/runs/e2c-ctl`).
+- Worker-stop verdict on natural delivery (E2c, closes the §4a open item):
+  a natural event 23 runs the pre-authored stop handshake — worker phase
+  ACTIVE(2)→QUIESCED(4), shutdown flag 0→1 (monotonic), error=0,
+  `startup.shutdown_done=1` (artifacts `.local/runs/e2c-noex{,2}`, two
+  field-identical runs). Re-insertion delivers 22+24 naturally and
+  re-mounts, but the worker stays QUIESCED: shutdown is sticky and
+  re-insertion does not revive the module (firmware-side behavior, recorded
+  as fact).
 - Boundary: the event 7/23 evidence is forced delivery under the emulator
   (gdbstub re-entry in an arbitrary stopped CPU context with sync=1, which
-  skips the dispatcher mutex); the natural dispatch-task context and the
-  sync=0 mutex path are not exercised, worker-stop propagation is an open
-  item, and the worker INTERRUPTED continuation path remains unexercised.
+  skips the dispatcher mutex; the forced path never reaches the
+  stop-handshake code — see the worker-stop verdict above), and the worker
+  INTERRUPTED continuation path remains unexercised.
 
 ### 5. Core build (`host/build_z8_core.py` + `emulation/z8_core.ld`)
 - 74 source files compiled (LLVM 19.1.7, the same strict flag set as Z9,
