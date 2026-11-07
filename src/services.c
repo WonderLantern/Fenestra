@@ -81,11 +81,13 @@ FxResult fx_modules_discover_accounted(const FxModuleDirectory *io,const uint8_t
         uint32_t disabled=n>9u && !memcmp(item.name+n-9u,".disabled",9u);
         uint32_t end=n-(disabled?9u:0u);
         if(end<5u || memcmp(item.name+end-4u,".wlm",4u))continue;
-        if(!fx_service_name(item.name,32u,1)){result=FX_ARGUMENT;break;}
+        /* Same filename rule as the module manager listing: names that cannot
+         * be a module (e.g. macOS "._x.wlm" AppleDouble files) are not one. */
+        if(!fx_service_name(item.name,32u,1))continue;
         uint32_t id_bytes=end-4u;
-        if(id_bytes>=16u){result=FX_ARGUMENT;break;}
+        if(id_bytes>=16u)continue;
         char identity[16]={0};memcpy(identity,item.name,id_bytes);
-        if(!fx_service_name(identity,16u,0)){result=FX_ARGUMENT;break;}
+        if(!fx_service_name(identity,16u,0))continue;
         uint32_t identity_slot;
         result=fx_module_index_add(&seen,identity,&identity_slot);
         if(result!=FX_OK)break;
