@@ -122,8 +122,8 @@
   before the module chain can load; host-peer boots order 19 after mount
   and carry the verdict) is documented in the E2c report
   (`.superpowers/sdd/2026-11-07-followup-arcs/reports/e2c-natural-delivery.md`)
-  with the Fenestra-side fix direction (pre-activation 23 exemption) left
-  as an open work item.
+  with the Fenestra-side fix direction (pre-activation 23 exemption) since
+  implemented — see the boot-cleanup exemption bullet below.
 - Natural delivery (E2b/E2c, 2026-11-07): the runtime
   `cfexpress-card-present` QMP toggle (bit 1 of `0x17a00044`) is the live
   source of MAIN's storage-slot poller — task loop `0x4031b2d8`, enable
@@ -149,6 +149,57 @@
   re-mounts, but the worker stays QUIESCED: shutdown is sticky and
   re-insertion does not revive the module (firmware-side behavior, recorded
   as fact).
+- Boot-cleanup CardRemove exemption (T9, 2026-11-07; closes that open item):
+  every EX boot emits a natural CardRemove (23) through the installed gate
+  before the first mount completes — running the stop handshake on it
+  closed the startup service before any module could load (modules load
+  from the card, so the chain can never win that race). The gate now
+  exempts exactly that 23: `fx_z8_lifecycle_boot_cleanup_window(word,
+  phase)` returns 1 iff the sticky `FX_Z8_LIFE_MOUNT_EVER` bit (0x8, set by
+  event 24, never cleared, outside the PENDING mask) is unset AND the
+  startup phase is one of {UNCHECKED, READY, ABNORMAL, IO_ERROR}
+  (pre-ARMED; FAULT/STOPPED fail closed). An exempt 23 skips
+  cleanup_window/shutdown entirely but is still recorded (CARD_PENDING,
+  the forensic surface is unchanged). Three legs on the exemption build
+  (patched MAIN from the T9 commit, QEMU sha `3757c7b3…`, artifacts under
+  z8-qemu `.local/runs/t9-exempt/`):
+  - EX leg (`leg1-ex/run4`): boot word `0x301` with CARD_PENDING and no
+    MOUNT_EVER (the boot cleanup 23 exempted, no sticky shutdown); insert
+    → 22/24 delivered naturally → word `0x30b`, module worker ACTIVE,
+    FXBOOT1 flag valid and DCIM/NIKON/Z_8 created on the card; the later
+    natural card-out 23 (post mount, MOUNT_EVER set) still runs the stop
+    handshake verbatim (worker QUIESCED, sticky shutdown), and re-insertion
+    re-arms the word `0x309→0x30b` with the worker staying QUIESCED — the
+    E2c verdict unchanged on the exemption build.
+  - noex re-verification (`leg2-noex/run1`): host-peer boot with the card
+    present from t0 — boot ring exactly [19,24] with no cleanup 23 (the
+    preinstall mount-hole boundary evidence), word `0x30b`, worker ACTIVE;
+    the later natural 23 is not exempted (QUIESCED, shutdown monotonic,
+    `shutdown_done=1`, State.shutdown=1).
+  - Discriminant leg (`leg3-disc/run5`): noex boot with the shipped
+    startup record rewritten to AUTO off, so the service inspects to READY
+    and parks there (an otherwise-exempt phase). With MOUNT_EVER set by the
+    boot 24, a forced 23 (captured real event-34 dispatch message patched
+    to 23, re-entered through the pinned stock dispatcher entry
+    `0x40d60ec8`; the T13 inject pattern) is NOT exempted: sticky
+    startup.shutdown set, handshake completes asynchronously
+    (`shutdown_done=1`, State.shutdown=1), word `0x30b→0x309` (CARD
+    cleared, CARD_PENDING set, MOUNT_EVER and STARTED retained). This pins
+    the discriminator's negative space: the READY phase alone is in the
+    exempt set — only the mount witness blocks the exemption.
+- Known boundary (accepted by decision, option A): the preinstall mount
+  hole — in a host-peer (noex) boot the physical mount can complete before
+  event 19 (installation), so the gate may never observe a 24 and
+  MOUNT_EVER may stay unset while the card is really mounted; a real card
+  removal in the window between installation and activation completion
+  would then be wrongly exempted. The E2c noex runs measured the boot ring
+  as [19,24] (a 24 is still delivered after installation) and the leg-2
+  re-verification reproduced that sequence on the exemption build — the
+  hole is closed empirically, not structurally. Every post-mount 23 keeps
+  the conservative stop-before-remove semantics as the hardware-
+  conservative layer (family comparison: Z9/ZR hook no card remove; Zf is
+  notice-only on real hardware; Z63 shares the 8∥24 stop with no
+  exemption — recorded as upstream-issue material).
 - Boundary: the event 7/23 evidence is forced delivery under the emulator
   (gdbstub re-entry in an arbitrary stopped CPU context with sync=1, which
   skips the dispatcher mutex; the forced path never reaches the
