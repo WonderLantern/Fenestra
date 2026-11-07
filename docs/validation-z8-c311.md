@@ -274,8 +274,9 @@ subsystem uses a face cache with 2-arg create/bind — `FUN_40881888`/
 change from Z9 recorded for T15) and the display profile (VG library
 verified unmoved at the Z9 addresses, 24 fns; the GUI cluster shifted,
 anchor map in the local evidence store) remain unpinned. The loader runs
-on the UI dispatch domain tick (C311 `task.create` is not pinned); no
-loader task exists in the enabled image.
+on the UI dispatch domain tick (the task family is pinned on C311; a
+loader task stays deliberately unused); no loader task exists in the
+enabled image.
 
 ## 4c. Render-profile cluster (T12, second round)
 
@@ -498,7 +499,7 @@ Evidence (probe `--phase okchain`, enabled image, one round per page):
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; activation to ACTIVE also observed on the enabled image (`menu-e2e-act-*`: worker magic + phase 2), attribution per the 4b caveat (auto-activate flag not isolated) |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |
-| task.create/resume/delay addresses | Z9 reference values | prologue probes exist; create/resume are not exercised by the validated configuration; the delay binding runs on the loader's yield path (all runs) and on the sysctl stop-handshake wait loop (forced-delivery context) |
+| task.create/resume/delay addresses | pinned on Z8 (C311) | `0x40185064` / `0x401855e0` / `0x40187b00` re-derived from C311 bytes alone (semantics: 56-byte record + TCB pop + ready-list insert / id bounds + id-table wake / wake-list link now+ticks; firmware caller cluster `0x40d2d524`→`0x40d2d5fc`→`0x40d2d658`; 16B entry-window sha256 pins in `tests/test_z8_task_pins.py`). Values equal the former Z9 references. Runtime: create/resume run on every module load (worker start), delay on the loader yield path (all runs) and the sysctl stop-handshake wait loop (forced-delivery context); the earlier "create/resume not exercised" wording was stale — the verified hello round trip (§10) requires them |
 | GUI mutex trio | pinned on Z8 | `0xa032b8044` / acquire `0x40d2bfb4` / release `0x40d2bf60`, used by both refresh paths and the pair dispatch wrapper `FUN_403f6388` (object `0xa032bbd68`); the former Z9 values (0xa032dcb98/0x40d30004/0x40d2ffb0) are absent from the sources |
 | FCB error codes / card_capacity BL chain | partial | loop signature verified; error paths and the call chain not pinned |
 | Hardware | **entirely unverified** | no device flashing; every conclusion in this file is emulation-boundary |

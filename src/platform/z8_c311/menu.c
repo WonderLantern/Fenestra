@@ -1247,8 +1247,9 @@ static void construct_pages(State *s, FxNativePage *sp) {
             &hub_expected,(uintptr_t)s,memory_order_release,memory_order_acquire))return;
     void *stack=allocate(65536u+16u);s->task_stack=stack;
     if(stack)fx_retained_account(fx_shared_loader_account(&s->accounting),&s->stack_accounted,65536u+16u);
-    /* No dedicated loader task (C311 task.create is not pinned): the UI
-     * dispatch domain tick owns the startup service and refresh legs. */
+    /* No dedicated loader task: the UI dispatch domain tick owns the
+     * startup service and refresh legs (the task-family bindings are
+     * pinned; a loader task stays deliberately unused). */
 }
 #endif /* !FX_Z8_HEADLESS construct */
 /* Anchor first (descriptor write), initialise afterwards; initialisation is

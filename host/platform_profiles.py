@@ -34,7 +34,16 @@ PROFILES={
    # lookup; navigate FUN_4039e810 = the 2973-site open-request funnel
    # (page, ctx); open FUN_403ad6d8 = the (group,page) open primitive.
    'camera.menu.page.get':0x403db694,'camera.menu.text.get':0x4032e130,
-   'camera.menu.navigate':0x4039e810,'camera.menu.open':0x403ad6d8},
+   'camera.menu.navigate':0x4039e810,'camera.menu.open':0x403ad6d8,
+   # Native task trio (B1): pinned against the C311 image by disassembled
+   # semantics + firmware caller cross-references (docs/validation-z8-c311.md).
+   # create FUN_40185064 = 56-byte record validation + TCB pop from the free
+   # list 0xa4b7568 + ready-list insertion, returns slot+1; resume FUN_401855e0
+   # = id bounds vs the count at 0xa2aaab8 + wake via the id table 0xa499e430;
+   # delay FUN_40187b00 = current-TCB wake-list link, wake tick = now+ticks.
+   # Values equal the former Z9 references; entry-window sha256 pins in
+   # tests/test_z8_task_pins.py re-derive them from C311 bytes.
+   'rtos.task.create':0x40185064,'rtos.task.resume':0x401855e0,'rtos.task.delay':0x40187b00},
   tables={'camera.menu.page-roots':(0xa032b50c8,56),
    # Text bank roots (firmware text init FUN_403edf3c registers these via
    # FUN_4032e05c/074/08c/0a4/104; sole reader FUN_4032e130 clamps against

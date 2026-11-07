@@ -7,8 +7,8 @@ typedef struct {
     uint32_t priority,reserved2;uint64_t stack_bytes;uintptr_t stack;
     uint32_t processor,affinity;
 } Task;
-_Static_assert(sizeof(Task)==56,"Z9 reference task creation record; not pinned on Z8");
-_Static_assert(offsetof(Task,entry)==16 && offsetof(Task,stack_bytes)==32 && offsetof(Task,affinity)==52,"Z9 reference argument offsets; not pinned on Z8");
+_Static_assert(sizeof(Task)==56,"C311 create 0x40185064 reads this record size");
+_Static_assert(offsetof(Task,entry)==16 && offsetof(Task,stack_bytes)==32 && offsetof(Task,affinity)==52,"C311 create 0x40185064 argument offsets (entry+0x10 stack_bytes+0x20 affinity+0x34)");
 FxResult fx_z8_task_start(FxZ8TaskScope *s,void (*entry)(void *),void *context,void *stack,uint32_t bytes) {
     if(!s || !entry || ((uintptr_t)entry&3u) || !stack || ((uintptr_t)stack&15u) ||
        bytes<4096u || bytes>FX_MODULE_STACK_MAX || (bytes&15u) || (uintptr_t)stack>UINTPTR_MAX-bytes)return FX_ARGUMENT;

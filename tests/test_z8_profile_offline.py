@@ -13,6 +13,7 @@ Z8_FUNCTIONS = {
     'camera.card.seek64', 'camera.card.write', 'camera.card.rename',
     'camera.menu.page.get', 'camera.menu.text.get',
     'camera.menu.navigate', 'camera.menu.open',
+    'rtos.task.create', 'rtos.task.resume', 'rtos.task.delay',
 }
 
 
