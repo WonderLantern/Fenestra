@@ -20,8 +20,8 @@ static uint32_t fx_native_apps_gate(void){return 0u;}
 static uint32_t noop(void *p){(void)p;return 1u;}
 static FxNativeAppFrame *frame(FxNativeApps *apps,const FxNativePage *page) {
     if(!apps || !page)return 0;
-    uint32_t id=page->identity>>16;if(!fx_native_apps_is_page(id))return 0;
-    uint32_t ordinal=id==FX_NATIVE_WONDER_PAGE?0u:id-FX_NATIVE_APPLICATION_PAGE_BASE+1u;
+    uint32_t id=page->identity>>16;if(!fx_native_apps_owns_page(apps,id))return 0;
+    uint32_t ordinal=id==apps->wonder_page?0u:id-apps->application_base+1u;
     FxNativeAppFrame *f=apps->current[ordinal];
     return f && f->current && page->identity==f->native.page.identity &&
         page->descriptor==(uintptr_t)&f->native.descriptor?f:0;
@@ -46,13 +46,18 @@ FxResult fx_native_apps_init(FxNativeApps *apps,const FxNativeMenuProfile *profi
         void *context,void *(*allocate)(uint32_t),uint32_t (*count)(void *),
         FxResult (*entry)(void *,uint32_t,const FxNativePage *,int,FxNativeAppEntry *),
         FxResult (*action)(void *,uint32_t),uint32_t title,uint32_t previous,uint32_t next,uint32_t empty,uint32_t back,
-        uint32_t unavailable,uint32_t retry) {
+        uint32_t unavailable,uint32_t retry,uint32_t wonder_page,uint32_t application_base,
+        uint32_t page_count,uint32_t row_base) {
     if(!apps || !profile || !callbacks || !allocate || !count || !entry || !action || !unavailable || !retry)return FX_ARGUMENT;
+    if(!wonder_page || !application_base || !page_count || wonder_page==application_base ||
+       application_base>65536u-page_count || row_base>65535u-FX_NATIVE_APP_ROW_NAV-4u)return FX_ARGUMENT;
     if(apps->allocate)return FX_BUSY;
     memset(apps,0,sizeof(*apps));apps->profile=*profile;memcpy(apps->callbacks,callbacks,sizeof(apps->callbacks));
     apps->context=context;apps->allocate=allocate;apps->count=count;apps->entry=entry;apps->action=action;
     apps->title=title;apps->previous_text=previous;apps->next_text=next;apps->empty_text=empty;apps->back_text=back;
     apps->unavailable_text=unavailable;apps->retry_text=retry;
+    apps->wonder_page=wonder_page;apps->application_base=application_base;
+    apps->page_count=page_count;apps->row_base=row_base;
     return FX_OK;
 }
 static FxNativeAppLink *link_for(FxNativeApps *apps,uint32_t instance,uint32_t page,FxNativeAppLink **head,FxAllocationObserver observer) {
@@ -83,9 +88,9 @@ static FxNativePage *failed(FxNativeApps *apps,FxNativeAppFrame *f,uint32_t page
      * required when constructing the error UI itself. Published owner event
      * records remain retained, but no longer appear in this descriptor. */
     FxNativeEntry rows[3]={
-        {apps->unavailable_text,0x7b13u,0u,0u,(uintptr_t)noop,apps->profile.stay},
-        {apps->retry_text,0x7b14u,1u,0u,(uintptr_t)noop,page},
-        {apps->back_text,0x7b12u,0u,0u,(uintptr_t)noop,apps->profile.back}};
+        {apps->unavailable_text,apps->row_base+FX_NATIVE_APP_ROW_NAV+3u,0u,0u,(uintptr_t)noop,apps->profile.stay},
+        {apps->retry_text,apps->row_base+FX_NATIVE_APP_ROW_NAV+4u,1u,0u,(uintptr_t)noop,page},
+        {apps->back_text,apps->row_base+FX_NATIVE_APP_ROW_NAV+2u,0u,0u,(uintptr_t)noop,apps->profile.back}};
     uintptr_t callbacks[5];memcpy(callbacks,apps->callbacks,sizeof(callbacks));
     callbacks[0]=(uintptr_t)opened;callbacks[1]=(uintptr_t)closed;
     memset(&f->native,0,sizeof(f->native));
@@ -111,14 +116,14 @@ static FxNativeAppFrame *reserve_frame(FxNativeApps *apps,uint32_t ordinal) {
     }
     uintptr_t callbacks[5];memcpy(callbacks,apps->callbacks,sizeof(callbacks));
     callbacks[0]=(uintptr_t)opened;callbacks[1]=(uintptr_t)closed;
-    FxNativeEntry back={apps->back_text,0x7b12u,0u,0u,(uintptr_t)noop,apps->profile.back};
-    FxResult r=fx_native_menu_build(&f->native,&apps->profile,fx_native_apps_page_id(ordinal),apps->title,&back,1u,callbacks);
+    FxNativeEntry back={apps->back_text,apps->row_base+FX_NATIVE_APP_ROW_NAV+2u,0u,0u,(uintptr_t)noop,apps->profile.back};
+    FxResult r=fx_native_menu_build(&f->native,&apps->profile,fx_native_apps_page_for(apps,ordinal),apps->title,&back,1u,callbacks);
     if(r!=FX_OK){apps->error=(uint32_t)r;return 0;}
     f->current=1u;apps->current[ordinal]=f;return f;
 }
 FxNativePage *fx_native_apps_page(FxNativeApps *apps,uint32_t page) {
-    if(!apps || !apps->allocate || !fx_native_apps_is_page(page))return 0;
-    uint32_t ordinal=page==FX_NATIVE_WONDER_PAGE?0u:page-FX_NATIVE_APPLICATION_PAGE_BASE+1u;
+    if(!apps || !apps->allocate || !fx_native_apps_owns_page(apps,page))return 0;
+    uint32_t ordinal=page==apps->wonder_page?0u:page-apps->application_base+1u;
     FxNativeAppFrame *old=apps->current[ordinal];
     if(old && old->pinned)return &old->native.page;
     apps->error=0u;
@@ -147,7 +152,7 @@ FxNativePage *fx_native_apps_page(FxNativeApps *apps,uint32_t page) {
         ++available;
         if(available>begin+FX_NATIVE_APP_ROWS){more=1u;break;}
     }
-    if(more && ordinal+1u==FX_NATIVE_APP_PAGE_COUNT)return failed(apps,f,page,FX_BUDGET);
+    if(more && ordinal+1u==apps->page_count)return failed(apps,f,page,FX_BUDGET);
     /* Every reachable Next destination has retained storage before native
      * input can close this source. Allocation failure stays on this frame. */
     if(more && !reserve_frame(apps,ordinal+1u))return failed(apps,f,page,(FxResult)apps->error);
@@ -161,13 +166,13 @@ FxNativePage *fx_native_apps_page(FxNativeApps *apps,uint32_t page) {
     f->notice=0u;f->failed_selection=0u;f->prepared=1u;f->count=items;f->more=more;memcpy(f->indices,indices,sizeof(indices));memcpy(f->entries,entries,sizeof(entries));
     uint32_t count=0u;
     for(uint32_t i=0;i<f->count;++i)
-        rows[count++]=(FxNativeEntry){f->entries[i].text,0x7b00u+i,f->entries[i].page!=apps->profile.stay,
+        rows[count++]=(FxNativeEntry){f->entries[i].text,apps->row_base+i,f->entries[i].page!=apps->profile.stay,
             f->entries[i].value!=0u,(uintptr_t)noop,f->entries[i].page};
-    if(!count)rows[count++]=(FxNativeEntry){apps->empty_text,0x7b00u,0u,0u,(uintptr_t)noop,apps->profile.stay};
-    if(ordinal)rows[count++]=(FxNativeEntry){apps->previous_text,0x7b10u,1u,0u,(uintptr_t)noop,fx_native_apps_page_id(ordinal-1u)};
-    if(more && ordinal+1u<FX_NATIVE_APP_PAGE_COUNT)
-        rows[count++]=(FxNativeEntry){apps->next_text,0x7b11u,1u,0u,(uintptr_t)noop,fx_native_apps_page_id(ordinal+1u)};
-    rows[count++]=(FxNativeEntry){apps->back_text,0x7b12u,0u,0u,(uintptr_t)noop,apps->profile.back};
+    if(!count)rows[count++]=(FxNativeEntry){apps->empty_text,apps->row_base,0u,0u,(uintptr_t)noop,apps->profile.stay};
+    if(ordinal)rows[count++]=(FxNativeEntry){apps->previous_text,apps->row_base+FX_NATIVE_APP_ROW_NAV,1u,0u,(uintptr_t)noop,fx_native_apps_page_for(apps,ordinal-1u)};
+    if(more && ordinal+1u<apps->page_count)
+        rows[count++]=(FxNativeEntry){apps->next_text,apps->row_base+FX_NATIVE_APP_ROW_NAV+1u,1u,0u,(uintptr_t)noop,fx_native_apps_page_for(apps,ordinal+1u)};
+    rows[count++]=(FxNativeEntry){apps->back_text,apps->row_base+FX_NATIVE_APP_ROW_NAV+2u,0u,0u,(uintptr_t)noop,apps->profile.back};
     memset(&f->native,0,sizeof(f->native));
     if(fx_native_menu_build(&f->native,&apps->profile,page,apps->title,rows,count,callbacks)!=FX_OK)return 0;
     for(uint32_t i=0;i<f->count;++i)f->native.events[i]=(uintptr_t)links[i]->events;
@@ -233,12 +238,12 @@ uint32_t fx_native_apps_condition(const FxNativePage *page,const FxNativeEvent *
 uint32_t fx_native_apps_value(FxNativeApps *apps,const FxNativePage *page,uint32_t row,int *enabled) {
     FxNativeAppFrame *f=frame(apps,page);if(!f || !enabled)return 0u;
     if(f->notice) {
-        if(row==0x7b13u)*enabled=0;
-        else if(row==0x7b14u)*enabled=1;
+        if(row==apps->row_base+FX_NATIVE_APP_ROW_NAV+3u)*enabled=0;
+        else if(row==apps->row_base+FX_NATIVE_APP_ROW_NAV+4u)*enabled=1;
         return 0u;
     }
-    if(row>=0x7b00u && row<0x7b00u+FX_NATIVE_APP_ROWS) {
-        uint32_t i=row-0x7b00u;
+    if(row>=apps->row_base && row<apps->row_base+FX_NATIVE_APP_ROWS) {
+        uint32_t i=row-apps->row_base;
         if(i>=f->count){*enabled=0;return 0u;}
         *enabled=f->entries[i].enabled!=0u;return f->entries[i].value;
     }

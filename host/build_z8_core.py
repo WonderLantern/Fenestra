@@ -57,7 +57,7 @@ TARGET = 'z8-c311'
 # Z9 reference values and their exercise status are documented in
 # docs/validation-z8-c311.md (boundaries).
 PLATFORM = [f'src/platform/z8_c311/{s}' for s in (
-    'menu.c', 'menu_construct.c', 'services.c', 'task.c', 'card.c', 'module_stage.c', 'module_session.c',
+    'menu.c', 'menu_construct.c', 'menu_route.c', 'services.c', 'task.c', 'card.c', 'module_stage.c', 'module_session.c',
     'module_worker.c', 'address_space.c', 'exec_context.c', 'ui_dispatch_profile.c',
     'lifecycle.c',
     'startup_files.c', 'rtos.c', 'private_call.S', 'user_call.S', 'v0_stubs.c', 'ptp_stub.c', 'system_trampoline.S',

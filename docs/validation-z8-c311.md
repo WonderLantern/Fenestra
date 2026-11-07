@@ -489,13 +489,97 @@ Evidence (probe `--phase okchain`, enabled image, one round per page):
   check true and page 25 keeps rebuilding (`page_count` 45, descriptor not
   ours); `--default-image` control stays `rendered_stock`.
 
+## 4f. Manager/apps/module routing: the shared families join the routed window (T5)
+
+T4b left the module manager, the apps list and the module UIs on the
+`0x7000`-family ids (unreachable: kind-2 gate, 4e). T5 routes them into
+the same audited window through a single platform allocation table
+(`src/platform/z8_c311/menu_route.c`, `fx_z8_route`) whose invariants are
+validated at construct time (`fx_z8_route_validate`): every routed id
+inside `[0x61c,0x65d]` with >= 5 spare ids at both ends and strictly below
+the `0x68c` gate; every borrowed row base inside the 99-row stock family
+`0x45cf..0x4631` (`0x43cf133c`, byte-verified in the mirror) and pairwise
+disjoint.
+
+| Family | Routed ids | Reached from | Notes |
+| --- | --- | --- | --- |
+| Fenestra core / wonder / auto / guard | `0x63c-0x63f` | 4e (unchanged) | own pages, full-shape rebinding |
+| Manager UI window | `[0x624,0x636)` | core `Modules` row ok (`next` = `0x624`) | one `FX_NATIVE_UI_PAGES` window; rows base `0x4600` (0..23, 40/41) |
+| Apps list, ordinal 1 | `0x636` | apps `Next` row (ordinal 0 = wonder `0x63d`) | `page_count=2` bound; > 10 modules is an explicit notice |
+| Module-UI dynamic window | `[0x640,0x652)` | apps row ok (per-module `page_base`) | `FxNativeUiSpace` bounds; row base `0x45cf` by load order, ONE bounded slot |
+| Apps rows | `0x461a-0x4623`, `0x462a-0x462e` | — | shared offsets 0..9 and `0x10..0x14` re-based (was `0x7b00..0x7b14`) |
+
+Design points (all pinned by offline tests + the virt fixture
+`tests/test_z8_menu_route.py`):
+
+- **Shared code stays target-neutral.** `fx_native_apps_init` now takes
+  the page scheme (wonder id, application base, page count) and the row
+  base; `fx_native_modules_init` takes the manager page base. Z9/ZR pass
+  their historical constants; Z8 passes the routed table. The
+  `0x7b00-0x7b14` apps row literals (whose error-page rows `0x7b12-0x7b14`
+  are not registered Z8 stock ids and would abort the open-path row
+  rebuild, T12 P3) are gone from the shared source.
+- **The wonder id resolves to the apps root** (`fx_z8_menu_page` →
+  `apps_page`): with no modules the root shows the same `No loaded
+  modules` + Back pair the static T4b page did; with modules it lists
+  them and each row's ok opens the module UI at its routed `page_base`.
+  The static wonder page and its two borrowed rows (`0x46ef/0x46f0`) are
+  gone. The apps back target is the 663 wrench list (the page the entry
+  rows live on), not the 638 hub.
+- **Bounded dynamic slots fail explicitly.** Module-UI row bases are
+  assigned by load order from a one-entry table; a second module UI
+  returns `FX_CAPABILITY` (surfaced as the apps notice page — explicit,
+  never a silently unusable id). Page exhaustion of the routed window
+  maps to `FX_CAPABILITY` the same way.
+- **The new families deliberately keep their shared handler tables**
+  (no full-shape rebinding): their row input goes through the shared
+  condition-gate callbacks (`fx_native_ui_condition_gate` reads the
+  caller's `x20`/`x22` page+event, the context T4a pinned for the record
+  processor) and the deferred navigation handshakes
+  (`fx_native_ui_prepare_navigation` / `fx_native_apps_prepare_navigation`
+  -> `FUN_403ad6d8` with a routed id, which passes the gate because the id
+  is renumbered — that is the whole point of T5). Rebinding them to
+  59-record stock tables would break the shared integrity checks in
+  `fx_native_ui_event` (`events[row]` must stay inside the shared handler
+  or `FxNativeRowProgram` storage).
+
+Evidence (probe legs on the enabled image, `build/re-runs/t5-*`, 2026-11-07):
+
+| Leg | Result |
+| --- | --- |
+| `t5-base-wrench` (pre-change baseline) | `milestone`, all checks true |
+| `t5-mgr-okc-r1` (okchain, core Modules row ok) | manager `0x624` PUSHED (stack 3->4, top `0x6240002`, ancestors `[root, 663, 0x63c, 0x624]`) and RENDERED: `page_count` 17, borrowed rows `0x4600`(PAGE control)/`0x4601`(Changes)/`0x4602`(Refresh)/`0x4603`(module switch)/`0x460f`(Search) built as live widgets, title id 3230, frame bands 0.94-0.98; wrench `milestone` held in the same round |
+| `t5-apps-okc-r1` (okchain, 663 entry row 1 ok) | apps root `0x63d` `CHAIN_WORKS` (2->3, top `0x63d0002`) and RENDERED: `page_count` 2 (hello row + back), row id `0x461a` built, title id 3205, boundary clean |
+| `t5-hello-okc-r1` (okchain, apps hello row ok) | hello module UI `0x640` PUSHED (3->4, stack `[root, 663, 0x63d, 0x640]`) -- the apps condition-gate -> deferred flush -> `FUN_403ad6d8` -> routed-page chain works; rows `0x45cf-0x45d3+` built, title id 3304 resolved; render PARTIAL (top bands painted, layout stalled at the boundary below) |
+| `t5-wrench-r1` (regression) | `milestone`, every check true, rc=0 (zero regression) |
+| `t5-mgr-ra-r2` (rowactions, manager plan) | `manage-modules` cb consumed at the record-processor cb site (hit x1, key index isolated); manager live tables resolved from the live descriptor: trio identical, PAGE-control row next `0x625` (its sub-page) exact; refresh/switch rows resolved with stay nexts (first-open controls land asynchronously -- see boundary) |
+| `t5-stock-r1b` (default image control) | `rendered_stock`, every check true, rc=0 |
+
+Discovered boundary (both routed-family legs that open an `FxNativeUi` page,
+`t5-mgr-okc-r1` and `t5-hello-okc-r1`, NOT the apps/menu-page leg or any
+baseline): one in-window unmapped read `cpu=0 pc=0x403b0278` (inside the
+staged visible-row list builder `FUN_403b01f0`: `ldr x8,[x23,#8]` with
+`x23=0x600000000`, then a 16-bit id read at `[x8+idx*8+6]` -- the content
+child-vector walk) at the page open. The manager page still painted fully
+(frame fresh); the hello UI page painted its top bands then stalled
+(bottom rows unplaced, frame stale). The same fault leaves the manager
+page's selection driver unable to move rows (`t5-mgr-ra-r2`: refresh/switch
+legs gave up after the open). Baselines (`t5-base-wrench`, `t5-wrench-r1`)
+carry only the pre-existing boot-time `cpu=-1/pc=0` access. Open item:
+pin what feeds `x23` in `FUN_403b01f0` when the content container is a
+freshly built shared page (suspect: a stale staged-list entry or an
+uninitialized container field for pages whose content vector was never
+stock-populated). Also observed: the module-manager control copy lands
+asynchronously (first-open switch rows still carry stay nexts until the
+scan/publish completes and the page rebuilds).
+
 ## Unverified / not enabled (explicit boundaries)
 
 | Item | State | Notes |
 | --- | --- | --- |
 | UI condition ABI window | pending | the 168B dispatch window is not pinned; the configuration records the pending state and the hook stays disabled |
 | worker INTERRUPTED continuation | not exercised | the EL0 interrupt/resume path has no interrupt-injection evidence yet (planned follow-up) |
-| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); construction verified on the enabled image (probe artifacts `menu-e2e-nav/neg-*`, 3/3 per phase) and the default build keeps construction dormant (negative leg + RE0); the activate leg exercises MCU key delivery with guest stability and observes the activation chain, but key-driven activation is not isolated from the card's auto-activate flag (see 4b caveat). Wrench-tab milestone (4d): the constructed SETUP list page (663) rebuilds and renders with the entry rows visible alongside stock. Own-page routing (4e): entry-row and own-row ok navigation pushes the routed Fenestra/Wonder/Auto/Guard pages and they render (`t4b-okc-*`, all probe checks true); the module-manager and module-UI/apps pages keep `0x7000`-family ids and remain unreachable from wrench rows (kind-2 gate, recorded boundary). Boundary: hardware untested |
+| Native menu registration (menu reachability) | emulation-verified (enabled build) | menu trio, font sites, layout/visibility/draw bindings, the draw-completion primitives, the menu quintuple and construction pinned and hooked (sections 4b/4c); construction verified on the enabled image (probe artifacts `menu-e2e-nav/neg-*`, 3/3 per phase) and the default build keeps construction dormant (negative leg + RE0); the activate leg exercises MCU key delivery with guest stability and observes the activation chain, but key-driven activation is not isolated from the card's auto-activate flag (see 4b caveat). Wrench-tab milestone (4d): the constructed SETUP list page (663) rebuilds and renders with the entry rows visible alongside stock. Own-page routing (4e): entry-row and own-row ok navigation pushes the routed Fenestra/Wonder/Auto/Guard pages and they render (`t4b-okc-*`, all probe checks true). Manager/apps/module routing (4f): the manager window `0x624`, the apps family (`0x63d` root + `0x636` list) and the module-UI window `[0x640,0x652)` join the routed band via `fx_z8_route`; the `0x7000`-family ids remain reserved-but-unroutable. Boundaries (4f): ONE module-UI row slot (a second loaded module presents the apps capability notice, never a fake page), ONE apps list page (ordinals beyond it are out of the Z8 window; > 10 modules present the shared budget notice), the routed families' row input relies on the shared condition-gate + deferred-navigation handshakes (never the full-shape rebind of 4e), one in-window unmapped read at the staged visible-row builder (`FUN_403b01f0+0x88`) accompanies the first open of an `FxNativeUi`-family routed page (the manager still paints fully; the hello module UI paints partially and its layout stalls -- open item), and the module-manager control copy lands asynchronously (first-open switch rows keep stay nexts until the rebuild). Boundary: hardware untested |
 | hello `.wlm` load round trip | verified in emulation | full install→activate→load→user_call chain, 3/3 runs; activation to ACTIVE also observed on the enabled image (`menu-e2e-act-*`: worker magic + phase 2), attribution per the 4b caveat (auto-activate flag not isolated) |
 | debug identity / native namespace pipeline | not wired | the shared tail of verify_platform_build is not yet z8-integrated |
 | PTP / Linux bridge / USB debug / fonts / display | capability unavailable | excluded from the v0 source list; stubs return FX_CAPABILITY |

@@ -456,7 +456,8 @@ static FxNativePage *apps_page(State *s,uint32_t page) {
         0x3cau,0x297u,{0x298u,0x29du,0x2b1u,0x2c0u},0x6b8u,SETUP};
     uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,UINT64_C(0x403b2748),(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_apps_init(apps,&profile,callbacks,s,allocate,apps_count,apps_entry,apps_action,
-            TEXT+1u,TEXT+21u,TEXT+22u,TEXT+5u,TEXT+4u,TEXT+24u,TEXT+25u)!=FX_OK)return 0;
+            TEXT+1u,TEXT+21u,TEXT+22u,TEXT+5u,TEXT+4u,TEXT+24u,TEXT+25u,
+            FX_NATIVE_WONDER_PAGE,FX_NATIVE_APPLICATION_PAGE_BASE,FX_NATIVE_APP_PAGE_COUNT,FX_NATIVE_APP_ROW_BASE)!=FX_OK)return 0;
         apps->capture_task=fx_native_ui_capture_task;
         apps->embedded=1u;apps->account=fx_shared_ui_account(&s->accounting);s->apps=apps;fx_native_apps_account_retained(apps);
     }
@@ -803,7 +804,7 @@ static uint32_t manage_modules(void *p) {
         uintptr_t callbacks[5]={(uintptr_t)page_opened,(uintptr_t)fx_native_ui_page_close,
             (uintptr_t)noop,(uintptr_t)noop,(uintptr_t)noop};
         if(fx_native_modules_init(m,fx_platform_target(),&profile,allocate,
-            UI_TEXT_BASE,0x7d00u,callbacks,
+            UI_TEXT_BASE,0x7d00u,FX_NATIVE_MANAGER_PAGE_BASE,callbacks,
             atomic_load(&s->activation)!=0u)!=FX_OK){map_release(0,m);return 0u;}
         m->ui.retained_account=fx_shared_ui_account(&s->accounting);
         m->ui.editor_profile=&ui_editor_profile;

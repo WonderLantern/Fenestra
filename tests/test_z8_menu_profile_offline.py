@@ -98,7 +98,7 @@ class Z8MenuIdsOffline(unittest.TestCase):
         self.assertEqual(tables['camera.menu.descriptor-templates'], (0x44d28110, 0x4c3 * 0x50))
 
     def test_routed_page_ids_below_gate(self):
-        text = self.MENU_C.read_text()
+        text = MENU_DATA.read_text()
         for name, value in (('FX_Z8_PAGE_FENESTRA', 0x63c), ('FX_Z8_PAGE_WONDER', 0x63d),
                             ('FX_Z8_PAGE_AUTO', 0x63e), ('FX_Z8_PAGE_GUARD', 0x63f)):
             self.assertIn(f'#define {name} 0x{value:x}u', text)
@@ -123,12 +123,18 @@ class Z8MenuIdsOffline(unittest.TestCase):
         rows = [('FX_Z8_CORE_ACTIVATE_ID', 0x46e8), ('FX_Z8_CORE_STATUS_ID', 0x46e9),
                 ('FX_Z8_CORE_MODULES_ID', 0x46ea), ('FX_Z8_CORE_AUTOSTART_ID', 0x46eb),
                 ('FX_Z8_CORE_GUARDFLAG_ID', 0x46ec), ('FX_Z8_CORE_USB_ID', 0x46ed),
-                ('FX_Z8_CORE_BACK_ID', 0x46ee), ('FX_Z8_WONDER_ROW_ID', 0x46ef),
-                ('FX_Z8_WONDER_BACK_ID', 0x46f0), ('FX_Z8_AUTOMENU_ON_ID', 0x46f1),
+                ('FX_Z8_CORE_BACK_ID', 0x46ee), ('FX_Z8_AUTOMENU_ON_ID', 0x46f1),
                 ('FX_Z8_AUTOMENU_OFF_ID', 0x46f2), ('FX_Z8_GUARDMENU_ROW_ID', 0x46f3),
-                ('FX_Z8_GUARDMENU_CLEAR_ID', 0x46f4), ('FX_Z8_MANAGER_ROW_BASE', 0x4600)]
+                ('FX_Z8_GUARDMENU_CLEAR_ID', 0x46f4)]
         for name, value in rows:
             self.assertIn(f'#define {name} 0x{value:x}u', text)
+        # Manager/apps/module row bases live in the route table (T5); the
+        # 0x46ef/0x46f0 wonder rows left the language family with the
+        # static page (the apps root now owns the wonder id).
+        route = (ROOT / 'src' / 'platform' / 'z8_c311' / 'menu_route.c').read_text()
+        for name, value in (('.manager_row_base', 0x4600), ('.apps_row_base', 0x461a)):
+            self.assertIn(f'{name} = 0x{value:x}u', route)
+        self.assertIn('.module_row_base = {0x45cfu}', route)
         # Entry rows stay the page-25 borrow; the 0x7ff0 family must not
         # return (unregistered: aborts the row rebuild).
         self.assertIn('#define FX_Z8_ENTRY_ROW_ID0 0x2d1cu', text)

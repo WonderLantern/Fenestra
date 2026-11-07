@@ -10,7 +10,7 @@ typedef struct {
     FxFileObserver file_observer;
 } FxNativeModules;
 FxResult fx_native_modules_init(FxNativeModules *,const FxPlatform *,const FxNativeMenuProfile *,
-    void *(*allocate)(uint32_t),uint32_t texts,uint32_t rows,const uintptr_t callbacks[5],int active);
+    void *(*allocate)(uint32_t),uint32_t texts,uint32_t rows,uint32_t pages,const uintptr_t callbacks[5],int active);
 /* Explicit menu actions only: native serialized card APIs on Nikon's task. */
 FxResult fx_native_modules_open(FxNativeModules *);
 void fx_native_modules_input(FxNativeUi *);

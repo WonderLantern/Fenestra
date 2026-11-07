@@ -107,8 +107,8 @@ static uint32_t current(void *context,const char *id){(void)context;return fx_na
 static void *allocate_index(void *context,uint32_t bytes){return ((FxNativeModules *)context)->allocate_index(bytes);}
 static void release_index(void *context,void *allocation){((FxNativeModules *)context)->release_index(allocation);}
 FxResult fx_native_modules_init(FxNativeModules *m,const FxPlatform *p,const FxNativeMenuProfile *profile,
-    void *(*allocate)(uint32_t),uint32_t texts,uint32_t rows,const uintptr_t callbacks[5],int active) {
-    if(!m || !p || !allocate)return FX_ARGUMENT;
+    void *(*allocate)(uint32_t),uint32_t texts,uint32_t rows,uint32_t pages,const uintptr_t callbacks[5],int active) {
+    if(!m || !p || !allocate || !pages)return FX_ARGUMENT;
     memset(m,0,sizeof(*m));m->directory=-1;m->allocate_index=allocate;
     for(uint32_t i=0;i<p->count;++i)if(p->bindings[i].kind==FX_BIND_FUNCTION && p->bindings[i].abi==FX_CALL_U64_8 &&
         !memcmp(p->bindings[i].name,"rtos.memory.release",20u))
@@ -117,7 +117,7 @@ FxResult fx_native_modules_init(FxNativeModules *m,const FxPlatform *p,const FxN
     FxModuleManagerIO io={{m,open_directory,next_directory,close_directory,read_module},rename_module,m,current,
         {m,allocate_index,release_index},FX_MODULE_INDEX_BUDGET};
     FxResult r=fx_module_manager_init(&m->manager,p,&io,active);if(r!=FX_OK)return r;
-    r=fx_native_ui_init(&m->ui,&m->manager.ui,profile,allocate,FX_NATIVE_MANAGER_PAGE_BASE,texts,rows,
+    r=fx_native_ui_init(&m->ui,&m->manager.ui,profile,allocate,pages,texts,rows,
         fx_native_ui_actions,fx_native_ui_options,callbacks);
     if(r==FX_OK)m->ui.input_ready=fx_native_modules_input;
     return r;

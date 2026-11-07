@@ -74,6 +74,18 @@ PROFILES={
    # are runtime scaffolds only (default identity (id<<16)|kind, mixed
    # across the band and uniformly |5 in the routed window; page_count 0).
    'camera.menu.descriptor-templates':(0x44d28110,0x4c3*0x50)},
+  # T5 routed page/row allocation (mirrors src/platform/z8_c311/menu_route.c,
+  # the value the firmware build compiles; offline tests cross-check the two
+  # stay identical): every navigable Fenestra page id must sit inside the
+  # audited free window with >=margin spare ids at both ends and below the
+  # kind-2 gate; borrowed row bases stay inside the 99-row stock family
+  # 0x45cf..0x4631 (0x43cf133c). Manager window = one shared UI window
+  # (FX_NATIVE_UI_PAGES=18); module UIs take dynamic page ids from
+  # [module_pages) by load order with one bounded row base.
+  routed_pages=dict(window=(0x61c,0x65d),margin=5,gate=0x68c,
+   own_pages=(0x63c,0x63d,0x63e,0x63f),apps_root=0x63d,apps_list=0x636,
+   manager=0x624,manager_pages=18,module_pages=(0x640,0x652),
+   rows=dict(manager=0x4600,apps=0x461a,modules=[0x45cf],family=(0x45cf,0x4631))),
   # SYSCTL lifecycle: event table + dispatcher entry pinned against the original
   # image. Dispatcher FUN_40d60ec8 reads the event id at message+0x20 (ldrsw at
   # entry+0x18); its 16-byte entry window is four stack-push STPs (the same

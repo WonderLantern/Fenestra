@@ -11,6 +11,21 @@
  * (settings-gated), stay next page id 0x68c. The old 0x43014bb8 value
  * was a Z9 reference that reads as high-entropy data on C311. */
 #define FX_Z8_MENU_NAVIGATION UINT64_C(0x43bf0680)
+/* Routed own-page ids (T4b): the C311 kind-2 navigation gate
+ * (FUN_403af53c: cmp w22,w20 @0x403af654 + b.ls @0x403af658) drops every
+ * list target >= 0x68c BEFORE page.get runs, so navigable own pages live
+ * in the audited free window [0x61c,0x65d] (nearest stock references:
+ * page-id immediates 0x61b/0x65e at open/navigation call sites; audit =
+ * descriptor-template census (ROM array 0x44d28110, stride 0x50, valid
+ * templates end at id 0x4c2) + row-table next census (no target inside
+ * the window) + call-site immediate scan + the live group-2 roots dump
+ * (t4b-audit-r2: window slots are empty scaffolds, page_count 0)). The
+ * T5 manager/apps/module windows extend the same window; the full routed
+ * layout and its invariants live in menu_route.c (fx_z8_route). */
+#define FX_Z8_PAGE_FENESTRA 0x63cu
+#define FX_Z8_PAGE_WONDER 0x63du
+#define FX_Z8_PAGE_AUTO 0x63eu
+#define FX_Z8_PAGE_GUARD 0x63fu
 typedef struct {uint32_t word[11];} FxZ8MenuRow;
 typedef struct {uint64_t event,callback,condition,next;} FxZ8MenuEvent;
 typedef struct {
