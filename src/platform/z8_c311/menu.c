@@ -1540,7 +1540,21 @@ uint64_t fx_z8_menu_navigate(uint64_t page, void *context) {
 uint64_t fx_z8_system_dispatch(void *message, uint32_t sync) {
     uint32_t event = message ? *(const uint32_t *)((const uint8_t *)message + 32u) : UINT32_MAX;
     State *s = state();
-    if ((event == 7u || event == 23u) && s) {
+    /* Boot cleanup window (E2c): every EX boot emits natural CardRemove
+     * events through this gate before the first mount completes, in every
+     * pre-ARMED phase; running the stop handshake on them would close the
+     * startup service before any module can load (modules load from the
+     * card, so the chain can never win that race). Such a 23 is exempt from
+     * the handshake - no cleanup_window, no sticky shutdown, no spin - but
+     * still recorded (before_card_remove sets CARD_PENDING). After the
+     * first 24 the MOUNT_EVER witness fails the predicate and every 23
+     * keeps the conservative stop-before-remove semantics. BSShutdown (7)
+     * always stops. */
+    if (event == 23u && s && fx_z8_lifecycle_boot_cleanup_window(
+            atomic_load_explicit(&s->lifecycle.word,memory_order_acquire),
+            atomic_load(&s->startup.phase))) {
+        /* exempt boot cleanup CardRemove */
+    } else if ((event == 7u || event == 23u) && s) {
         /* Original event is forwarded exactly once, even if a module/native
          * call hangs. Never remove the flag after the card cleanup window.
          * BSShutdown (7) and CardRemove (23) share the stop handshake: the

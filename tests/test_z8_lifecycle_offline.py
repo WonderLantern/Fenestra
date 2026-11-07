@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'host'))
 from platform_profiles import PROFILES
+sys.path.insert(0, str(ROOT / 'tests'))
 
 # Z8 C3.11 system-event ids: names byte-verified against the pinned table at
 # 0x43F907F8 (64 entries x 88 bytes) and re-checked on every core build.
@@ -56,6 +57,40 @@ class Z8LifecycleOfflineTests(unittest.TestCase):
         s = PROFILES['z8-c311']['sysctl']
         self.assertEqual(build_z8_core.SYSTEM_HOOK, s['dispatch'])
         self.assertEqual(build_z8_core.SYSTEM_HOOK + 16, build_z8_core.SYSTEM_CONT)
+
+    def test_z8_lifecycle_mount_ever_bit_pinned(self):
+        header = (ROOT / 'src' / 'platform' / 'z8_c311' / 'lifecycle.h').read_text()
+        self.assertRegex(header, r'FX_Z8_LIFE_MOUNT_EVER\s*=\s*0x8u\b')
+        # The sticky witness is a state bit, never a coalesced notice.
+        self.assertFalse(0x8 & 0x700)
+        self.assertIn('FX_Z8_LIFE_PENDING=0x700u', header)
+        self.assertIn('int fx_z8_lifecycle_boot_cleanup_window(uint32_t word,uint32_t phase);',
+                      header)
+        # The predicate names the exempt phases explicitly (no bare <).
+        source = (ROOT / 'src' / 'platform' / 'z8_c311' / 'lifecycle.c').read_text()
+        self.assertIn('case FX_STARTUP_UNCHECKED:', source)
+        self.assertIn('case FX_STARTUP_READY:', source)
+        self.assertIn('case FX_STARTUP_ABNORMAL:', source)
+        self.assertIn('case FX_STARTUP_IO_ERROR:', source)
+        self.assertNotIn('case FX_STARTUP_ARMED:', source)
+        # Enum-order pin so a renumbered enum cannot widen the set.
+        self.assertIn('_Static_assert(FX_STARTUP_UNCHECKED==0 && FX_STARTUP_READY==1 &&',
+                      source)
+
+    def test_z8_lifecycle_gate_exempts_boot_cleanup_23(self):
+        """Compiled truth table: MOUNT_EVER stickiness + predicate over the
+        FX_STARTUP_* phases, run on the isolated virt machine (no firmware)."""
+        import z8_unit_support
+        result = z8_unit_support.build_and_run(
+            'tests/z8_lifecycle_fixture.c',
+            ['src/platform/z8_c311/lifecycle.c'],
+            'PASS Z8 lifecycle mount-ever-sticky boot-cleanup-window-truth-table')
+        if result is None:
+            self.skipTest('clang/ld.lld on PATH and QEMU (FX_QEMU or the '
+                          'default z8-qemu build) are required')
+        returncode, output, passed = result
+        if not passed:
+            self.fail(f'fixture failed (rc={returncode}): {output[-400:]}')
 
 
 if __name__ == '__main__':
