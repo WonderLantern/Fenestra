@@ -28,8 +28,10 @@ Enabled: native menu trio, font request sites, the render-profile cluster, the
 menu quintuple and the page construction are pinned and hooked (validation
 sections 4b-4f). The menu-enabled build (`build_z8_core.py --menu-enabled`)
 constructs the Fenestra pages at install and the construction + activation
-chain is verified in emulation (key-driven activation attribution pending an
-AUTO-off card run); the wrench-tab SET UP list rebuilds and renders with the
+chain is verified in emulation (key-driven activation verified on an
+AUTO-off card: the Activate-row ok is the sole activation source, with a
+zero-key control window staying inert; artifacts c2-ctl/c2-act); the
+wrench-tab SET UP list rebuilds and renders with the
 Fenestra entry rows, and the routed own pages, module manager, paged apps
 list and module UIs push and render — two concurrent module UIs are
 supported and the apps list spans six pages (60 apps); the default build
@@ -78,9 +80,12 @@ SHA1 header signature). Both are covered by the test suite.
 python host/build_sdk_module.py examples/hello/module.c --id hello --target z8-c311 --output-dir build/hello-z8
 ```
 
-Copy the produced `hello.wlm` to the card as `A:\FENESTRA\hello.wlm`. Activation
-currently goes through the startup-file service; native menu-driven activation
-was observed ACTIVE on the menu-enabled build; key-driven attribution pending an AUTO-off card run (emulation boundary).
+Copy the produced `hello.wlm` to the card as `A:\FENESTRA\hello.wlm`. Activation goes through the startup-file service or the native Activate row:
+key-driven activation verified on an AUTO-off card in emulation — the menu
+walk to the Activate row is the sole activation source (activation, worker
+start and the on-card boot flag land strictly after the ok press), while a
+zero-key control window stays inert (artifacts c2-ctl/c2-act; emulation
+boundary).
 
 ## Local verification
 

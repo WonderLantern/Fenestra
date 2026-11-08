@@ -340,23 +340,31 @@ stream-fed window, qtest-primary evidence via `fx_z8_menu_metadata` v5;
   down/ok/ok) are delivered through the external frame transport with the
   guest stable and no unmodeled access, and the module activation chain
   completes — activation requested, modules > 0, worker magic
-  `0x465A3957`, phase 2 (ACTIVE). Attribution caveat (review finding):
-  the card template's `FX_STARTUP_AUTO` flag auto-activates the hello
-  module through the startup-file service with ZERO keys (the navigate
-  legs are the counterfactual: they send no keys and reach the same
-  activation state), so menu-key-DRIVEN activation is NOT isolated by
-  this evidence; an AUTO-off card variant is the follow-up input.
-  UPDATE (attribution leg, artifact `menu-e2e-att-2`): the AUTO-off card
-  variant (scripts/z8_card_auto_off.py clears FX_STARTUP_AUTO, desired
-  3->2 with recomputed CRC) proves the attribution gap is real and the
-  method works — pre-key state is activation 0/modules 0, and the key
-  sequence produces NO activation. Menu-key-driven activation is
-  additionally blocked by an input-protocol gap: vision-verified frames
-  show the MENU key opens the photo-shooting tab and the four-way keys
-  do not move the category tab strip (LEFT eventually exits the menu);
-  reaching the SET UP tab requires a command-dial rotation record,
-  which z8-qemu's z8_navigation_input BINDINGS does not carry. The dial
-  record format is the follow-up input.
+  `0x465A3957`, phase 2 (ACTIVE). Attribution caveat (review finding,
+  now CLOSED): the card template's `FX_STARTUP_AUTO` flag auto-activates
+  the hello module through the startup-file service with ZERO keys (the
+  navigate legs are the counterfactual: they send no keys and reach the
+  same activation state), so menu-key-DRIVEN activation is NOT isolated
+  by that evidence alone. The AUTO-off attribution legs (artifacts
+  `c2-ctl-r1`/`c2-act-r1`, reproduced `c2-ctl-r2`/`c2-act-r2`;
+  scripts/z8_card_auto_off.py clears FX_STARTUP_AUTO, desired 3->2 with
+  recomputed CRC) close it: the zero-key control window (AUTO-off card,
+  menu-enabled image, stream MENU only, no walk keys) stays inert for
+  the whole idle span — 730/728 snapshots activation 0/modules 0/no
+  worker, startup service READY, virtual time live 18.6->61.3s — while
+  the key window (SET UP walk -> entry row -> Activate row ok) activates
+  strictly after the ok press (activate cb `0x401cb1b0` consumed by the
+  stock record processor in the ok's key window; ok press vt=26.100,
+  last act=0 snapshot t=26.157, first activation t=26.196 with worker
+  magic `0x465A3957`, module identity `hello-z8`, startup phase 1->5
+  RUNNING). The camera writes `FENESTRA/BOOT-Z8.FLAG` (valid FXBOOT1)
+  ONLY in the key window; the control card gains only the boot-time
+  camera structure (DCIM/NIKON001.DSC), which is therefore not
+  activation evidence. The earlier negative (`menu-e2e-att-2`) is
+  superseded: its key plan predated the calibrated wrench walk
+  (left/left/down x4/ok) and the T6 adaptive Activate-row driver
+  (t6-act-r2 first isolated the row; C2 closes the chain end-to-end
+  with the on-card flag and the inert control).
 - negative (default image): the headless State installs (early publish)
   with construction dormant (no owned core page, no entry-row rewrite) —
   baseline equivalence, plus the full RE0 regression re-run
