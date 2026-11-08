@@ -1,6 +1,9 @@
 # Z8 C 3.11 platform port validation record (v0 headless)
 
 > Corresponds to the `z8-c311` platform contribution; validation date 2026-10-31.
+> The `(v0 headless)` title names the v0 contribution scope: the default build
+> is headless-equivalent, and the menu-enabled build (`build_z8_core.py
+> --menu-enabled`) is the main verification form of the menu sections 4b-4f.
 > Follows the `validation.md` conventions; every conclusion states its verification
 > boundary explicitly. **All results are emulation-boundary validation; no hardware
 > testing has been performed.**

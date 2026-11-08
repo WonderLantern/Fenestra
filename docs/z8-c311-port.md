@@ -17,13 +17,25 @@ Enabled today: core build, independent verification, container repack, the SDK
 module target, startup-file activation with a full session load
 (install → activate → stage → load → EL0 user call) and sysctl lifecycle
 events (the system-event dispatcher gate records startup/mount and card
-removal/shutdown into a lifecycle inbox; forcing the worker stop path is
-pending natural-context delivery), all validated under a matching
+removal/shutdown into a lifecycle inbox; natural card hot-plug events are
+delivered end to end — card-out runs the pre-authored worker stop handshake
+(ACTIVE→QUIESCED, sticky shutdown; re-insertion re-mounts but does not revive
+the module) and the boot-cleanup CardRemove every EX boot emits is exempted
+so the module chain still completes), all validated under a matching
 Z8 emulator.
 
-Enabled: native menu trio, font request sites, the render-profile cluster, the menu quintuple and the page construction are pinned and hooked (validation sections 4b/4c). The menu-enabled build (`build_z8_core.py --menu-enabled`) constructs the Fenestra pages at install and the construction + activation chain is verified in emulation (key-driven activation attribution pending an AUTO-off card run); the default build keeps construction dormant (headless-equivalent)
-pending), device-side PTP (the profile reports `FX_CAPABILITY`), Linux bridge,
-USB debug and fonts. Unsupported capabilities report `FX_CAPABILITY` rather than
+Enabled: native menu trio, font request sites, the render-profile cluster, the
+menu quintuple and the page construction are pinned and hooked (validation
+sections 4b-4f). The menu-enabled build (`build_z8_core.py --menu-enabled`)
+constructs the Fenestra pages at install and the construction + activation
+chain is verified in emulation (key-driven activation attribution pending an
+AUTO-off card run); the wrench-tab SET UP list rebuilds and renders with the
+Fenestra entry rows, and the routed own pages, module manager, paged apps
+list and module UIs push and render — two concurrent module UIs are
+supported and the apps list spans six pages (60 apps); the default build
+keeps construction dormant (headless-equivalent). Not enabled: device-side
+PTP (the profile reports `FX_CAPABILITY`), Linux bridge, USB debug and
+fonts. Unsupported capabilities report `FX_CAPABILITY` rather than
 faking success; per-item evidence and boundaries live in
 [validation-z8-c311.md](validation-z8-c311.md).
 
@@ -86,6 +98,13 @@ python3 host/verify_platform_build.py --target z8-c311 --firmware "$Z8_MAIN" \
 # fail. Requires LLVM on PATH and an explicit QEMU binary.
 python3 tests/run_z8_session.py --output build/<new-session-dir> --qemu <qemu-system-aarch64>
 ```
+
+Full-system verification runs against the matching z8-qemu emulator:
+`scripts/z8_fenestra_regression.py` boots a patched image through the full
+boot chain and asserts the camera-side writes (FXBOOT1 record,
+DCIM/NIKON/Z_8), while `scripts/z8_menu_probe.py` and
+`scripts/z8_sysctl_probe.py` drive the menu and lifecycle probe legs behind
+validation sections 4a-4f.
 
 Per-item evidence chains, unverified boundaries and the reproduction
 environment are documented in [validation-z8-c311.md](validation-z8-c311.md).
