@@ -41,9 +41,10 @@ FxResult fx_card_read(const FxCardIO *io, const char *path, uint32_t expected_by
         out->cleanup = FX_CLOSE;
         if (result == FX_OK) result = FX_CLOSE;
     }
-    if (result == FX_OK) {
+    if (loaded) {
         fx_sha256(buffer, loaded, actual_digest);
-        if (memcmp(actual_digest, expected_sha256, sizeof(actual_digest)) != 0)
+        memcpy(out->observed_sha256, actual_digest, sizeof(actual_digest));
+        if (result == FX_OK && memcmp(actual_digest, expected_sha256, sizeof(actual_digest)) != 0)
             result = FX_INTEGRITY;
     }
     out->primary = result;

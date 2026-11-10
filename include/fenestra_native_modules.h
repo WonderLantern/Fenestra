@@ -3,7 +3,7 @@
 #include "fenestra_module_manager.h"
 #include "fenestra_native_ui.h"
 #include "fenestra_file_observer.h"
-typedef struct {
+typedef struct FxNativeModules {
     FxModuleManager manager;FxNativeUi ui;
     int32_t directory;uint32_t poisoned;
     void *(*allocate_index)(uint32_t);void (*release_index)(void *);
@@ -16,4 +16,5 @@ FxResult fx_native_modules_open(FxNativeModules *);
 void fx_native_modules_input(FxNativeUi *);
 /* Target returns actual retained loaded state, not an inference from card. */
 uint32_t fx_native_module_loaded(const char *id);
+FxResult fx_native_modules_selected(FxNativeModules *,FxManagedModule *out);
 #endif
