@@ -49,6 +49,41 @@ FxResult fx_exec_layout(uint32_t metadata,uint32_t package,uint32_t image,uint32
     return fx_exec_layout_stacks(metadata,package,image,exchange,extra,
         (FxModuleStacks){FX_MODULE_STACK_DEFAULT,FX_MODULE_STACK_DEFAULT},out);
 }
+#ifdef FX_Z8_C311_FULL
+static FxResult layout_stacks(uint32_t metadata,uint32_t package,uint32_t image,uint32_t exchange,
+                        uint32_t extra,FxModuleStacks stacks,uint32_t split_stack,FxExecLayout *out) {
+    if(!out || !metadata || metadata>1048576u || package<=FX_MODULE_HEADER || package>FX_CARD_LIMIT ||
+       !image || image>FX_MODULE_MEMORY_LIMIT || !exchange || exchange>65536u || (exchange&4095u) ||
+       extra>FX_MODULE_MEMORY_LIMIT || (extra&4095u) || !fx_module_stacks_valid(stacks))return FX_ARGUMENT;
+    /* A separate stack in the same 1 GiB RAM window can span two extra L3 tables. */
+    uint32_t stack_tables=split_stack?2u:0u;
+    FxExecLayout p={0};p.tables=7u+stack_tables;p.image_bytes=page_up(image);p.package_bytes=package;
+    p.native_stack_bytes=stacks.native_bytes;p.user_stack_bytes=stacks.user_bytes;
+    for(uint32_t attempt=0;attempt<16u;++attempt) {
+        uint32_t at=page_up(metadata);
+        p.private_tables=at;at+=p.tables*4096u;p.user_tables=at;at+=p.tables*4096u;
+        if(!split_stack){p.native_stack=at;at+=stacks.native_bytes;}
+        p.api=at;at+=4096u;p.exchange=at;at+=exchange;
+        p.extra=at;at+=extra+4096u;p.user_stack=at;at+=stacks.user_bytes+4096u;
+        /* Package/file scratch is temporary and never part of either owned view. */
+        p.package=p.file=0u;
+        p.expected=at;at+=p.image_bytes/4096u*8u;p.staging=at;at+=p.image_bytes/4096u*8u;
+        p.image=page_up(at);p.bytes=p.image+p.image_bytes;
+        uint32_t tables=6u+stack_tables+(p.bytes+2097151u)/2097152u;
+        if(tables>16u)return FX_BUDGET;
+        if(tables==p.tables){*out=p;return FX_OK;}p.tables=tables;
+    }
+    return FX_BUDGET;
+}
+FxResult fx_exec_layout_stacks(uint32_t metadata,uint32_t package,uint32_t image,uint32_t exchange,
+                        uint32_t extra,FxModuleStacks stacks,FxExecLayout *out) {
+    return layout_stacks(metadata,package,image,exchange,extra,stacks,0u,out);
+}
+FxResult fx_exec_layout_split_stack(uint32_t metadata,uint32_t package,uint32_t image,uint32_t exchange,
+                        FxModuleStacks stacks,FxExecLayout *out) {
+    return layout_stacks(metadata,package,image,exchange,0u,stacks,1u,out);
+}
+#else
 FxResult fx_exec_layout_stacks(uint32_t metadata,uint32_t package,uint32_t image,uint32_t exchange,
                         uint32_t extra,FxModuleStacks stacks,FxExecLayout *out) {
     if(!out || !metadata || metadata>1048576u || package<=FX_MODULE_HEADER || package>FX_CARD_LIMIT ||
@@ -71,6 +106,7 @@ FxResult fx_exec_layout_stacks(uint32_t metadata,uint32_t package,uint32_t image
     }
     return FX_BUDGET;
 }
+#endif
 
 #if defined(__aarch64__)
 static FxResult context(uint64_t *root, uint64_t *tcr, uint64_t *mair) {

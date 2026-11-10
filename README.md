@@ -16,6 +16,7 @@ This repository contains the core, module SDK, host debugging tools, firmware pa
 | --- | --- | --- | --- |
 | `zr-c110` | Nikon ZR C1.10 | Core, SDK, native menus, and PTP debugging | Not available |
 | `z9-c532` | Nikon Z9 C5.32 | Core, SDK, native menus, and PTP debugging | Available |
+| `z8-c311` | Nikon Z8 C3.11 | Experimental core, SDK target, native menus, and PTP debugging | Not available |
 
 Other firmware versions require their own validated profiles. Fenestra is experimental and has not completed full hardware qualification. Auto activate defaults to off; existing card settings remain effective.
 
@@ -47,6 +48,7 @@ For a module targeting an already supported profile, begin with [Module developm
 ## Documentation
 
 - [Installation, builds, and troubleshooting](docs/getting-started.md)
+- [Z8 C3.11 build and verification](docs/z8-c311-port.md)
 - [Architecture and resource lifetimes](docs/architecture.md)
 - [Module development tutorial](docs/module-development.md)
 - [`.wlm` file format](docs/module-format.md)

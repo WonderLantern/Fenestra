@@ -24,6 +24,10 @@ void fx_native_ui_refresh_owner(FxPlatformOwner *owner) {
 uint32_t fx_native_ui_poll_native(void *flags) {
     uint32_t result=((uint32_t (*)(void *))fx_native_ui_dispatch_profile.poll)(flags);
     FxNativeUiDispatch *d=fx_native_ui_dispatch_domain();
+#ifdef FX_Z8_C311_FULL
+    if(ui_task(d) && atomic_load(&d->resume_pending) && d->resume_poll)
+        d->resume_poll(d->resume_context);
+#endif
     if(ui_task(d) && fx_native_apps_pending(fx_native_apps_domain()))(void)fx_native_apps_flush_native();
 #ifdef FX_NATIVE_TASKS
     if(d && fx_tasks_pending(&d->tasks)) {
@@ -38,6 +42,10 @@ uint32_t fx_native_ui_poll_native(void *flags) {
 uint32_t fx_native_ui_wait_native(void) {
     uint32_t result=((uint32_t (*)(void))fx_native_ui_dispatch_profile.next_wait)();
     FxNativeUiDispatch *d=fx_native_ui_dispatch_domain();
+#ifdef FX_Z8_C311_FULL
+    if(ui_task(d) && atomic_load(&d->resume_pending) && result>fx_native_ui_dispatch_profile.interval_ms)
+        result=fx_native_ui_dispatch_profile.interval_ms;
+#endif
     if(ui_task(d) && fx_native_apps_pending(fx_native_apps_domain()) && result>fx_native_ui_dispatch_profile.interval_ms)
         result=fx_native_ui_dispatch_profile.interval_ms;
 #ifdef FX_NATIVE_TASKS

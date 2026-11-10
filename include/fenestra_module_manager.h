@@ -46,6 +46,9 @@ FxResult fx_module_manager_account(FxModuleManager *,FxAllocationObserver indexe
 FxResult fx_module_manager_scan(FxModuleManager *);
 FxResult fx_module_manager_enable(FxModuleManager *,uint32_t slot,uint32_t enabled);
 /* Page navigation is copied UI work only; never card IO. */
+#ifdef FX_Z8_C311_FULL
+FxResult fx_module_manager_resume(FxModuleManager *);
+#endif
 FxResult fx_module_manager_page(FxModuleManager *,uint32_t page);
 /* Case-insensitive ASCII substring of the stable module identity. bytes
  * includes NUL. Empty clears; filtering/paging never reads or renames files.

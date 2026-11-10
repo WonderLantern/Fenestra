@@ -17,7 +17,7 @@ def native_optimization(source):
         'src/native_ui_routes.c','src/native_ui_pager.c','src/native_ui_editor.c','src/tasks.c',
         'src/native_resources.c','src/worker_wait.c','src/capacity.c','src/slot_pool.c',
         'src/module_manager.c','src/native_modules.c','src/platform/z9_c532/menu.c',
-        'src/platform/zr_c110/menu.c','src/startup.c','src/startup_files.c','src/startup_service.c')
+        'src/platform/zr_c110/menu.c','src/platform/z8_c311_full/menu.c','src/startup.c','src/startup_files.c','src/startup_service.c')
     return '-Os' if source in cold else '-O2'
 
 PROFILES={
@@ -104,12 +104,20 @@ PROFILES={
   native_pages=dict(first=79632912,stop=0x6b8,kinds={2:1396,0:3,3:143,5:177}),
   abi_evidence=['docs/porting.md','host/verify_platform_build.py','host/verify_native_namespace.py'])}
 
+# The complete Z8 target owns explicit mappings and UI semantics.
+from z8_full_profile import build_profile as _z8_profile
+PROFILES['z8-c311']=_z8_profile(PROFILES['z9-c532'])
+
 # Independently observed original dispatcher ABI. These are mid-function
 # instruction windows, never exported as callable named bindings. The source
 # page is x20; selected 32-byte event is x22; x0 is NOT a page argument.
 UI_CONDITION_ABI = {'zr-c110': (1079156136, 168, 'd268b51081f7f0a1103a87522470a16cc7601cdcdda0dbbcd35dfcfa5792f4bc'), 'z9-c532': (1078993640, 168, '8731d7c78c916f02977eaaf3f9327f3f1484df5f58adc81465938dccc4f7a3c8')}
 
 def verify_ui_condition_abi(target,data):
+    if target=='z8-c311':
+        from z8_ui_profile import get_profile
+        c=get_profile()['condition_abi']
+        UI_CONDITION_ABI[target]=(c['address'],c['length'],c['sha256'])
     if target not in UI_CONDITION_ABI:raise ValueError('unknown native condition ABI')
     address,size,digest=UI_CONDITION_ABI[target];at=address-BASE;original=data[at:at+size];expected=original.hex()
     if len(original)!=size or hashlib.sha256(original).hexdigest()!=digest:raise ValueError('native condition caller ABI differs')
@@ -144,6 +152,9 @@ def verify_card_capacity(target,data):
     elif target=='z9-c532':
         chain=[(0x402dc99c,0x408b94f8),(0x408b9538,0x408bb1f8),(0x408bb248,0x408bcd54)]
         loop,error=0x408bcda4,0x408bb270
+    elif target=='z8-c311':
+        from z8_full_profile import card_capacity_profile
+        chain,loop,error=card_capacity_profile()
     else:raise ValueError('unverified native card capacity profile')
     for address,destination in chain:
         word=struct.unpack_from('<I',data,address-BASE)[0]

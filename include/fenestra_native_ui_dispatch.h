@@ -16,6 +16,11 @@ typedef struct {
      * can occupy one of at most 256 disjoint IDs in a bucket. */
     _Atomic uintptr_t page_routes[256];_Atomic uint32_t page_writer;
     FxTextRegions *text_regions;
+#ifdef FX_Z8_C311_FULL
+    /* Core-only retained callback, consumed solely by the captured GUI task. */
+    void (*resume_poll)(void *);void *resume_context;
+    _Atomic uint32_t resume_pending;
+#endif
 } FxNativeUiDispatch;
 typedef struct {
     uintptr_t current_page,poll,next_wait;
