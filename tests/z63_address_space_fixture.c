@@ -5,7 +5,7 @@ static _Alignas(4096) uint64_t tables[16][512];
 static uintptr_t mapping(void *context,uintptr_t va,uint32_t flags) {
     (void)context;(void)flags;
     if(va>=(uintptr_t)tables && va<(uintptr_t)tables+sizeof(tables))return va;
-    if(va==0x40910000u)return UINT64_C(0xa16310000);
+    if(va==0x401a0000u)return UINT64_C(0x401a0000);
     return 0;
 }
 static uint64_t descriptor(FxZ63AddressSpace *s,uintptr_t va) {
@@ -17,13 +17,13 @@ int main(void) {
     FxZ63AddressSpace s={0};uintptr_t root=0;
     assert(fx_z63_space_init(&s,(void *)(uintptr_t)(UINT64_C(1)<<39),16u,0,mapping)==FX_ARGUMENT);
     assert(fx_z63_space_init(&s,tables,16u,0,mapping)==FX_OK);
-    assert(fx_z63_space_map(&s,0x40910000u,4096u,FX_Z63_MAP_READ|FX_Z63_MAP_WRITE|FX_Z63_MAP_EXECUTE)==FX_ARGUMENT);
-    assert(fx_z63_space_map(&s,0x40910000u,4096u,FX_Z63_MAP_READ|FX_Z63_MAP_EXECUTE)==FX_OK);
-    uint64_t pte=descriptor(&s,0x40910000u);
-    assert((pte&UINT64_C(0x0000fffffffff000))==UINT64_C(0xa16310000));
+    assert(fx_z63_space_map(&s,0x401a0000u,4096u,FX_Z63_MAP_READ|FX_Z63_MAP_WRITE|FX_Z63_MAP_EXECUTE)==FX_ARGUMENT);
+    assert(fx_z63_space_map(&s,0x401a0000u,4096u,FX_Z63_MAP_READ|FX_Z63_MAP_EXECUTE)==FX_OK);
+    uint64_t pte=descriptor(&s,0x401a0000u);
+    assert((pte&UINT64_C(0x0000fffffffff000))==UINT64_C(0x401a0000));
     assert(!(pte&(UINT64_C(1)<<53)) && (pte&(UINT64_C(1)<<54)));
-    assert(fx_z63_space_map(&s,0x40911000u,4096u,FX_Z63_MAP_READ)==FX_CAPABILITY);
+    assert(fx_z63_space_map(&s,0x401a1000u,4096u,FX_Z63_MAP_READ)==FX_CAPABILITY);
     assert(fx_z63_space_seal(&s,&root)==FX_OK && root==(uintptr_t)tables);
-    assert(fx_z63_space_map(&s,0x40910000u,4096u,FX_Z63_MAP_READ)==FX_STATE);
+    assert(fx_z63_space_map(&s,0x401a0000u,4096u,FX_Z63_MAP_READ)==FX_STATE);
     return 0;
 }

@@ -534,7 +534,7 @@ def main():
                             demo_result=dict(first_frames=first,word_frames=word,released_frames=released,
                                 reopened_frames=second,back_and_reopen=True,passed=True)
                         if args.tasks_test:
-                            image=application.read_bytes();code=0x40910000;image_base=0x40160000
+                            image=application.read_bytes();image_base=0x40160000
                             menu_offset=struct.unpack_from('<I',image,symbols['fx_z63_menu_ui_offset']-image_base)[0]
                             layout=struct.unpack_from('<6I',image,symbols['fx_z63_ui_layout']-image_base)
                             if layout[:2]!=(0x46585536,1):raise RuntimeError('UI observation layout differs')

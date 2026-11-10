@@ -5,6 +5,7 @@ from pathlib import Path
 import struct
 import subprocess
 from build_z63_adapter import ROOT, load_application
+from z63_placement import check as check_placement, guards as build_guards, marker_address, MARKER
 
 
 def build(application, output, linker, llvm_bin, module=None, menu=False, discovery=False, sdk=False, ptp=False, runtime=False, drawing=False, ui=False):
@@ -20,8 +21,10 @@ def build(application, output, linker, llvm_bin, module=None, menu=False, discov
     if any(w & 0x3a000000 != 0x28000000 for (w,) in struct.iter_unpack('<I', displaced)):
         raise ValueError('unsupported displaced instruction')
     begin, end = (profile['probe_code_region'][k] for k in ('begin', 'end'))
-    if any(original[begin-base:end-base]):
-        raise ValueError('probe region is not empty')
+    placement = check_placement(profile, original)
+    header = (ROOT / 'src/platform/z63_c201/core_region.h').read_text()
+    if 'FX_Z63_CORE_BEGIN UINT64_C(0x%x)' % begin not in header or 'FX_Z63_CORE_END UINT64_C(0x%x)' % end not in header:
+        raise ValueError('core_region.h differs from the profile code region')
     names = {'startup_sync_hook': b'eSyscCommandId_AppFirstStartCompleteSyncHook',
              'startup_complete': b'eSyscCommandId_AppFirstStartComplete',
              'shutdown': b'eSyscCommandId_BSShutdown',
@@ -151,7 +154,7 @@ def build(application, output, linker, llvm_bin, module=None, menu=False, discov
         subprocess.run(command,check=True,cwd=ROOT)
         graph[name]=dependencies(dep,ROOT);compilations[name]=command;objects.append(str(obj))
     identity_inputs=[*sources,'host/build_z63_probe.py','host/build_z63_adapter.py','host/z63_bindings.py',
-                     'host/compiler_dependencies.py','host/verify_z63_build.py','host/z63_package.py',
+                     'host/compiler_dependencies.py','host/verify_z63_build.py','host/z63_package.py','host/z63_placement.py',
                      'fenestra.py','targets/z63-c201.json','emulation/z63_probe.ld']
     header=(out/'z63_debug_identity.h').relative_to(ROOT).as_posix()
     configuration={}
@@ -171,7 +174,7 @@ def build(application, output, linker, llvm_bin, module=None, menu=False, discov
         lambda name:subprocess.run(compilations[name],check=True,cwd=ROOT))
     (out/'identity.json').write_text(json.dumps(configuration,indent=2)+'\n')
     elf = out / 'probe.elf'
-    subprocess.run([str(linker), '-m', 'aarch64elf', '--gc-sections', *['--undefined=' + name for name in [*hooks.values(),*(['fx_z63_startup_layout','fx_z63_worker_layout'] if runtime else []),*(['fx_z63_panic_layout','fx_z63_menu_ui_offset','fx_z63_menu_runtime_offset','fx_z63_runtime_layout','fx_z63_scene_layout','fx_native_scene_metadata','fx_z63_ui_layout','fx_z63_manager_layout','fx_native_modules_metadata','fx_native_ui_editor_metadata','fx_native_ui_reader_metadata'] if ui else [])]], '-T', str(ROOT / 'emulation/z63_probe.ld'), *objects, '-o', str(elf)], check=True)
+    subprocess.run([str(linker), '-m', 'aarch64elf', '--gc-sections', *['--undefined=' + name for name in [*hooks.values(),*(['fx_z63_startup_layout','fx_z63_worker_layout'] if runtime else []),*(['fx_z63_panic_layout','fx_z63_menu_ui_offset','fx_z63_menu_runtime_offset','fx_z63_runtime_layout','fx_z63_scene_layout','fx_native_scene_metadata','fx_z63_ui_layout','fx_z63_manager_layout','fx_native_modules_metadata','fx_native_ui_editor_metadata','fx_native_ui_reader_metadata'] if ui else [])]], '--defsym=fx_z63_core_begin=0x%x' % begin, '--defsym=fx_z63_core_end=0x%x' % end, '-T', str(ROOT / 'emulation/z63_probe.ld'), *objects, '-o', str(elf)], check=True)
     binary = out / 'probe.bin'
     subprocess.run([str(Path(llvm_bin) / 'llvm-objcopy'), '-O', 'binary', str(elf), str(binary)], check=True)
     symbols = {}
@@ -180,7 +183,8 @@ def build(application, output, linker, llvm_bin, module=None, menu=False, discov
         if len(fields) == 3:
             symbols[fields[2]] = int(fields[0], 16)
     code = binary.read_bytes()
-    if not code or begin + len(code) > end:
+    marker = marker_address(profile)
+    if not code or begin + len(code) > marker:
         raise ValueError('probe overflow')
     destination = symbols['fx_z63_system_dispatch']
     delta = destination - hook['dispatcher']
@@ -188,11 +192,19 @@ def build(application, output, linker, llvm_bin, module=None, menu=False, discov
         raise ValueError('hook branch out of range')
     candidate = bytearray(original)
     candidate[begin-base:begin-base+len(code)] = code
-    for address, symbol in hooks.items():
-        delta = symbols[symbol] - address
+    candidate[marker-base:marker-base+len(MARKER)] = MARKER
+    # No hook branches straight into the core. Each goes through a guard in
+    # copied original text that falls back to original behaviour when the
+    # marker, and so the core, is not present.
+    calls = {row['address'] for row in profile['ui_calls']} if ui else set()
+    guard_code, guard_table = build_guards(profile, original, {a: (symbols[s], a in calls) for a, s in hooks.items()})
+    guard_begin = profile['guard_region']['begin']
+    candidate[guard_begin-base:guard_begin-base+len(guard_code)] = guard_code
+    for address in hooks:
+        delta = guard_table[address] - address
         if delta % 4 or not -(1 << 27) <= delta < (1 << 27):
             raise ValueError('hook branch out of range')
-        candidate[address-base:address-base+4] = struct.pack('<I', (0x94000000 if ui and any(row['address']==address for row in profile['ui_calls']) else 0x14000000) | ((delta // 4) & 0x3ffffff))
+        candidate[address-base:address-base+4] = struct.pack('<I', (0x94000000 if address in calls else 0x14000000) | ((delta // 4) & 0x3ffffff))
     # The emulator consumes the EG directly. No member CRC or update package
     # is emitted; retained CRC bytes remain original and must not be mistaken
     # for a package-integrity result.
@@ -201,6 +213,8 @@ def build(application, output, linker, llvm_bin, module=None, menu=False, discov
     # Independently reverse declared edits and prove all other bytes unchanged.
     restored = bytearray(candidate)
     restored[begin-base:begin-base+len(code)] = original[begin-base:begin-base+len(code)]
+    restored[marker-base:marker-base+len(MARKER)] = original[marker-base:marker-base+len(MARKER)]
+    restored[guard_begin-base:guard_begin-base+len(guard_code)] = original[guard_begin-base:guard_begin-base+len(guard_code)]
     for address in hooks:
         restored[address-base:address-base+4] = original[address-base:address-base+4]
     if restored != original:
@@ -209,6 +223,7 @@ def build(application, output, linker, llvm_bin, module=None, menu=False, discov
                    application_sha256=profile['application_sha256'],
                    candidate_sha256=hashlib.sha256(candidate).hexdigest(),
                    symbols=symbols, hook=hook, hooks={hex(a): n for a,n in hooks.items()}, menu=menu, discovery=discovery, sdk=sdk, ptp=ptp, runtime=runtime, drawing=drawing, original_reconstruction=True,
+                   placement=placement, guards={hex(a): hex(s) for a, s in guard_table.items()},
                    firmware_package=False, runtime_qualified=False, do_not_flash=True,
                    compiler=subprocess.check_output([cc, '--version'], text=True).splitlines()[0],
                    linker=subprocess.check_output([str(linker), '--version'], text=True).splitlines()[0],

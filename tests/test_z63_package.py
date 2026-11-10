@@ -6,6 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'host'))
 from z63_package import verify_application, xor3, seal_header
+from z63_placement import guards, MARKER
 
 
 class Z63PackageTests(unittest.TestCase):
@@ -21,12 +22,17 @@ class Z63PackageTests(unittest.TestCase):
         with self.assertRaises(ValueError):seal_header(header,body,replacement,b'wrong888')
 
     def setUp(self):
-        self.original = bytes(range(64)) + bytes(256)
+        # Offset 64: the hooked site, a position-independent instruction.
+        self.original = bytes(range(64)) + struct.pack('<I', 0xa9bf7bfd) + bytes(252 + 256)
         self.profile = dict(image_base=0x4000, application_sha256=hashlib.sha256(self.original).hexdigest(),
-            probe_code_region=dict(begin=0x4080, end=0x4100), sysctl=dict(dispatcher=0x4040), menu_hooks={})
+            probe_code_region=dict(begin=0x4080, end=0x4100), guard_region=dict(begin=0x4100, end=0x4200),
+            sysctl=dict(dispatcher=0x4040), menu_hooks={})
         self.candidate = bytearray(self.original)
         self.candidate[128:132] = b'code'
-        struct.pack_into('<I', self.candidate, 64, 0x14000010)
+        self.candidate[0xf8:0x100] = MARKER
+        guard, table = guards(self.profile, self.original, {0x4040: (0x4080, False)})
+        self.candidate[0x100:0x100 + len(guard)] = guard
+        struct.pack_into('<I', self.candidate, 64, 0x14000000 | ((table[0x4040] - 0x4040) // 4))
         self.receipt = dict(target='z63-c201', hooks={'0x4040':'fx_z63_system_dispatch'},
             symbols={'fx_z63_system_dispatch':0x4080})
 
@@ -44,7 +50,25 @@ class Z63PackageTests(unittest.TestCase):
 
     def test_rejects_wrong_branch_destination(self):
         self.receipt['symbols']['fx_z63_system_dispatch'] += 4
+        with self.assertRaisesRegex(ValueError, 'guards differ'):
+            self.check()
+        self.receipt['symbols']['fx_z63_system_dispatch'] = 0x4200
         with self.assertRaisesRegex(ValueError, 'resident symbol'):
+            self.check()
+
+    def test_rejects_hook_that_bypasses_its_guard(self):
+        struct.pack_into('<I', self.candidate, 64, 0x14000010)
+        with self.assertRaisesRegex(ValueError, 'branch to its guard'):
+            self.check()
+
+    def test_rejects_altered_guard(self):
+        self.candidate[0x100 + 8 + 16] ^= 1
+        with self.assertRaisesRegex(ValueError, 'guards differ'):
+            self.check()
+
+    def test_rejects_missing_marker(self):
+        self.candidate[0xf8:0x100] = bytes(8)
+        with self.assertRaisesRegex(ValueError, 'marker missing'):
             self.check()
 
     def test_rejects_unknown_hook(self):

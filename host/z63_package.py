@@ -82,25 +82,41 @@ def verify_application(original, candidate, receipt, profile):
         allowed.update({row['address']: prefix + name for name, row in profile.get(group, {}).items()})
     calls={row['address']:row['symbol'] for row in profile.get('ui_calls',[])}
     allowed.update(calls)
+    from z63_placement import guards as build_guards, marker_address, MARKER
     restored = bytearray(candidate)
+    marker = marker_address(profile) - base
+    if candidate[marker:end] != MARKER:
+        raise ValueError('resident marker missing')
     restored[begin:end] = original[begin:end]
+    hooks = {}
     for address, symbol in receipt['hooks'].items():
         address = int(address, 16)
         if allowed.get(address) != symbol:
             raise ValueError('undeclared target hook')
+        target = receipt['symbols'][symbol]
+        if not begin + base <= target < marker + base:
+            raise ValueError('hook does not branch to its resident symbol')
+        hooks[address] = (target, address in calls)
+    # Rebuild every guard independently from the original image and the
+    # receipt; the candidate must contain exactly those bytes and no others.
+    guard_code, guard_table = build_guards(profile, original, hooks)
+    g0, g1 = (profile['guard_region'][name] - base for name in ('begin', 'end'))
+    if candidate[g0:g0 + len(guard_code)] != guard_code or any(candidate[g0 + len(guard_code):g1]):
+        raise ValueError('boot hook guards differ')
+    restored[g0:g1] = original[g0:g1]
+    for address, (target, call) in hooks.items():
         word = struct.unpack_from('<I', candidate, address - base)[0]
         delta = word & 0x3ffffff
         if delta & (1 << 25):
             delta -= 1 << 26
-        target = address + delta * 4
-        if word >> 26 != (0x25 if address in calls else 0x5) or target != receipt['symbols'][symbol] or not begin + base <= target < end + base:
-            raise ValueError('hook does not branch to its resident symbol')
+        if word >> 26 != (0x25 if call else 0x5) or address + delta * 4 != guard_table[address]:
+            raise ValueError('hook does not branch to its guard')
         restored[address - base:address - base + 4] = original[address - base:address - base + 4]
     if restored != original:
         raise ValueError('undeclared application change outside code/hooks')
 
 
-def build(raw_path, body_path, candidate_path, receipt_path, output, suffix_path=None):
+def build(raw_path, body_path, candidate_path, receipt_path, output, suffix_path=None, unqualified_envelope=False):
     raw, original = Path(raw_path).read_bytes(), Path(body_path).read_bytes()
     if len(raw) != BODY_BYTES + 608 or sha(raw) != RAW_SHA256 or sha(original) != BODY_SHA256:
         raise ValueError('pinned complete official C2.01 ciphertext/plaintext twins required')
@@ -113,6 +129,15 @@ def build(raw_path, body_path, candidate_path, receipt_path, output, suffix_path
     receipt = json.loads(Path(receipt_path).read_text())
     profile = json.loads((Path(__file__).resolve().parents[1] / 'targets/z63-c201.json').read_text())
     verify_application(old_main, candidate, receipt, profile)
+    from z63_placement import check as check_placement
+    placement = check_placement(profile, old_main)
+    if receipt.get('placement') != placement:
+        raise ValueError('candidate was not built against the current placement check')
+    # A complete envelope is what a camera updater accepts. The file name is
+    # not a safeguard, so an unqualified target needs an explicit request.
+    if suffix_path is not None and not placement['physical_install_qualified'] and not unqualified_envelope:
+        raise ValueError('target is not qualified for physical installation; a complete envelope '
+                         'requires --unqualified-envelope')
     changed = bytearray(original)
     start, size = row['offset'], row['bytes']
     changed[start:start + size - 2] = candidate[:-2]
@@ -148,6 +173,7 @@ def build(raw_path, body_path, candidate_path, receipt_path, output, suffix_path
         authentication_reconstructed=False, updater_tested=False, physical_camera_tested=False,
         package_digest_reconstructed=package is not None,outer_authentication_applied=False,
         original_header_outside_digest_preserved=True,
+        placement=placement, unqualified_envelope_requested=bool(unqualified_envelope),
         do_not_flash=True, other_components_unchanged=True, original_application_reconstruction=True,
         components=after)
     (out / 'package.json').write_text(json.dumps(report, indent=2)+'\n')

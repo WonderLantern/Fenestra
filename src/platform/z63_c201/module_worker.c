@@ -1,3 +1,4 @@
+#include "core_region.h"
 #include "module_worker.h"
 #include "fenestra_memory.h"
 #include "fenestra_platform.h"
@@ -38,7 +39,7 @@ static int native_ram(const void *p,uint32_t n) {
 static int overlap(const void *a,uint32_t an,const void *b,uint32_t bn) {
     return (uintptr_t)a<(uintptr_t)b+bn && (uintptr_t)b<(uintptr_t)a+an;
 }
-static int callback(uintptr_t a){return !(a&3u) && a>=UINT64_C(0x40910000) && a<UINT64_C(0x40c00000);}
+static int callback(uintptr_t a){return !(a&3u) && a>=FX_Z63_CORE_BEGIN && a<FX_Z63_CORE_END;}
 static void panic(FxZ63ModuleWorker *w,FxResult result) {
     if(atomic_load_explicit(&w->phase,memory_order_acquire)==FX_Z63_WORKER_PANIC)return;
     uint32_t zero=0u;atomic_compare_exchange_strong(&w->error,&zero,(uint32_t)result);

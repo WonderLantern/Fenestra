@@ -134,8 +134,26 @@ controls have native presentation/close acceptance in the model. Reader touch
 pagination remains unqualified; its native buttons pass exact offset checks. Declare
 only the capabilities each example needs when building its WLM.
 
+The resident core links at `0x401A0000`-`0x40200000`. Original startup copies
+MAIN text to DRAM in three windows and remaps each whole window, so package
+bytes after a window's copy end do not survive boot; an earlier revision of
+this port linked at `0x40910000`, inside the first window's uncopied padding,
+and must not be installed. The current range lies outside every window and
+stays mapped in place and executable. A read-only page-table walk of a stock
+C2.01 camera agrees with the static trace. The build decodes the window bounds
+from the original copy routine and rejects a code region that overlaps one
+(`host/z63_placement.py`, [porting guide](porting.md)).
+
+No hook branches straight into the core. Each of the 14 hooks (18 with
+`--experimental-ptp`) goes through a guard in the padding at `0x40194180`,
+inside the copied content of the lowest window. The guard enters the core only
+when the marker at the end of the code region is present; otherwise the hooked
+site behaves as original. `host/z63_core_absent_smoke.py` boots a candidate
+with the code region cleared and requires an original-matching scanout with no
+entry into the region.
+
 The builder checks the complete original image, native binding fingerprints,
-hook spans and zero-filled reservation before compiling. `verified.json` is an
+hook spans, placement and the empty code and guard regions before compiling. `verified.json` is an
 independent check of linked code, exact hook destinations, displaced original
 instructions, compiler dependencies and byte-for-byte original reconstruction.
 `probe.json` and `identity.json` retain the matching build identities. The EG
@@ -149,8 +167,9 @@ discovery, drawing and headless negative controls.
 and a candidate receipt. It repairs the MAIN and body CRCs and emits fixed-layout
 plaintext and encoded-body research artifacts. The other four members must stay
 identical. A complete envelope additionally requires local authentication
-material that first validates the exact original package; that C2.01 path is
-unqualified. Body reconstruction is not updater acceptance.
+material that first validates the exact original package, and
+`--unqualified-envelope`, because the target profile is not qualified for
+physical installation. Body reconstruction is not updater acceptance.
 
 ## Full-system acceptance so far
 
@@ -233,6 +252,10 @@ follows the upstream [porting guide](porting.md), with target-specific bindings
 and independent build checks.
 
 Current validation covers local host tests and full-system emulator controls.
+Two placement points remain unproven: that the camera loader places modified
+padding bytes at `0x401A0000` verbatim, and the behaviour of a warm start that
+skips the text copy. The emulator used here pre-fills the DRAM windows from the
+image, so it would not have shown the earlier placement fault.
 Physical-camera installation and runtime testing remain pending; generated
 firmware artifacts retain `DO_NOT_FLASH`. No firmware, local material or
 device logs are included in this source change.

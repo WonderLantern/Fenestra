@@ -632,9 +632,29 @@
     "hook_sha256": "305e1a78a035b8a30156b6c821947e2f9f11b2b92e205cce9dbe6f7998840714"
   },
   "probe_code_region": {
-    "begin": 1083244544,
-    "end": 1086324736,
+    "begin": 1075445760,
+    "end": 1075838976,
     "original_fill": 0
+  },
+  "guard_region": {
+    "begin": 1075396992,
+    "end": 1075400704,
+    "evidence": "Zero padding after the last W3 instruction and inside the W3 copy range, so original startup copies it to DRAM with the surrounding code."
+  },
+  "text_relocation": {
+    "evidence": "Original startup runs MAIN text in place, then copies each window's content to DRAM and remaps the whole window. Bytes a package places between copy_end and remap_end are replaced by unwritten DRAM. The in-place range is never remapped. Static trace, confirmed by a read-only page-table walk on a stock C2.01 camera.",
+    "routines": [
+      {"address": 1092131584, "bytes": 364, "sha256": "cf987f8e041aa4cb5cff9612a6908478f77fa1802ead3093e0b8904269f08f01"},
+      {"address": 1092132016, "bytes": 156, "sha256": "15e10546fd4cee120387973c6602135de756628e6a805059a94c2af196c968d3"}
+    ],
+    "windows": [
+      {"name": "W3", "begin": 1075216384, "copy_end": 1075400704, "remap_end": 1075400704},
+      {"name": "W1", "begin": 1075838976, "copy_end": 1083239400, "remap_end": 1086324736},
+      {"name": "W2", "begin": 1086324736, "copy_end": 1097241336, "remap_end": 1098907648}
+    ],
+    "in_place_executable": {"begin": 1075404800, "end": 1075838976},
+    "loader_places_padding_verified": false,
+    "physical_install_qualified": false
   },
   "menu_hooks": {
     "page": {

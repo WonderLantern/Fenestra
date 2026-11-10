@@ -8,8 +8,9 @@
 #define IMAGE FX_NATIVE_MODULE_IMAGE_LIMIT
 #define EXCHANGE FX_SERVICE_EXCHANGE_BYTES
 _Static_assert(sizeof(FxServiceExchange)<=FX_SERVICE_EXCHANGE_BYTES,"service wire fits copied exchange pages");
-#define CODE_BEGIN UINT64_C(0x40910000)
-#define CODE_END UINT64_C(0x40c00000)
+#include "core_region.h"
+#define CODE_BEGIN FX_Z63_CORE_BEGIN
+#define CODE_END FX_Z63_CORE_END
 enum {EMPTY,STAGED,READY,FAILED,CLOSED};
 struct FxZ63ModuleSession {
     FxZ63ExecContext exec;FxZ63ModuleStage stage;FxExecArena arena;

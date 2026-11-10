@@ -7,6 +7,7 @@ import struct
 import subprocess
 from build_z63_adapter import ROOT, load_application
 from z63_package import verify_application
+from z63_placement import check as check_placement
 
 
 def verify(application, build, llvm_bin):
@@ -17,9 +18,15 @@ def verify(application, build, llvm_bin):
     code = (build / 'probe.bin').read_bytes()
     base = profile['image_base']
     begin, end = (profile['probe_code_region'][k] for k in ('begin', 'end'))
+    placement = check_placement(profile, original)
+    if report.get('placement') != placement:
+        raise ValueError('receipt placement differs from the original relocation check')
     if not code or len(code) > end - begin or candidate[begin-base:begin-base+len(code)] != code:
         raise ValueError('linked resident code differs')
-    if any(candidate[begin-base+len(code):end-base]):
+    from z63_placement import MARKER, marker_address
+    marker = marker_address(profile)
+    if begin + len(code) > marker or any(candidate[begin-base+len(code):marker-base]) or \
+            candidate[marker-base:end-base] != MARKER:
         raise ValueError('unexplained resident tail')
     # Read the ELF independently; a receipt cannot authorize a different entry.
     symbols = {}
@@ -71,6 +78,7 @@ def verify(application, build, llvm_bin):
         candidate_sha256=hashlib.sha256(candidate).hexdigest(), build_identity=identity,
         hooks=len(expected), displaced_windows=len(copied), source_inputs=len(inputs),
         original_reconstruction=True, linked_code_verified=True, do_not_flash=True,
+        placement=placement, guarded_hooks=len(expected),
         updater_tested=False, physical_camera_tested=False)
 
 

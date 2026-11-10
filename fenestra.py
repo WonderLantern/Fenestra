@@ -46,6 +46,7 @@ def main():
     package.add_argument('--receipt', type=Path, required=True)
     package.add_argument('--output-dir', type=Path, required=True)
     package.add_argument('--suffix-file', type=Path, help='optional local eight-byte authentication material, checked against the original envelope')
+    package.add_argument('--unqualified-envelope', action='store_true', help='allow a complete envelope although the target is not qualified for physical installation')
     args = p.parse_args()
     if args.command == 'build' and args.target == 'z63-c201':
         if args.llvm_bin is None or args.linker is None:
@@ -63,7 +64,7 @@ def main():
         p.error('the explicit toolchain and experimental PTP options apply only to z63-c201')
     if args.command == 'package-z63':
         from z63_package import build as package_z63
-        result = package_z63(args.original_package, args.original_body, args.candidate, args.receipt, args.output_dir, args.suffix_file)
+        result = package_z63(args.original_package, args.original_body, args.candidate, args.receipt, args.output_dir, args.suffix_file, args.unqualified_envelope)
         print(json.dumps(result, indent=2))
         return
     if args.command == 'build-z63-probe':
