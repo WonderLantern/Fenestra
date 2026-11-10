@@ -10,6 +10,8 @@ from platform_profiles import ROOT,BASE,load,verify_page_namespace
 BINDINGS={
  'zr-c110':dict(root=0xa034dfc20,navigate=0x403bba78,apply=0x403b9c74,prefix='fx_c110',
                 image='c110-menu.snapshot',code='c110-menu.bin'),
+ 'z8-c311':dict(root=0xa032b50c8,navigate=0x403af53c,apply=0x403ad6a4,prefix='fx_z8',
+                image='z8-core.main',code='core.bin'),
  'z9-c532':dict(root=0xa032d5de8,navigate=0x403afa44,apply=0x403adbac,prefix='fx_z9',
                 image='z9-core.main',code='core.bin')}
 
@@ -17,7 +19,7 @@ def verify(target,firmware,build):
     if not __debug__:raise ValueError('native instruction verification requires assertions; do not use Python -O')
     profile,original=load(target,firmware);namespace=verify_page_namespace(profile,original);b=BINDINGS[target]
     report=json.loads((build/'build.json').read_text());candidate=(build/b['image']).read_bytes()
-    digest=report['candidate_sha256'] if target=='z9-c532' else report['sha256']
+    digest=report['candidate_sha256'] if target in ('z9-c532','z8-c311') else report['sha256']
     if hashlib.sha256(candidate).hexdigest()!=digest:raise ValueError('candidate differs')
     if report.get('navigation_hook_version')!=1:raise ValueError('missing separate page namespace/navigation')
     for name,value in report['source_sha256'].items():

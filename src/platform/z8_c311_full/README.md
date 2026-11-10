@@ -1,0 +1,15 @@
+# Complete Z8 C3.11 platform implementation
+
+This separate adapter tree derives from upstream Fenestra's Z9 C5.32 platform logic. It preserves the module loader, owned MMU/EL0 execution gates, SDK services, native menu/input/editor/font integration, PTP RTOS/Linux bridges and startup guard. Upstream LICENSE and EXCEPTIONS apply.
+
+Ported native addresses are explicit FX_Z8_ADDR_* bindings. The required-addresses.json manifest records the source address dependencies; a missing or ambiguous correspondence stops the build. Z9 address values serve only as manifest keys. Z8 UI values come from independently checked original metadata in host/z8_ui_profile.py: 36 languages, 3136 stock strings, Setup page 663 with 44 rows, and Z8-specific navigation/widget/editor event IDs. No uniform address delta is used.
+
+The application identity is the 81,807,709-byte original MAIN without its trailing component CRC, SHA-256 2b43a31c9de838f84b12416de4348a7004e65be07f853ec56ec2b10f3a8e3853. ELF/bin and the application candidate are built through host/build_z8_core.py. Its report declares flashable=false; an application candidate is not an updater package or hardware qualification.
+
+The owner has two descriptors. A prepared, byte-identical stock clone is published before the original startup-complete event runs; the shared startup service and disabled PTP state are already initialized. An expanded descriptor is constructed separately. Only successful construction and a still-open owner permit atomic publication of the expanded descriptor and creation of the loader task. Missing entry-time roots receive no late installation fallback. Normal shutdown closes admission before forwarding the stock event. Resume waits for the stop acknowledgment and opens a fresh runtime generation while retaining published UI owners.
+
+Installation states are 0 prepared, 1 constructing, 2 published, 3 failed and 4 closed. fx_z8_install_metadata preserves its twelve-word layout. The separate fx_z8_install_step_metadata publishes the offset of a progress word: 1 prerequisites, 2 core menu, 3 secondary menu, 4 automatic-start menu, 5 abnormal-start guard menu, 6 stock-row links, 7 text bank, 8 owner text region, 9 image text region, 10 publication admission, 11 expanded descriptor published, 12 native task start, 13 native create/resume returned and 14 loader entry. Failures preserve the actual FxResult.
+
+The shared text bank now supports up to 64 dynamically allocated language maps within its existing 65536-text and 8 MiB retained-memory budgets. Tests cover 29 and 36 language create/grow behavior, retained generations, the maximum 64-language bank and rejection of 65 languages before allocation. The earlier 32-language guard rejected Z8's 36-language installation and was found through actual compiled-C return tracing.
+
+The Linux queue acceptance ceiling is an explicit local guard, derived from the recovered shared-pool start plus 0x801000. It is not represented as a recovered native symbol. Original initialization must establish the expected pool and size; the actual queue and block also require runtime qualification.
