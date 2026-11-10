@@ -4,6 +4,7 @@ static FxResult read_record(void *context,uint32_t id,uint8_t *data,uint32_t cap
     if(!bytes)return FX_ARGUMENT;
     *bytes=0;
     if(id>FX_STARTUP_CFG1 || !data || capacity!=65u)return FX_ARGUMENT;
+    if(atomic_load(&s->uncertain))return FX_CLOSE;
     const FxStartupFileProfile *p=s->profile;
     int32_t fd=p->open(p->paths[id],0u,0u);
     FxCapacityClaim claim=fx_file_observe_open(s->observer,fd);
@@ -20,6 +21,7 @@ static FxResult read_record(void *context,uint32_t id,uint8_t *data,uint32_t cap
         if(!done)break;
     }
     uint32_t closed=p->close(fd);if(closed)atomic_store(&s->native_error,closed);
+    if(closed)atomic_store(&s->uncertain,1u);
     fx_file_observe_close(s->observer,&claim,closed);
     return closed?FX_CLOSE:result;
 }
@@ -27,6 +29,7 @@ static FxResult create_record(void *context,uint32_t id,const uint8_t *data,uint
     FxStartupFiles *s=context;
     if(atomic_load(s->shutdown))return FX_STATE;
     if(id>FX_STARTUP_CFG1 || !data || bytes!=FX_STARTUP_RECORD)return FX_ARGUMENT;
+    if(atomic_load(&s->uncertain))return FX_CLOSE;
     const FxStartupFileProfile *p=s->profile;
     int32_t fd=p->open(p->paths[id],0x101u,0u);
     FxCapacityClaim claim=fx_file_observe_open(s->observer,fd);
@@ -34,12 +37,14 @@ static FxResult create_record(void *context,uint32_t id,const uint8_t *data,uint
     if(fd<0)return FX_IO;
     uint32_t done=0,r=p->write(fd,data,bytes,&done,0);
     uint32_t closed=p->close(fd);atomic_store(&s->native_error,closed?closed:r);
+    if(closed)atomic_store(&s->uncertain,1u);
     fx_file_observe_close(s->observer,&claim,closed);
     return closed?FX_CLOSE:r || done!=bytes?FX_IO:FX_OK;
 }
 static FxResult remove_record(void *context,uint32_t id) {
     FxStartupFiles *s=context;
     if(id>FX_STARTUP_CFG1)return FX_ARGUMENT;
+    if(atomic_load(&s->uncertain))return FX_CLOSE;
     if(atomic_load(s->shutdown) && (id!=FX_STARTUP_FLAG || !atomic_load(s->cleanup_window)))return FX_TIMEOUT;
     uint32_t r=s->profile->remove(s->profile->paths[id]);atomic_store(&s->native_error,r);
     return r?FX_IO:FX_OK;

@@ -18,6 +18,9 @@ This repository contains the core, module SDK, host debugging tools, firmware pa
 | --- | --- | --- | --- |
 | `zr-c110` | Nikon ZR C1.10 | Core, SDK, native menus, and PTP debugging | Not available |
 | `z9-c532` | Nikon Z9 C5.32 | Core, SDK, native menus, and PTP debugging | Available |
+| `z63-c201` | Nikon Z6III C2.01 | Experimental core, SDK, native UI and optional debugging; emulator acceptance | Not available |
+
+The [Z6III C2.01 development port](docs/z63-c201-port.md) includes discovered SDK workers, native application pages, dialogs/readers, page/global drawing, module management/search, startup policy and optional RTOS/Linux debugging. Full-system emulator controls and local package-body verification are separate from physical-camera and updater acceptance. All Z6III artifacts remain **DO_NOT_FLASH**; authenticated modified envelopes are unqualified.
 
 Other firmware versions require their own validated profiles. Fenestra is experimental and has not completed full hardware qualification. Auto activate defaults to off; existing card settings remain effective.
 

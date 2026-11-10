@@ -1,0 +1,65 @@
+/* Z6III C2.01 normal filesystem read path. No controller/sector/Flash interface.
+ * Addresses are independent C2.01 bindings; the original serialized wrappers
+ * perform their normal locking and short-read handling. */
+#include "card.h"
+#ifndef FX_Z63_NATIVE_CALL
+#define FX_Z63_NATIVE_CALL(a,t) ((t)(uintptr_t)(a))
+#endif
+#define FN(a,t) FX_Z63_NATIVE_CALL(a,t)
+#define MAGIC UINT32_C(0x465a6343)
+#define DENIED UINT32_C(0x80000001)
+
+static int module_path(const char *p) {
+    static const char prefix[]="A:\\FENESTRA\\";
+    if(!p)return 0;
+    for(uint32_t i=0;i<sizeof(prefix)-1u;++i)if(p[i]!=prefix[i])return 0;
+    p+=sizeof(prefix)-1u;
+    uint32_t n=0;
+    while(n<32u && p[n])++n;
+    if(n<5u || n>12u || p[n-4u]!='.' || !((p[n-3u]=='w' && p[n-2u]=='l' && p[n-1u]=='m') || (p[n-3u]=='o' && p[n-2u]=='f' && p[n-1u]=='f')))return 0;
+    for(uint32_t i=0;i<n-4u;++i)
+        if(!((p[i]>='a' && p[i]<='z') || (p[i]>='0' && p[i]<='9') || p[i]=='_' || p[i]=='-'))return 0;
+    return 1;
+}
+static int32_t open_file(void *context,const char *path,uint32_t mode) {
+    FxZ63CardScope *s=context;
+    if(!s || s->magic!=MAGIC || s->uncertain || s->fd>=0 || mode!=FX_TEXT_READ || !module_path(path))return -1;
+    int32_t fd=FN(UINT64_C(0x402e3674),int32_t (*)(const char *,uint32_t,uint32_t))(path,0u,0u);
+    if(fd<0)s->native_error=(uint32_t)fd;
+    else s->fd=fd;
+    return fd;
+}
+static uint32_t read_file(void *context,int32_t fd,void *data,uint32_t bytes,uint32_t *done) {
+    FxZ63CardScope *s=context;
+    if(done)*done=0;
+    if(!s || s->magic!=MAGIC || s->uncertain || fd<0 || fd!=s->fd || !data || !done || !bytes || bytes>65536u)return DENIED;
+    /* Aggregate bounded native transfers so the shared loader's 64-call
+     * supervision also admits packages larger than 32 KiB. Each original call
+     * keeps the independently exercised 511-byte bound. Stop on short/EOF. */
+    uint32_t total=0;
+    while(total<bytes) {
+        uint32_t chunk=bytes-total;if(chunk>511u)chunk=511u;
+        uint32_t actual=UINT32_MAX;
+        uint32_t result=FN(UINT64_C(0x402e3774),uint32_t (*)(int32_t,void *,uint32_t,uint32_t *))(fd,(uint8_t *)data+total,chunk,&actual);
+        if(result)s->native_error=result;
+        if(actual>chunk){s->uncertain=1u;return DENIED;}
+        total+=actual;*done=total;
+        if(result || actual<chunk)return result;
+    }
+    return 0u;
+}
+static uint32_t close_file(void *context,int32_t fd) {
+    FxZ63CardScope *s=context;
+    if(!s || s->magic!=MAGIC || s->uncertain || fd<0 || fd!=s->fd)return DENIED;
+    uint32_t result=FN(UINT64_C(0x402e36d4),uint32_t (*)(int32_t))(fd);
+    if(result){s->native_error=result;s->uncertain=1u;}
+    else s->fd=-1;
+    return result;
+}
+FxResult fx_z63_card_files(FxTextFiles *files,FxZ63CardScope *scope) {
+    if(!files || !scope)return FX_ARGUMENT;
+    if(scope->magic==MAGIC && (scope->fd>=0 || scope->uncertain))return FX_BUSY;
+    *scope=(FxZ63CardScope){MAGIC,0u,0u,-1};
+    *files=(FxTextFiles){scope,open_file,0,read_file,close_file};
+    return FX_OK;
+}
