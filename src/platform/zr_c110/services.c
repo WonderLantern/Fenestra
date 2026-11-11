@@ -17,6 +17,7 @@ static FxResult platform_owner(FxC110Services *s,FxPlatformOwner **out) {
         if(s->accounting)(void)fx_account_acquire(&s->accounting->allocation,sizeof(*p),1u,0u);
         memset(p,0,sizeof(*p));
         FxResult r=fx_platform_init(p,fx_platform_target(),s->owner,s->generation,s->capabilities);
+        if(r==FX_OK)p->conflicts=fx_native_conflicts();
         if(r==FX_OK)p->capacity=fx_native_capacity_registry();
         if(r==FX_OK && s->accounting){p->accounting=&s->accounting->state;p->accounting->shared=fx_native_shared_accounts();}
         if(r==FX_OK && s->module)r=fx_platform_bind_module(p,s->module,s->module_image,s->module->bytes);

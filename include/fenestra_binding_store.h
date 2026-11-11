@@ -2,6 +2,7 @@
 #define FENESTRA_BINDING_STORE_H
 #include "fenestra_module_index.h"
 #include "fenestra_allocation_observer.h"
+#include "fenestra_resource_conflict.h"
 #include <stdatomic.h>
 
 /* Internal owner storage; SDK messages remain pointer-free and unchanged. */
@@ -19,7 +20,8 @@ typedef struct {
 } FxNamedBinding;
 /* cookie's ADDRESS is call-scoped. A provider retains its own state plus
  * owner/token, never a pointer to a reusable lease field after detach ACK. */
-typedef struct {uint64_t token,cookie;uint32_t index,attached,panic_status;} FxBindingLease;
+typedef struct {uint64_t token,cookie;uint32_t index,attached,panic_status,access;
+    FxResourceClaim claim;} FxBindingLease;
 typedef struct {FxBindingLease value;uint32_t id,next_token,next_binding,next_free;} FxBindingSlot;
 typedef struct FxBindingDeclaration FxBindingDeclaration;
 struct FxBindingDeclaration {

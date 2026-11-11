@@ -26,11 +26,17 @@ FxResult fx_module_directory_inspect(const FxModuleDirectory *io,const char *nam
 FxResult fx_module_directory_inspect_accounted(const FxModuleDirectory *io,const char *name,uint64_t size,
         const uint8_t firmware[32],uint64_t capabilities,FxIndexMemory memory,uint8_t *scratch,
         uint32_t capacity,FxModule *out,uint8_t digest[32],FxAllocationObserver observer) {
+    return fx_module_directory_inspect_report(io,name,size,firmware,capabilities,memory,scratch,capacity,out,digest,observer,0);
+}
+FxResult fx_module_directory_inspect_report(const FxModuleDirectory *io,const char *name,uint64_t size,
+        const uint8_t firmware[32],uint64_t capabilities,FxIndexMemory memory,uint8_t *scratch,
+        uint32_t capacity,FxModule *out,uint8_t digest[32],FxAllocationObserver observer,FxModuleIssue *issue) {
+    if(issue)memset(issue,0,sizeof(*issue));
     if(!io || !io->read || !firmware || !out || !digest || !name)return FX_ARGUMENT;
     char copied_name[32]={0};uint32_t name_bytes=0;
     while(name_bytes<31u && name[name_bytes]){copied_name[name_bytes]=name[name_bytes];++name_bytes;}
     if(name[name_bytes] || !fx_service_name(copied_name,32u,1))return FX_ARGUMENT;
-    if(size<=FX_MODULE_HEADER || size>FX_NATIVE_MODULE_PACKAGE_LIMIT)return FX_BOUNDS;
+    if(size<=FX_MODULE_HEADER || size>FX_NATIVE_MODULE_PACKAGE_LIMIT){if(issue)issue->reason=FX_MODULE_BAD_PACKAGE;return FX_BOUNDS;}
     uint32_t room=(uint32_t)size+1u;uint8_t *buffer=scratch;int temporary=0;
     if(!buffer || capacity<room) {
         if(!memory.allocate || !memory.release)return FX_ARGUMENT;
@@ -41,8 +47,11 @@ FxResult fx_module_directory_inspect_accounted(const FxModuleDirectory *io,const
     uint32_t bytes=0;FxModule module;
     FxResult r=io->read(io->context,copied_name,buffer,room,&bytes);
     if(r==FX_OK && bytes!=size)r=FX_INTEGRITY;
-    if(r==FX_OK && fx_module_header_entry(buffer,bytes)!=FX_MODULE_ENTRY_SERVICES)r=FX_CAPABILITY;
-    if(r==FX_OK)r=fx_module_inspect(buffer,bytes,firmware,capabilities,FX_NATIVE_MODULE_IMAGE_LIMIT,&module);
+    if(r==FX_OK)r=fx_module_inspect_report(buffer,bytes,firmware,capabilities,FX_NATIVE_MODULE_IMAGE_LIMIT,&module,issue);
+    if(r==FX_OK && module.entry_abi!=FX_MODULE_ENTRY_SERVICES) {
+        if(issue)issue->reason=FX_MODULE_ENTRY_ABI;
+        r=FX_CAPABILITY;
+    }
     if(r==FX_OK){fx_sha256(buffer,bytes,digest);*out=module;}
     if(temporary){memory.release(memory.context,buffer);fx_allocation_observe(observer,room,FX_ALLOC_FREE_PENDING);}
     return r;
@@ -96,7 +105,11 @@ FxResult fx_modules_discover_accounted(const FxModuleDirectory *io,const uint8_t
         memcpy(descriptor.id,identity,16u);memcpy(descriptor.file,item.name,32u);
         descriptor.enabled=1u;descriptor.period_ms=33u;descriptor.budget_ms=100u;
         FxModule module;
-        result=fx_module_directory_inspect_accounted(io,item.name,item.bytes,firmware,capabilities,memory,scratch,capacity,&module,descriptor.digest,packages);
+        FxModuleIssue issue;
+        result=fx_module_directory_inspect_report(io,item.name,item.bytes,firmware,capabilities,memory,scratch,capacity,&module,descriptor.digest,packages,&issue);
+        if(result!=FX_OK && issue.reason && (result==FX_CAPABILITY || result==FX_BOUNDS || result==FX_INTEGRITY)) {
+            ++found.rejected;result=FX_OK;continue;
+        }
         if(result!=FX_OK)break;
         uint32_t slot;
         result=fx_module_index_add(&found.index,identity,&slot);if(result!=FX_OK)break;

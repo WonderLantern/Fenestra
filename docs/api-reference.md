@@ -19,6 +19,11 @@ This index follows the SDK headers and profiles in this distribution. Refer to t
 
 Query the platform and binding descriptors. Check version, kind, ABI, availability, and capabilities. Reject unsupported versions or use a documented fallback. Native functions use the calling convention declared by the profile. A generic integer-call wrapper cannot replace an API requiring object state, floating-point arguments, or a particular interrupt context.
 
+Interface availability does not mean another module has left a resource free.
+See [conflicts between modules](module-conflicts.md) for automatic table/hook
+ownership, explicit shared/exclusive opens, named pipeline reservations and
+the copied `FX_CONFLICT` diagnostic.
+
 ## SDK function index
 
 ### fenestra_accounting_sdk.h
@@ -111,6 +116,9 @@ Source: [fenestra_sdk.h](../include/fenestra_sdk.h)
 - `fx_sdk_wait`
 - `fx_sdk_capacity`
 - `fx_sdk_open_instance`
+- `fx_sdk_open_access`
+- `fx_sdk_reserve`
+- `fx_sdk_resource_conflict`
 - `fx_sdk_declare`
 - `fx_sdk_call_frame`
 - `fx_sdk_memory_allocate`
