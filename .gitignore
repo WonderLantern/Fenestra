@@ -7,3 +7,10 @@ __pycache__/
 *.wlm
 *.fxpatch
 .venv/
+*.elf
+*.o
+*.a
+*.exe
+*.dll
+*.pem
+*.key

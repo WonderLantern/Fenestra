@@ -51,6 +51,8 @@ For a module targeting an already supported profile, begin with [Module developm
 - [Installation, builds, and troubleshooting](docs/getting-started.md)
 - [Architecture and resource lifetimes](docs/architecture.md)
 - [Module development tutorial](docs/module-development.md)
+- [Native resident extensions](docs/native-extensions.md)
+- [Generic module services, streams and audio](docs/module-services.md)
 - [`.wlm` file format](docs/module-format.md)
 - [SDK and named binding reference](docs/api-reference.md)
 - [Platform porting guide](docs/porting.md)

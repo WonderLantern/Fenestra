@@ -1,5 +1,6 @@
 #include "fenestra_platform_native.h"
 #include "fenestra_resources.h"
+#include "fenestra_extensions.h"
 #include "fenestra_machine.h"
 #include "fenestra_native_context.h"
 #include "native_translation_impl.h"

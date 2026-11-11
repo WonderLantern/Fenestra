@@ -1,3 +1,5 @@
+#include "fenestra_resident.h"
+#include "fenestra_native_ui_dispatch.h"
 /* C1.10 card demonstration. A normal native RTOS task owns storage,
  * Loader and animation. GUI callbacks only create/notify this bounded worker.
  * Modules run at EL0 in a separate owned view; original translation tables and
@@ -152,6 +154,7 @@ struct FxC110Demo {
     uint8_t service_memory[4096];
     FxServiceExchange *exchange;
     _Atomic(FxC110Demo *) *children;
+    FxResident **residents;
     uint32_t children_capacity;
     _Atomic uint32_t child_count;
     uint32_t last_view;
@@ -573,6 +576,13 @@ static FxResult load_poll(void *context) {
     }
     return FX_OK;
 }
+static FxResult resident_read(void *context,const char *file,uint8_t *data,uint32_t capacity,uint32_t *bytes) {
+    (void)context;return fx_c110_module_read(file,data,capacity,bytes);
+}
+static FxResult resident_owner_ready(void *context,FxPlatformOwner *owner) {
+    (void)context;owner->capacity=fx_native_capacity_registry();
+    return fx_ui_dispatch_register(fx_native_ui_dispatch_domain(),owner);
+}
 static FxResult start_children(FxC110Demo *d) {
     FxModuleInventory catalog={0};FxResult r=fx_module_load_buffer_open(&d->load_buffer,
         (FxIndexMemory){0,load_allocate,load_release},d->layout.package_bytes);
@@ -582,18 +592,26 @@ static FxResult start_children(FxC110Demo *d) {
     if(r!=FX_OK)return r;
     if(catalog.count>FX_MODULE_OWNER_LIMIT){fx_modules_destroy(&catalog);return FX_BUDGET;}
     if(catalog.count) {
-        uint32_t bytes=catalog.count*(uint32_t)sizeof(*d->children);
+        uint32_t bytes=catalog.count*2u*(uint32_t)sizeof(*d->children);
         d->children=FN(UINT64_C(0x40f41084),void *(*)(uint32_t,uint32_t))(bytes,0u);
         if(!d->children){fx_modules_destroy(&catalog);return FX_BUDGET;}
         FxAllocationObserver observer=fx_account_observer(controller_account("loader.storage"));
         fx_allocation_observe(observer,bytes,FX_ALLOC_REQUESTED);
-        memset(d->children,0,bytes);d->children_capacity=catalog.count;
+        memset(d->children,0,bytes);d->residents=(FxResident **)(d->children+catalog.count);d->children_capacity=catalog.count;
         fx_allocation_observe(observer,bytes,FX_ALLOC_PUBLISHED);
     }
     for(uint32_t i=0;i<catalog.count && !atomic_load(&d->stopping);++i) {
         FxDiscoveredModule *e=&catalog.entries[i];
         if(!e->enabled)continue;
         if(e->required&~FX_SDK_CAPS){fx_modules_destroy(&catalog);return FX_CAPABILITY;}
+        if(e->entry_abi==FX_MODULE_ENTRY_NATIVE) {
+            const FxPlatform *platform=fx_platform_target();FxResidentHost host=fx_native_resident_host(platform);
+            host.prepare_owner=resident_owner_ready;FxModuleDirectory io={.read=resident_read};
+            r=fx_resident_start(&d->residents[i],platform,e,i+1u,1u,&io,host);
+            atomic_store_explicit(&d->child_count,i+1u,memory_order_release);
+            if(r!=FX_OK){fx_modules_destroy(&catalog);return r;}
+            continue;
+        }
         FxC110Demo *child=0;
         r=start_module(0,&child,d->page,d->text_page,d->module_selection,e,i+1u);
         atomic_store_explicit(&d->children[i],child,memory_order_release);
@@ -625,6 +643,7 @@ uint32_t fx_c110_module_loaded(FxC110Demo *d,const char *id) {
     if(!atomic_load(&d->catalog_loaded))return 0u;
     for(uint32_t i=0;i<atomic_load(&d->child_count);++i) {
         FxC110Demo *child=atomic_load(&d->children[i]);
+        if(d->residents[i] && !memcmp(fx_resident_identity(d->residents[i]),id,16u))return fx_resident_phase(d->residents[i])!=FX_RESIDENT_LOADING;
         if(child && !memcmp(child->entry.id,id,16u)) {
             uint32_t phase=atomic_load(&child->public.phase);
             return phase!=QUEUED && phase!=LOADING && phase!=CARD_WAIT?1u:0u;
@@ -659,6 +678,14 @@ static void worker(void *argument) {
     }
     for(;;) {
         uint64_t loop_ticket=fx_worker_wait_ticket(&d->wait);
+        if(d->generic){FxPlatformOwner *owner=atomic_load_explicit(&d->native.platform,memory_order_acquire);if(owner && atomic_load_explicit(&owner->extensions,memory_order_acquire))fx_extensions_pulse(owner,now());}
+        for(uint32_t i=0u;i<atomic_load_explicit(&d->child_count,memory_order_acquire);++i)if(d->residents[i]) {
+            uint32_t stopping=atomic_load_explicit(&d->stopping,memory_order_acquire);
+            if(stopping || fx_c110_demo_phase(d)==PANICKED)fx_resident_request_stop(d->residents[i],stopping==2u || fx_c110_demo_phase(d)==PANICKED);
+            fx_platform_pulse(fx_resident_owner(d->residents[i]),now());FxResult status=fx_resident_poll(d->residents[i]);
+            if(status!=FX_OK && status!=FX_BUSY && fx_c110_demo_phase(d)!=PANICKED)fail(d,status);
+        }
+
         uint32_t observer_fault=atomic_exchange_explicit(&d->observer_fault,0u,memory_order_acquire);
         if(observer_fault)fail(d,(FxResult)observer_fault);
         if(d->generic) {
@@ -704,7 +731,8 @@ static void worker(void *argument) {
             display_restore(d);panic_detach(d);
             int children_stopped=1;
             for(uint32_t i=0;i<atomic_load(&d->child_count);++i)
-                if(!fx_c110_demo_shutdown(atomic_load(&d->children[i])))children_stopped=0;
+                if(d->residents[i]){if(fx_resident_phase(d->residents[i])!=FX_RESIDENT_STOPPED)children_stopped=0;}
+                else if(!fx_c110_demo_shutdown(atomic_load(&d->children[i])))children_stopped=0;
             int services_stopped=!d->generic || d->service.stop_state==FX_SERVICE_STOP_DONE;
             if(d->generic && !d->user_context[34] && !d->extension.loader.runtime.outstanding && !services_stopped) {
                 r=fx_service_stop(&d->service);
@@ -1057,14 +1085,14 @@ FxResult fx_c110_module_action(FxC110Demo *d,uint32_t index) {
 FxPlatformOwner *fx_c110_module_platform(FxC110Demo *d,uint32_t index) {
     if(!d || index>=atomic_load_explicit(&d->child_count,memory_order_acquire))return 0;
     FxC110Demo *child=atomic_load_explicit(&d->children[index],memory_order_acquire);
-    return child?atomic_load_explicit(&child->native.platform,memory_order_acquire):0;
+    return d->residents[index]?fx_resident_owner(d->residents[index]):child?atomic_load_explicit(&child->native.platform,memory_order_acquire):0;
 }
 uint32_t fx_c110_module_count(const FxC110Demo *d){return d?atomic_load_explicit(&d->child_count,memory_order_acquire):0u;}
 uint32_t fx_c110_module_capacity(const FxC110Demo *d){return d && atomic_load_explicit(&d->catalog_loaded,memory_order_acquire)?d->children_capacity:0u;}
 const char *fx_c110_module_identity(const FxC110Demo *d,uint32_t index) {
     if(!d || index>=atomic_load_explicit(&d->child_count,memory_order_acquire))return 0;
     FxC110Demo *child=atomic_load_explicit(&d->children[index],memory_order_acquire);
-    return child?child->entry.id:0;
+    return d->residents[index]?fx_resident_identity(d->residents[index]):child?child->entry.id:0;
 }
 const uint32_t fx_c110_services_metadata[]={0x46585332u,2u,offsetof(FxC110Demo,children),
     offsetof(FxC110Demo,child_count),offsetof(FxC110Demo,service),sizeof(FxServiceOwner),

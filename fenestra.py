@@ -6,6 +6,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent/'host'))
 
 def main():
+    if sys.argv[1:2]==['module']:
+        from build_sdk_module import main as build_module
+        return build_module(sys.argv[2:])
     p = argparse.ArgumentParser(description=__doc__)
     commands = p.add_subparsers(dest='command', required=True)
     build = commands.add_parser('build', help='build/independently verify a core from an original application component')
