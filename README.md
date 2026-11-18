@@ -12,6 +12,10 @@ Fenestra is a camera firmware extension runtime that loads independent `.wlm` mo
 
 This repository contains the core, module SDK, host debugging tools, firmware patch tools, and development documentation. Supply the original firmware and patch-generation material yourself. Build tools extract required original instructions locally from the specified firmware.
 
+## USB Debug
+
+USB Debugging is designed to provide authorized entities with full access to the camera body.
+
 ## Supported targets
 
 | Profile | Original firmware | Source support | Prebuilt patch |
