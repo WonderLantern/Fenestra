@@ -4,6 +4,24 @@ _Static_assert(sizeof(FxUiEvent)==24u,"UI event wire ABI remains unchanged");
 _Static_assert(sizeof(FxUiTextEvent)==152u && sizeof(FxUiTextEvent)<=FX_SERVICE_BYTES,"UI text wire ABI");
 _Static_assert(sizeof(FxUiStatus)==40u,"UI submission status wire ABI");
 
+FxResult fx_platform_interface(const FxPlatform *p,const char *name,FxModuleInterface *out) {
+    if(!p || !name || !out)return FX_ARGUMENT;
+    memset(out,0,sizeof(*out));uint32_t n=0u;
+    while(n<64u && name[n])++n;
+    if(!n || n==64u)return FX_ARGUMENT;
+    for(uint32_t i=0u;i<p->count;++i) {
+        const FxNamedBinding *b=&p->bindings[i];uint32_t j=0u;
+        while(j<n && b->name[j] && b->name[j]==name[j])++j;
+        if(j!=n || b->name[j])continue;
+        uint32_t available=b->address?1u:0u;
+        if(b->kind==FX_BIND_FUNCTION)available&=b->abi==FX_CALL_AAPCS64?(p->io.call_frame?1u:0u):(p->io.call?1u:0u);
+        else if(b->kind==FX_BIND_HOOK || b->kind==FX_BIND_DEVICE)available&=p->io.resource?1u:0u;
+        else if(b->kind==FX_BIND_TABLE && (b->flags&FX_BIND_READ))available&=p->io.read?1u:0u;
+        *out=(FxModuleInterface){b->kind,b->abi,b->version,available,b->capabilities|FX_SDK_BINDING};return FX_OK;
+    }
+    return FX_EMPTY;
+}
+
 FxResult fx_platform_bind_module(FxPlatformOwner *o,const FxModule *m,void *image,uint32_t capacity) {
     if(!o || !o->platform || !m || !image || !m->prepared || !m->bytes || m->bytes>capacity ||
        m->bytes>FX_MODULE_MEMORY_LIMIT || !m->segment_count || m->segment_count>FX_MODULE_SEGMENTS ||
@@ -265,6 +283,46 @@ const FxNamedBinding *fx_platform_open_binding(const FxPlatformOwner *s,uint64_t
     FxBindingLease *l=fx_binding_store_lease(&s->bindings,token);
     return l && l->attached==1u?fx_platform_binding(s,l->index):0;
 }
+uint32_t fx_platform_binding_access(const FxPlatformOwner *s,uint64_t token) {
+    FxBindingLease *l=s?fx_binding_store_lease(&s->bindings,token):0;
+    return l && l->attached==1u?l->access:0u;
+}
+FxResult fx_platform_claim(FxPlatformOwner *s,FxResourceClaim *claim,const char *name,uint32_t domain,
+    uint64_t address,uint64_t bytes,uint32_t mode,FxServiceReply *reply) {
+    if(!s || !claim)return FX_ARGUMENT;
+    /* Standalone hosts can leave coordination unconfigured. Both native
+     * profiles attach the controller registry before publishing an owner. */
+    if(!s->conflicts)return FX_OK;
+    FxResourceConflict conflict;
+    FxResult r=fx_resource_acquire(s->conflicts,claim,s->owner,s->generation,name,domain,address,bytes,mode,&conflict);
+    if(r==FX_CONFLICT) {
+        s->last_conflict=conflict;
+        if(reply){memcpy(reply->data,&conflict,sizeof(conflict));reply->bytes=sizeof(conflict);}
+    }
+    return r;
+}
+static FxResult drop_binding(FxPlatformOwner *s,FxBindingLease *l) {
+    FxResult r=fx_resource_release(&l->claim);if(r!=FX_OK)return r;
+    r=fx_binding_store_release(&s->bindings,l);if(r==FX_OK)--s->binding_count;return r;
+}
+static FxResult binding(FxPlatformOwner *,const FxServiceRequest *,FxServiceReply *);
+static FxResult reserve_group(FxPlatformOwner *s,const FxServiceRequest *q,FxServiceReply *a) {
+    if(!s->conflicts)return FX_CAPABILITY;
+    if(q->bytes!=64u || !text((const char *)q->data,64u,0) || q->arg[1]>1u || q->arg[3] ||
+       (q->arg[2]!=FX_RESOURCE_SHARED && q->arg[2]!=FX_RESOURCE_EXCLUSIVE))return FX_ARGUMENT;
+    const char *name=(const char *)q->data;
+    const FxNamedBinding *b=fx_platform_find(s,name);
+    if(b && !(b->flags&FX_BIND_CLAIM_ONLY))return FX_STATE;
+    if(!b) {
+        FxNamedBinding value={.name=name,.kind=FX_BIND_DEVICE,.abi=FX_CALL_DEVICE,.version=1u,
+            .flags=FX_BIND_CLAIM_ONLY,.address=1u};
+        uint32_t index;binding_memory(s);
+        FxResult r=fx_binding_store_declare(&s->bindings,&value,&index);if(r!=FX_OK)return r;
+    }
+    FxServiceRequest open=*q;
+    open.arg[0]=FX_BIND_OPEN;open.arg[1]=1u;open.arg[2]=q->arg[1];open.arg[3]=q->arg[2];
+    return binding(s,&open,a);
+}
 static FxResult declare_binding(FxPlatformOwner *s,const FxServiceRequest *q,FxServiceReply *a) {
     if(q->bytes!=sizeof(FxBindingInfo) || q->arg[1] || q->arg[2] || q->arg[3])return FX_ARGUMENT;
     if(!(s->capabilities&FX_SDK_NATIVE))return FX_CAPABILITY;
@@ -314,6 +372,13 @@ FxResult fx_platform_invoke_native(FxPlatformOwner *s,const FxNamedBinding *b,vo
 }
 static FxResult binding(FxPlatformOwner *s, const FxServiceRequest *q, FxServiceReply *a) {
     uint32_t op = (uint32_t)q->arg[0];
+    if(op==FX_BIND_RESERVE)return reserve_group(s,q,a);
+    if(op==FX_BIND_CONFLICT) {
+        if(q->bytes || q->arg[1] || q->arg[2] || q->arg[3])return FX_ARGUMENT;
+        if(!s->conflicts)return FX_CAPABILITY;
+        FxResourceConflict info=s->last_conflict;info.abi=1u;info.bytes=sizeof(info);
+        memcpy(a->data,&info,sizeof(info));a->bytes=sizeof(info);return FX_OK;
+    }
     if(op==FX_BIND_DECLARE)return declare_binding(s,q,a);
     if(op==FX_BIND_CAPACITY) {
         if(q->bytes || q->arg[1] || q->arg[2] || q->arg[3])return FX_ARGUMENT;
@@ -342,6 +407,7 @@ static FxResult binding(FxPlatformOwner *s, const FxServiceRequest *q, FxService
         FxBindingInfo info={.kind=b->kind,.abi=b->abi,.version=b->version,.flags=b->flags,
             .capabilities=b->capabilities,.bytes=b->bytes,
             .available=(b->capabilities&~s->capabilities)?0u:
+                (b->flags&FX_BIND_CLAIM_ONLY)?(s->conflicts?1u:0u):
                 (b->kind==FX_BIND_HOOK || b->kind==FX_BIND_DEVICE)?(s->platform->io.resource?1u:0u):
                 b->kind==FX_BIND_FUNCTION?(b->abi==FX_CALL_AAPCS64?(s->platform->io.call_frame?1u:0u):(s->platform->io.call?1u:0u)):1u};
         for(uint32_t i=0;i<63u && b->name[i];++i)info.name[i]=b->name[i];
@@ -349,19 +415,30 @@ static FxResult binding(FxPlatformOwner *s, const FxServiceRequest *q, FxService
         memcpy(a->data,&info,sizeof(info));a->bytes=sizeof(info);return FX_OK;
     }
     if (op == FX_BIND_OPEN) {
-        if (q->arg[2]>1u || q->arg[3] || q->bytes != 64u || !text((const char *)q->data, 64u, 0))
+        if (q->arg[2]>1u || q->arg[3]>FX_RESOURCE_EXCLUSIVE || q->bytes != 64u || !text((const char *)q->data, 64u, 0))
             return FX_ARGUMENT;
+        if(q->arg[3] && !s->conflicts)return FX_CAPABILITY;
         uint32_t index=0u;const FxNamedBinding *b=find_binding(s,(const char *)q->data,&index);
         if(!b)return FX_CAPABILITY;
         if((b->capabilities&~s->capabilities) || (q->arg[1] && q->arg[1]!=b->version))return FX_CAPABILITY;
+        if((b->flags&FX_BIND_EXCLUSIVE) && q->arg[3]==FX_RESOURCE_SHARED)return FX_CAPABILITY;
+        uint32_t access=q->arg[3]?(uint32_t)q->arg[3]:
+            (b->flags&FX_BIND_EXCLUSIVE || (b->kind==FX_BIND_TABLE && (b->flags&FX_BIND_WRITE)))?FX_RESOURCE_EXCLUSIVE:FX_RESOURCE_SHARED;
         FxBindingLease *l=q->arg[2]?0:fx_binding_store_existing(&s->bindings,index);
-        if(l){a->value[0]=l->token;a->value[1]=b->kind;a->value[2]=b->abi;return l->attached==1u?FX_OK:FX_STATE;}
+        if(l){a->value[0]=l->token;a->value[1]=b->kind;a->value[2]=b->abi;
+            return l->attached==1u && (!q->arg[3] || access==l->access)?FX_OK:FX_STATE;}
         if(s->next_token==FX_BINDING_IDENTITIES)return FX_BUDGET;
         binding_memory(s);uint64_t token=((uint64_t)s->owner<<48)|((uint64_t)s->generation<<16)|(s->next_token+1u);
         FxResult reserved=fx_binding_store_take(&s->bindings,token,index,&l);if(reserved!=FX_OK)return reserved;
+        uint32_t domain=b->kind==FX_BIND_TABLE || b->kind==FX_BIND_FUNCTION?FX_RESOURCE_MEMORY:FX_RESOURCE_NAMED;
+        uint64_t address=domain==FX_RESOURCE_MEMORY?b->address:0u;
+        uint64_t bytes=domain==FX_RESOURCE_MEMORY?(b->kind==FX_BIND_FUNCTION?4u:b->bytes):0u;
+        reserved=fx_platform_claim(s,&l->claim,b->name,domain,address,bytes,access,a);
+        if(reserved!=FX_OK){(void)fx_binding_store_release(&s->bindings,l);return reserved;}
+        l->access=access;
         ++s->next_token;++s->binding_count;
         FxResult attached = FX_OK;
-        if (b->kind == FX_BIND_HOOK || b->kind == FX_BIND_DEVICE) {
+        if (!(b->flags&FX_BIND_CLAIM_ONLY) && (b->kind == FX_BIND_HOOK || b->kind == FX_BIND_DEVICE)) {
             attached = s->platform->io.resource
                            ? s->platform->io.resource(s->platform->io.context, FX_RESOURCE_ATTACH, b, s,
                                                       l->token, &l->cookie, q, a)
@@ -369,12 +446,11 @@ static FxResult binding(FxPlatformOwner *s, const FxServiceRequest *q, FxService
             /* A nonzero cookie after failure represents uncertain native
              * ownership. Keep it pinned until an acknowledged detach. */
             if (attached != FX_OK && !l->cookie) {
-                (void)fx_binding_store_release(&s->bindings,l);
-                --s->binding_count;
-                return attached;
+                l->attached=3u; /* Native side retained nothing; only claim cleanup remains. */
+                if(drop_binding(s,l)==FX_OK)return attached;
             }
         }
-        l->attached = attached == FX_OK ? 1u : 2u;
+        if(l->attached!=3u)l->attached = attached == FX_OK ? 1u : 2u;
         a->value[0] = l->token;
         a->value[1] = b->kind;
         a->value[2] = b->abi;
@@ -399,15 +475,14 @@ static FxResult binding(FxPlatformOwner *s, const FxServiceRequest *q, FxService
         return FX_OK;
     }
     if (op == FX_BIND_CLOSE) {
-        if (b->kind == FX_BIND_HOOK || b->kind == FX_BIND_DEVICE) {
+        if (l->attached!=3u && !(b->flags&FX_BIND_CLAIM_ONLY) && (b->kind == FX_BIND_HOOK || b->kind == FX_BIND_DEVICE)) {
             FxResult r = s->platform->io.resource(s->platform->io.context, FX_RESOURCE_DETACH, b, s, l->token,
                                                   &l->cookie, q, a);
             if (r != FX_OK)
                 return r;
         }
-        FxResult released=fx_binding_store_release(&s->bindings,l);
-        if(released==FX_OK)--s->binding_count;
-        return released;
+        l->attached=3u; /* Do not repeat acknowledged detach if registry lock is busy. */
+        return drop_binding(s,l);
     }
     if (l->attached != 1u)
         return FX_STATE;
@@ -425,7 +500,7 @@ static FxResult binding(FxPlatformOwner *s, const FxServiceRequest *q, FxService
                 a->bytes = (uint32_t)count;
             return r;
         }
-        if (!(b->flags & FX_BIND_WRITE) || !s->platform->io.write)
+        if (!(b->flags & FX_BIND_WRITE) || l->access!=FX_RESOURCE_EXCLUSIVE || !s->platform->io.write)
             return FX_CAPABILITY;
         if (q->bytes != count)
             return FX_ARGUMENT;
@@ -433,6 +508,7 @@ static FxResult binding(FxPlatformOwner *s, const FxServiceRequest *q, FxService
     }
     if (op != FX_BIND_CALL)
         return FX_ARGUMENT;
+    if(b->flags&FX_BIND_CLAIM_ONLY)return FX_ARGUMENT;
     if (b->kind == FX_BIND_HOOK || b->kind == FX_BIND_DEVICE)
         return s->platform->io.resource(s->platform->io.context, FX_RESOURCE_CALL, b, s, l->token, &l->cookie,
                                         q, a);
@@ -1122,7 +1198,7 @@ FxResult fx_platform_stop(FxPlatformOwner *s, uint32_t panic) {
         if(!l)
             continue;
         const FxNamedBinding *b = fx_platform_binding(s,l->index);
-        if (b->kind == FX_BIND_HOOK || b->kind == FX_BIND_DEVICE) {
+        if (l->attached!=3u && !(b->flags&FX_BIND_CLAIM_ONLY) && (b->kind == FX_BIND_HOOK || b->kind == FX_BIND_DEVICE)) {
             FxResult r = panic && l->panic_status ? (FxResult)(l->panic_status-1u) :
                 s->platform->io.resource(s->platform->io.context,
                                                   panic ? FX_RESOURCE_PANIC : FX_RESOURCE_DETACH, b, s,
@@ -1144,13 +1220,14 @@ FxResult fx_platform_stop(FxPlatformOwner *s, uint32_t panic) {
                 uint32_t zero=0u;
                 if (r != FX_BUSY)
                     (void)atomic_compare_exchange_strong(&s->first_error,&zero,(uint32_t)r);
-                result = r;
+                if(result==FX_OK || (result==FX_BUSY && r!=FX_BUSY))result=r;
                 continue;
             }
         }
         if (!panic) {
-            (void)fx_binding_store_release(&s->bindings,l);
-            --s->binding_count;
+            l->attached=3u;
+            FxResult released=drop_binding(s,l);
+            if(released!=FX_OK && (result==FX_OK || (result==FX_BUSY && released!=FX_BUSY)))result=released;
         }
     }
     bind_unlock(s);

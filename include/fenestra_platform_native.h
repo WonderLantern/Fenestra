@@ -7,6 +7,7 @@ FxPlatformIO fx_platform_native_io(void);
 void fx_native_module_fault(FxPlatformOwner *,FxResult);
 /* Present only when built with a generated, full-image-verified profile. */
 const FxPlatform *fx_platform_target(void);
+FxResourceRegistry *fx_native_conflicts(void);
 /* Profile-backed native domains; unknown native totals stay zero. This is
  * provider configuration, not an installed-module or subscription limit. */
 typedef struct {FxCapacityDomain card,buffers,events,mappings,ui_pages,ui_texts;} FxNativeCapacityDomains;

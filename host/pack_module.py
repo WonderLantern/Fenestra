@@ -4,6 +4,7 @@ import hashlib
 import json
 import struct
 from pathlib import Path
+from module_compatibility import encode as encode_requirements, parse_requirement
 
 HEADER = 128
 MEMORY_LIMIT = 4 * 1024 * 1024
@@ -11,9 +12,15 @@ FILE_LIMIT = 1024 * 1024
 
 
 def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int = 0,
-         native_stack_bytes=None, user_stack_bytes=None):
+         native_stack_bytes=None, user_stack_bytes=None, requirements=None, service_abi=1):
     if type(entry_abi) is not int or entry_abi not in (0,1):raise ValueError('unsupported module entry ABI')
     explicit_stacks = native_stack_bytes is not None or user_stack_bytes is not None
+    contract = b''
+    if requirements is not None:
+        if entry_abi != 1:raise ValueError('compatibility requirements need a service entry')
+        contract = encode_requirements(requirements, service_abi)
+        explicit_stacks = True
+    elif service_abi != 1:raise ValueError('a service ABI requirement needs a compatibility contract')
     if explicit_stacks:
         native_stack_bytes = 65536 if native_stack_bytes is None else native_stack_bytes
         user_stack_bytes = 65536 if user_stack_bytes is None else user_stack_bytes
@@ -92,10 +99,10 @@ def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int =
         table += struct.pack("<6I", address, position, len(data), memsz, permissions, alignment)
         payload += data
         position += len(data)
-    body = bytes(table) + b"".join(struct.pack("<IIQ", *r) for r in relocations) + bytes(payload)
+    body = bytes(table) + b"".join(struct.pack("<IIQ", *r) for r in relocations) + bytes(payload) + contract
     header = bytearray(HEADER)
     header[:8] = b"FENESTRA"
-    struct.pack_into("<4I", header, 8, 3 if explicit_stacks else 2 if entry_abi else 1, HEADER, 1, 1)
+    struct.pack_into("<4I", header, 8, 4 if contract else 3 if explicit_stacks else 2 if entry_abi else 1, HEADER, 1, 1)
     if entry_abi:struct.pack_into('<I',header,116,entry_abi)
     if explicit_stacks:struct.pack_into('<2I',header,120,native_stack_bytes,user_stack_bytes)
     header[24:56] = firmware
@@ -119,13 +126,17 @@ def main():
     parser.add_argument('--entry-abi', choices=('legacy','services'), default='legacy')
     parser.add_argument('--native-stack-bytes', type=lambda x: int(x,0))
     parser.add_argument('--user-stack-bytes', type=lambda x: int(x,0))
+    parser.add_argument('--require-binding',type=parse_requirement,action='append',default=[])
+    parser.add_argument('--compatibility',action='store_true',help='emit v4 even without named requirements')
+    parser.add_argument('--service-abi',type=lambda x:int(x,0),default=1)
     args = parser.parse_args()
     if args.firmware_sha256 != PACKAGE_SHA256:
         parser.error("current module build target is fixed to ZR C1.10")
     try:
         value = pack(args.elf.read_bytes(), bytes.fromhex(args.firmware_sha256), int(args.capabilities, 0),
                      entry_abi=int(args.entry_abi=='services'), native_stack_bytes=args.native_stack_bytes,
-                     user_stack_bytes=args.user_stack_bytes)
+                     user_stack_bytes=args.user_stack_bytes,
+                     requirements=args.require_binding if args.require_binding or args.compatibility else None,service_abi=args.service_abi)
     except (OSError, ValueError, struct.error) as exc:
         parser.error(str(exc))
     require_module_target(value)

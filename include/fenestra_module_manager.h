@@ -10,6 +10,7 @@ typedef struct {
     char id[16],file[32];
     uint32_t present,enabled,current,valid,error,bytes,required,image_bytes;
     uint8_t digest[32];
+    FxModuleIssue issue;
 } FxManagedModule;
 typedef struct {
     FxModuleDirectory directory;

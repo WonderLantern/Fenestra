@@ -1,14 +1,18 @@
 """Decode the entry contract in a .wlm header, independently of its name."""
 import struct
+from module_compatibility import CompatibilityError,decode,check_environment
 
 def entry_abi(data):
     if len(data)<128 or data[:8]!=b'FENESTRA':raise ValueError('module header missing')
     version,header,abi,isa=struct.unpack_from('<4I',data,8)
-    if (header,abi,isa)!=(128,1,1) or version not in (1,2,3):raise ValueError('unsupported module header')
+    if header!=128:raise CompatibilityError(1)
+    if version not in (1,2,3,4):raise CompatibilityError(2,expected=4,actual=version)
+    if abi!=1:raise CompatibilityError(3,expected=1,actual=abi)
+    if isa!=1:raise CompatibilityError(4,expected=1,actual=isa)
     if version<3 and any(data[120 if version==2 else 116:128]):raise ValueError('reserved module header bytes set')
     if version>=2:
         kind=struct.unpack_from('<I',data,116)[0]
-        if kind!=1:raise ValueError('unsupported module entry ABI')
+        if kind!=1:raise CompatibilityError(8,expected=1,actual=kind)
         return kind
     return 1 if struct.unpack_from('<Q',data,108)[0]&0x3f0000 else 0
 
@@ -32,7 +36,7 @@ def stack_requirements(data):
     return native, user
 
 
-def validate_package(data, identity, *, capabilities=0x7f0000):
+def validate_package(data, identity, *, capabilities=0x7f0000, environment=None):
     """Independent worker preflight; never allocates or changes an image.
 
     Mirrors the Loader's descriptor/relocation contract and the actual native
@@ -41,19 +45,21 @@ def validate_package(data, identity, *, capabilities=0x7f0000):
     """
     if not 128 < len(data) <= PACKAGE_LIMIT:
         raise ValueError('module package exceeds native worker capacity')
-    if entry_abi(data) != 1 or data[24:56] != identity:
-        raise ValueError('module target or service entry differs')
+    if entry_abi(data)!=1:raise CompatibilityError(8,expected=1)
+    if data[24:56]!=identity:raise CompatibilityError(5)
     native_stack, user_stack = stack_requirements(data)
     import hashlib
     if hashlib.sha256(data[128:]).digest() != data[56:88]:
-        raise ValueError('module body checksum differs')
+        raise CompatibilityError(6)
     size, image, entry, count, relocs, required = struct.unpack_from('<5IQ', data, 88)
-    if size != len(data) or not 0 < image <= IMAGE_LIMIT or required & ~capabilities:
+    if required & ~capabilities:raise CompatibilityError(7,expected=required,actual=capabilities)
+    if size != len(data) or not 0 < image <= IMAGE_LIMIT:
         raise ValueError('module size/image/capabilities outside native worker contract')
     if not 0 < count <= 8 or relocs > 128:
         raise ValueError('module segment/relocation capacity exceeded')
     table_end = 128 + count * 24 + relocs * 16
-    if table_end > len(data):
+    data_end,service,requirements=decode(data)
+    if table_end > data_end:
         raise ValueError('module descriptor tables truncated')
     segments = [struct.unpack_from('<6I', data, 128 + i * 24) for i in range(count)]
     def overlaps(a, n, b, m):
@@ -64,7 +70,7 @@ def validate_package(data, identity, *, capabilities=0x7f0000):
                    for start, _, file_bytes, memory_bytes, flags, _ in segments)
     for i, (start, offset, file_bytes, memory_bytes, flags, alignment) in enumerate(segments):
         if (not memory_bytes or file_bytes > memory_bytes or start > image or memory_bytes > image - start
-                or offset < table_end or offset > size or file_bytes > size - offset
+                or offset < table_end or offset > data_end or file_bytes > data_end - offset
                 or flags & ~7 or not flags & 1 or flags & 6 == 6
                 or not 0 < alignment <= 4096 or alignment & (alignment - 1) or start & (alignment - 1)):
             raise ValueError('invalid module segment')
@@ -83,6 +89,9 @@ def validate_package(data, identity, *, capabilities=0x7f0000):
                 or value > 0xffffffff or not inside(value, 1, 1)):
             raise ValueError('invalid module relocation')
         seen.add(at)
-    return dict(package_bytes=size, image_bytes=image, entry_offset=entry,
+    if environment is not None:check_environment(data,environment,service=service,requirements=requirements)
+    result=dict(package_bytes=size, image_bytes=image, entry_offset=entry,
                 segments=count, relocations=relocs, required=required, entry_abi=1,
                 native_stack_bytes=native_stack, user_stack_bytes=user_stack)
+    if service:result.update(service_abi=service,requirements=requirements,compatibility_checked=environment is not None)
+    return result

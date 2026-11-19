@@ -129,6 +129,20 @@ static const FxPlatform target = {FX_PLATFORM_ABI,
                                   {0, read_bytes, write_bytes, call, resource,scalar,cache,call_frame},
                                   FX_TARGET_MODULE_IDENTITY};
 const FxPlatform *fx_platform_target(void) { return &target; }
+static FxResult module_interface(const void *context,const char *name,FxModuleInterface *out) {
+    return fx_platform_interface(context,name,out);
+}
+static const FxModuleEnvironment module_environment={FX_SERVICE_ABI,&target,module_interface,target.module_identity};
+const FxModuleEnvironment *fx_platform_module_environment(void){return &module_environment;}
+/* Host export reads the actual linked registry, with C-provided offsets. No
+ * duplicated list of supported services or original device data is exported. */
+const uint64_t fx_module_compatibility_metadata[]={UINT64_C(0x4658434d50543031),1u,(uintptr_t)&target,
+    offsetof(FxPlatform,count),offsetof(FxPlatform,module_identity),offsetof(FxPlatform,bindings),
+    sizeof(FxNamedBinding),offsetof(FxNamedBinding,name),offsetof(FxNamedBinding,kind),offsetof(FxNamedBinding,abi),
+    offsetof(FxNamedBinding,version),offsetof(FxNamedBinding,flags),offsetof(FxNamedBinding,capabilities),
+    offsetof(FxNamedBinding,address),offsetof(FxPlatform,io)+offsetof(FxPlatformIO,read),
+    offsetof(FxPlatform,io)+offsetof(FxPlatformIO,call),offsetof(FxPlatform,io)+offsetof(FxPlatformIO,resource),
+    offsetof(FxPlatform,io)+offsetof(FxPlatformIO,call_frame),FX_ABI,FX_ISA_AARCH64,FX_SERVICE_ABI,FX_SDK_CAPS,30u};
 FxResult fx_platform_capacity_init(FxCapacityRegistry *r,FxNativeCapacityDomains *d,FxIndexMemory memory,FxAllocationObserver observer,FxNativeUiSpace *space) {
     if(!d || !space || !space->domain)return FX_ARGUMENT;
     FxResult result=fx_capacity_init(r,memory,observer);

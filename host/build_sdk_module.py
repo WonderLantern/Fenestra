@@ -10,6 +10,7 @@ from pack_module import pack
 from target_c110 import PACKAGE_SHA256, require_module_target
 from platform_profiles import PROFILES
 from module_header import validate_package
+from module_compatibility import parse_requirement,validate_environment
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,8 +30,13 @@ def main():
     p.add_argument('--user-stack-bytes', type=lambda x: int(x,0),
                    help='v3: EL0 module stack, 4096..1048576 bytes, page aligned')
     p.add_argument('--target',choices=tuple(PROFILES),default='zr-c110')
+    p.add_argument('--require-binding',type=parse_requirement,action='append',default=[],help='NAME:KIND:ABI:exact-version; emits v4')
+    p.add_argument('--compatibility',action='store_true',help='declare service ABI with v4 even without named requirements')
+    p.add_argument('--service-abi',type=lambda x:int(x,0),default=1)
+    p.add_argument('--compatibility-profile',type=Path,help='compatibility.json exported from the target linked core')
     args = p.parse_args()
     if args.simd:args.required|=0x400000
+    environment=None if args.compatibility_profile is None else validate_environment(json.loads(args.compatibility_profile.read_text(encoding='utf-8')))
     source, out = args.source.resolve(strict=True), args.output_dir.resolve()
     if not source.is_relative_to(ROOT) or not out.is_relative_to(ROOT) or out == ROOT:
         raise ValueError('owned source and output required')
@@ -71,10 +77,11 @@ def main():
                     '-z', 'max-page-size=4096', '-e', 'fenestra_module_entry',*map(str,objects),'-o',str(elf)], check=True, timeout=30)
     identity=PROFILES[args.target]['module_identity']
     data = pack(elf.read_bytes(), bytes.fromhex(identity), args.required,entry_abi=1,
-                native_stack_bytes=args.native_stack_bytes,user_stack_bytes=args.user_stack_bytes)
+                native_stack_bytes=args.native_stack_bytes,user_stack_bytes=args.user_stack_bytes,
+                requirements=args.require_binding if args.require_binding or args.compatibility else None,service_abi=args.service_abi)
     if args.target=='zr-c110':require_module_target(data)
     elif data[24:56]!=bytes.fromhex(identity):raise ValueError('module target identity differs')
-    preflight=validate_package(data,bytes.fromhex(identity))
+    preflight=validate_package(data,bytes.fromhex(identity),environment=environment)
     row.update(sha256=hashlib.sha256(data).hexdigest(), bytes=len(data))
     (out / row['file']).write_bytes(data)
     # -MMD already records every actual owned transitive include. Unrelated
@@ -82,7 +89,7 @@ def main():
     # its compiled source identity merely because another adapter changed.
     sources = [source,*support,*sorted(dependencies),
                ROOT / 'host/build_sdk_module.py', ROOT / 'host/pack_module.py',
-               ROOT / 'host/target_c110.py',ROOT/'host/module_header.py',ROOT/'host/platform_profiles.py',ROOT/'src/memory.c']
+               ROOT / 'host/target_c110.py',ROOT/'host/module_header.py',ROOT/'host/module_compatibility.py',ROOT/'host/platform_profiles.py',ROOT/'src/memory.c']
     report = dict(modules=[row], target=args.target, preflight=preflight, simd=args.simd, optimize=args.optimize,
                   sources={str(f.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(f.read_bytes()).hexdigest() for f in sources})
     (out / 'module.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')

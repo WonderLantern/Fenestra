@@ -3,7 +3,7 @@
 #include "fenestra_memory.h"
 typedef uint64_t (*Native)(uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t);
 typedef struct {
-    uint32_t before_count,after_count;uint64_t expected;
+    uint32_t before_count,after_count,function_count,reserved;uint64_t expected;
     /* instructions followed by equally many resolved u64 CALL targets */
     FxHookInstruction instructions[];
 } Policy;
@@ -18,6 +18,7 @@ typedef struct {
     void *(*allocate)(uint32_t,uint32_t);void (*release)(void *);
     uint64_t failure_result,original;uint32_t policy_bytes;
     FxAllocationObserver observer;uint32_t retained_mask;
+    FxResourceClaim target_claim;
 } Hook;
 enum {RETAIN_HOOK=1u,RETAIN_UPLOAD=2u,RETAIN_POLICY=4u};
 static void retain_allocation(Hook *s,uint32_t bit,uint32_t bytes) {
@@ -212,13 +213,30 @@ static FxResult acquire_cell(FxHookRegistry *r,FxPlatformOwner *owner,Hook *allo
     }
     atomic_store_explicit(&r->growing,0u,memory_order_release);return result;
 }
-static void drop_policy(Hook *s){if(s->policy){hook_release(s,s->policy,s->policy_bytes,RETAIN_POLICY);
-    atomic_fetch_sub(s->storage,s->policy_bytes);}s->policy=0;s->policy_bytes=0u;}
-static FxResult install(Hook *s) {
+static FxResourceClaim *policy_claims(Policy *p) {
+    uint32_t count=p->before_count+p->after_count;
+    return (FxResourceClaim *)(void *)((uint64_t *)(void *)(p->instructions+count)+count);
+}
+static FxResult drop_policy(Hook *s) {
+    if(s->policy) {
+        FxResult r=fx_resource_release_many(policy_claims(s->policy),s->policy->function_count);if(r!=FX_OK)return r;
+        hook_release(s,s->policy,s->policy_bytes,RETAIN_POLICY);atomic_fetch_sub(s->storage,s->policy_bytes);
+    }
+    s->policy=0;s->policy_bytes=0u;return FX_OK;
+}
+static FxResult failed_install(Hook *s,FxResult reason) {
+    FxResult r=fx_resource_release(&s->target_claim);if(r!=FX_OK)return r;
+    r=drop_policy(s);return r==FX_OK?reason:r;
+}
+static FxResult install(Hook *s,FxServiceReply *reply) {
     const FxHookProgram *u=s->upload;
     FxResult r=fx_hook_program_check(u);if(r!=FX_OK)return r;
+    r=failed_install(s,FX_OK);if(r!=FX_OK)return r;
     uint32_t count=u->before_count+u->after_count;
-    uint32_t bytes=(uint32_t)sizeof(Policy)+count*((uint32_t)sizeof(FxHookInstruction)+8u);
+    uint32_t calls=0u;
+    for(uint32_t i=0u;i<u->before_count;++i)if(u->before[i].op==FX_VM_CALL)++calls;
+    for(uint32_t i=0u;i<u->after_count;++i)if(u->after[i].op==FX_VM_CALL)++calls;
+    uint32_t bytes=(uint32_t)sizeof(Policy)+count*((uint32_t)sizeof(FxHookInstruction)+8u)+calls*(uint32_t)sizeof(FxResourceClaim);
     Policy *p=hook_allocate(s,bytes);if(!p)return FX_BUDGET;
     memset(p,0,bytes);s->policy=p;s->policy_bytes=bytes;atomic_fetch_add(s->storage,bytes);
     p->before_count=u->before_count;p->after_count=u->after_count;p->expected=u->expected;
@@ -227,20 +245,27 @@ static FxResult install(Hook *s) {
     uint64_t *targets=(uint64_t *)(void *)(p->instructions+count);
     for(uint32_t i=0;i<count;++i)if(p->instructions[i].op==FX_VM_CALL) {
         const FxNamedBinding *fn=fx_platform_open_binding(s->owner,p->instructions[i].value);
-        if(!fn){drop_policy(s);return FX_STALE;}
-        if(fn->kind!=FX_BIND_FUNCTION || fn->abi!=FX_CALL_U64_8){drop_policy(s);return FX_CAPABILITY;}
+        if(!fn)return failed_install(s,FX_STALE);
+        if(fn->kind!=FX_BIND_FUNCTION || fn->abi!=FX_CALL_U64_8)return failed_install(s,FX_CAPABILITY);
+        r=fx_platform_claim(s->owner,&policy_claims(p)[p->function_count],fn->name,FX_RESOURCE_MEMORY,
+            fn->address,4u,FX_RESOURCE_SHARED,reply);
+        if(r!=FX_OK)return failed_install(s,r);
+        ++p->function_count;
         targets[i]=fn->address;
     }
     const FxNamedBinding *b=fx_platform_open_binding(s->owner,u->table);
-    if(!b){drop_policy(s);return FX_STALE;}
+    if(!b)return failed_install(s,FX_STALE);
     if(b->kind!=FX_BIND_TABLE || !(b->flags&FX_BIND_WRITE) || u->offset>b->bytes ||
-       8u>b->bytes-u->offset || ((b->address+u->offset)&7u)){drop_policy(s);return FX_BOUNDS;}
+       8u>b->bytes-u->offset || ((b->address+u->offset)&7u))return failed_install(s,FX_BOUNDS);
+    if(fx_platform_binding_access(s->owner,u->table)!=FX_RESOURCE_EXCLUSIVE)return failed_install(s,FX_CAPABILITY);
+    r=fx_platform_claim(s->owner,&s->target_claim,b->name,FX_RESOURCE_MEMORY,b->address+u->offset,8u,FX_RESOURCE_EXCLUSIVE,reply);
+    if(r!=FX_OK)return failed_install(s,r);
     s->slot=(_Atomic uintptr_t *)(uintptr_t)(b->address+u->offset);
     s->original=u->expected;
     uintptr_t expected=(uintptr_t)s->original;
     atomic_store_explicit(&s->accept,1u,memory_order_release);
     if(!atomic_compare_exchange_strong_explicit(s->slot,&expected,s->entry,memory_order_acq_rel,memory_order_acquire)) {
-        atomic_store(&s->accept,0u);drop_policy(s);return FX_STALE;
+        atomic_store(&s->accept,0u);return failed_install(s,FX_STALE);
     }
     s->pinned=1u;s->installed=1u;atomic_store(s->state,3u);
     retain_allocation(s,RETAIN_HOOK,(uint32_t)sizeof(*s));retain_allocation(s,RETAIN_POLICY,s->policy_bytes);
@@ -282,8 +307,8 @@ FxResult fx_hook_resource(void *context,uint32_t op,const FxNamedBinding *bindin
             /* Never published: no native caller can hold a trampoline or
              * pointer into this allocation. Unlike installed programs it
              * can be reclaimed after a failed/abandoned upload. */
+            FxResult r=failed_install(s,FX_OK);if(r!=FX_OK)return r;
             if(s->upload)hook_release(s,s->upload,(uint32_t)sizeof(FxHookProgram),RETAIN_UPLOAD);
-            drop_policy(s);
             atomic_store(s->storage,0u);atomic_store(s->state,0u);
             atomic_store_explicit(&cell->slot,0u,memory_order_release);
             *cookie=0;hook_release(s,s,(uint32_t)sizeof(*s),RETAIN_HOOK);return FX_OK;
@@ -295,7 +320,8 @@ FxResult fx_hook_resource(void *context,uint32_t op,const FxNamedBinding *bindin
             s->installed=0;atomic_store(s->state,4u);
         }
         if(atomic_load_explicit(s->gate,memory_order_acquire)&CALLS)return FX_BUSY;
-        drop_policy(s);
+        FxResult r=drop_policy(s);if(r!=FX_OK)return r;
+        r=fx_resource_release(&s->target_claim);if(r!=FX_OK)return r;
         /* A native caller may have fetched the old trampoline immediately
          * before pointer restoration. Keep its stable gate/Hook/original pinned. Closed admission and a
          * drained entrant count allow reclaiming only the policy, not the gate. */
@@ -353,6 +379,6 @@ FxResult fx_hook_resource(void *context,uint32_t op,const FxNamedBinding *bindin
     if(q->arg[2]==FX_INTERCEPT_APPEND && q->bytes && q->arg[3]==s->uploaded && s->upload && q->bytes<=sizeof(*s->upload)-s->uploaded) {
         memcpy((uint8_t *)s->upload+s->uploaded,q->data,q->bytes);s->uploaded+=q->bytes;a->value[0]=s->uploaded;return FX_OK;
     }
-    if(q->arg[2]==FX_INTERCEPT_COMMIT && !q->bytes && !q->arg[3] && s->uploaded==sizeof(FxHookProgram))return install(s);
+    if(q->arg[2]==FX_INTERCEPT_COMMIT && !q->bytes && !q->arg[3] && s->uploaded==sizeof(FxHookProgram))return install(s,a);
     return FX_ARGUMENT;
 }

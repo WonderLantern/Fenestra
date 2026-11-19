@@ -61,6 +61,7 @@ typedef struct {
  * Destroy a successful snapshot once its descriptors have been copied. */
 typedef struct {
     uint32_t count;FxDiscoveredModule *entries;FxModuleIndex index;
+    uint32_t rejected; /* Invalid/incompatible files skipped; card failures still abort. */
 } FxModuleInventory;
 void fx_modules_destroy(FxModuleInventory *);
 
@@ -87,6 +88,8 @@ FxResult fx_modules_discover(const FxModuleDirectory *,const uint8_t firmware[32
 FxResult fx_module_directory_inspect_accounted(const FxModuleDirectory *,const char *,uint64_t bytes,
     const uint8_t firmware[32],uint64_t capabilities,FxIndexMemory,uint8_t *scratch,uint32_t capacity,
     FxModule *,uint8_t digest[32],FxAllocationObserver);
+FxResult fx_module_directory_inspect_report(const FxModuleDirectory *,const char *,uint64_t,
+    const uint8_t[32],uint64_t,FxIndexMemory,uint8_t *,uint32_t,FxModule *,uint8_t[32],FxAllocationObserver,FxModuleIssue *);
 FxResult fx_modules_discover_accounted(const FxModuleDirectory *,const uint8_t firmware[32],
     uint32_t capabilities,uint8_t *scratch,uint32_t capacity,FxModuleInventory *,FxIndexMemory,
     FxAllocationObserver indexes,FxAllocationObserver packages);

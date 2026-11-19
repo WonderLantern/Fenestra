@@ -23,23 +23,120 @@ static int in_segment(const FxModule *module, uint32_t offset, uint32_t bytes,
     return 0;
 }
 
+const char *fx_module_issue_text(uint32_t reason) {
+    switch(reason) {
+        case FX_MODULE_COMPATIBLE:return "Compatible";
+        case FX_MODULE_FORMAT_UNSUPPORTED:return "Unsupported module format";
+        case FX_MODULE_CORE_ABI:return "Core ABI mismatch";
+        case FX_MODULE_ISA:return "Unsupported CPU architecture";
+        case FX_MODULE_TARGET:return "Wrong camera or firmware";
+        case FX_MODULE_CHECKSUM:return "Package checksum mismatch";
+        case FX_MODULE_CAPABILITIES:return "Missing capability";
+        case FX_MODULE_ENTRY_ABI:return "Unsupported entry ABI";
+        case FX_MODULE_BAD_CONTRACT:return "Invalid requirements";
+        case FX_MODULE_NO_ENVIRONMENT:return "Compatibility checker unavailable";
+        case FX_MODULE_SERVICE_ABI:return "Service ABI mismatch";
+        case FX_MODULE_INTERFACE_MISSING:return "Missing interface";
+        case FX_MODULE_INTERFACE_KIND:return "Interface type mismatch";
+        case FX_MODULE_INTERFACE_ABI:return "Interface ABI mismatch";
+        case FX_MODULE_INTERFACE_VERSION:return "Interface version mismatch";
+        case FX_MODULE_INTERFACE_UNAVAILABLE:return "Interface unavailable";
+        default:return "Invalid module";
+    }
+}
+static FxResult issue(FxModuleIssue *out,uint32_t reason,uint64_t expected,uint64_t actual) {
+    if(out){out->reason=reason;out->expected=expected;out->actual=actual;}
+    return reason==FX_MODULE_CHECKSUM?FX_INTEGRITY:
+        reason==FX_MODULE_BAD_PACKAGE || reason==FX_MODULE_BAD_CONTRACT?FX_BOUNDS:FX_CAPABILITY;
+}
+static const FxModuleEnvironment *environment(void) {
+#ifdef FX_PLATFORM_PROFILE
+    return fx_platform_module_environment();
+#else
+    return 0;
+#endif
+}
+static int requirement_name(const uint8_t *p) {
+    uint32_t n=0u;while(n<64u && p[n]){if(p[n]<32u || p[n]>126u)return 0;++n;}
+    if(!n || n==64u)return 0;
+    for(;n<64u;++n)if(p[n])return 0;
+    return 1;
+}
+static FxResult contract(const uint8_t *p,uint32_t size,uint32_t *data_end,FxModuleIssue *out) {
+    *data_end=size;
+    if(u32(p+8u)!=4u)return FX_OK;
+    if(size<FX_MODULE_HEADER+FX_MODULE_CONTRACT_FOOTER)return issue(out,FX_MODULE_BAD_CONTRACT,0u,0u);
+    const uint8_t *footer=p+size-FX_MODULE_CONTRACT_FOOTER;
+    uint32_t count=u32(footer+8u),stride=u32(footer+12u),service=u32(footer+16u);
+    if(memcmp(footer,"FXCMPT01",8u) || count>FX_MODULE_REQUIREMENT_LIMIT || stride!=FX_MODULE_REQUIREMENT_BYTES ||
+       !service || u32(footer+20u) || (uint64_t)count*stride>size-FX_MODULE_HEADER-FX_MODULE_CONTRACT_FOOTER)
+        return issue(out,FX_MODULE_BAD_CONTRACT,0u,0u);
+    *data_end=size-FX_MODULE_CONTRACT_FOOTER-count*stride;
+    /* Validate every record, including duplicates, before any environment
+     * callback. Geometry corruption must not turn into interface lookup. */
+    for(uint32_t i=0u;i<count;++i) {
+        const uint8_t *r=p+*data_end+i*stride;
+        if(!requirement_name(r) || !u32(r+64u) || u32(r+64u)>4u || !u32(r+68u) ||
+           u32(r+68u)>5u || !u32(r+72u) || u32(r+76u))return issue(out,FX_MODULE_BAD_CONTRACT,0u,0u);
+        for(uint32_t j=0u;j<i;++j)if(!memcmp(r,p+*data_end+j*stride,64u))return issue(out,FX_MODULE_BAD_CONTRACT,0u,0u);
+    }
+    return FX_OK;
+}
+static FxResult check_contract(const uint8_t *p,uint32_t size,uint32_t data_end,uint64_t grants,
+    const FxModuleEnvironment *env,FxModuleIssue *out) {
+    if(u32(p+8u)!=4u)return FX_OK;
+    const uint8_t *footer=p+size-FX_MODULE_CONTRACT_FOOTER;
+    uint32_t count=u32(footer+8u),stride=FX_MODULE_REQUIREMENT_BYTES,service=u32(footer+16u);
+    if(!env || (count && !env->lookup))return issue(out,FX_MODULE_NO_ENVIRONMENT,service,0u);
+    if(env->service_abi!=service)return issue(out,FX_MODULE_SERVICE_ABI,service,env->service_abi);
+    for(uint32_t i=0u;i<count;++i) {
+        const uint8_t *r=p+data_end+i*stride;FxModuleInterface found={0};
+        if(out)memcpy(out->binding,r,64u);
+        FxResult result=env->lookup(env->context,(const char *)r,&found);
+        if(result==FX_EMPTY)return issue(out,FX_MODULE_INTERFACE_MISSING,u32(r+72u),0u);
+        if(result!=FX_OK){if(out)memset(out,0,sizeof(*out));return result;}
+        if(found.kind!=u32(r+64u))return issue(out,FX_MODULE_INTERFACE_KIND,u32(r+64u),found.kind);
+        if(found.abi!=u32(r+68u))return issue(out,FX_MODULE_INTERFACE_ABI,u32(r+68u),found.abi);
+        if(found.version!=u32(r+72u))return issue(out,FX_MODULE_INTERFACE_VERSION,u32(r+72u),found.version);
+        if(found.capabilities&~grants)return issue(out,FX_MODULE_CAPABILITIES,found.capabilities,grants);
+        if(!found.available)return issue(out,FX_MODULE_INTERFACE_UNAVAILABLE,1u,0u);
+    }
+    if(out)memset(out,0,sizeof(*out));
+    return FX_OK;
+}
 FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t firmware[32],
                            uint64_t caps,uint32_t capacity,FxModule *out) {
+    return fx_module_inspect_report(package,size,firmware,caps,capacity,out,0);
+}
+FxResult fx_module_inspect_report(const uint8_t *package,uint32_t size,const uint8_t firmware[32],
+                           uint64_t caps,uint32_t capacity,FxModule *out,FxModuleIssue *report) {
+    return fx_module_inspect_environment(package,size,firmware,caps,capacity,environment(),out,report);
+}
+FxResult fx_module_inspect_environment(const uint8_t *package,uint32_t size,const uint8_t firmware[32],
+                           uint64_t caps,uint32_t capacity,const FxModuleEnvironment *env,FxModule *out,FxModuleIssue *report) {
+    if(report)memset(report,0,sizeof(*report));
     if(!out)return FX_ARGUMENT;
     memset(out,0,sizeof(*out));
-    if(!package || !firmware || size<FX_MODULE_HEADER || size>FX_CARD_LIMIT)return FX_ARGUMENT;
+    if(!package || !firmware)return FX_ARGUMENT;
+    if(size<FX_MODULE_HEADER || size>FX_CARD_LIMIT)return issue(report,FX_MODULE_BAD_PACKAGE,FX_MODULE_HEADER,size);
+    if(report)report->reason=FX_MODULE_BAD_PACKAGE;
     FxModule candidate;uint8_t hash[32];uint32_t i,j,tables_end,relocations_start;
     uint32_t entry_abi=fx_module_header_entry(package,size);
-    if (memcmp(package, "FENESTRA", 8u) != 0 || entry_abi==UINT32_MAX ||
+    if(memcmp(package,"FENESTRA",8u))return FX_BOUNDS;
+    if(u32(package+8u)<1u || u32(package+8u)>4u)return issue(report,FX_MODULE_FORMAT_UNSUPPORTED,4u,u32(package+8u));
+    if(entry_abi==UINT32_MAX)return issue(report,FX_MODULE_ENTRY_ABI,FX_MODULE_ENTRY_SERVICES,u32(package+116u));
+    if (
         u32(package + 12u) != FX_MODULE_HEADER || u32(package + 88u) != size)
         return FX_BOUNDS;
-    if (u32(package + 16u) != FX_ABI || u32(package + 20u) != FX_ISA_AARCH64 ||
-        memcmp(package + 24u, firmware, 32u) != 0) return FX_CAPABILITY;
+    if(u32(package+16u)!=FX_ABI)return issue(report,FX_MODULE_CORE_ABI,FX_ABI,u32(package+16u));
+    if(u32(package+20u)!=FX_ISA_AARCH64)return issue(report,FX_MODULE_ISA,FX_ISA_AARCH64,u32(package+20u));
+    if(memcmp(package+24u,firmware,32u))return issue(report,FX_MODULE_TARGET,0u,0u);
+    if(env && env->identity && memcmp(env->identity,firmware,32u))return issue(report,FX_MODULE_TARGET,0u,0u);
     fx_sha256(package + FX_MODULE_HEADER, size - FX_MODULE_HEADER, hash);
-    if (memcmp(hash, package + 56u, 32u) != 0) return FX_INTEGRITY;
+    if(memcmp(hash,package+56u,32u))return issue(report,FX_MODULE_CHECKSUM,0u,0u);
     memset(&candidate, 0, sizeof(candidate));
     candidate.stacks=(FxModuleStacks){FX_MODULE_STACK_DEFAULT,FX_MODULE_STACK_DEFAULT};
-    if(u32(package+8u)==3u) {
+    if(u32(package+8u)>=3u) {
         candidate.stacks=(FxModuleStacks){u32(package+120u),u32(package+124u)};
         if(!fx_module_stacks_valid(candidate.stacks))return FX_BOUNDS;
     }
@@ -51,13 +148,17 @@ FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t fi
     candidate.segment_count = u32(package + 100u);
     candidate.relocation_count = u32(package + 104u);
     candidate.required_capabilities = u64(package + 108u);
-    if ((candidate.required_capabilities & ~caps) != 0u) return FX_CAPABILITY;
+    if((candidate.required_capabilities&~caps)!=0u)return issue(report,FX_MODULE_CAPABILITIES,candidate.required_capabilities,caps);
+    uint32_t data_end=size;
+    FxResult compatibility=contract(package,size,&data_end,report);
+    if(compatibility!=FX_OK)return compatibility;
+    if(report)report->reason=FX_MODULE_BAD_PACKAGE;
     if (candidate.bytes == 0u || candidate.bytes > capacity || candidate.bytes > FX_MODULE_MEMORY_LIMIT ||
         candidate.segment_count == 0u || candidate.segment_count > FX_MODULE_SEGMENTS ||
         candidate.relocation_count > FX_MODULE_RELOCATIONS) return FX_BOUNDS;
     relocations_start = FX_MODULE_HEADER + candidate.segment_count * 24u;
     tables_end = relocations_start + candidate.relocation_count * 16u;
-    if (tables_end > size) return FX_BOUNDS;
+    if (tables_end > data_end) return FX_BOUNDS;
     for (i = 0u; i < candidate.segment_count; ++i) {
         const uint8_t *p = package + FX_MODULE_HEADER + i * 24u;
         FxSegment *s = &candidate.segments[i];
@@ -66,7 +167,7 @@ FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t fi
         s->flags = u32(p + 16u); s->alignment = u32(p + 20u);
         if (s->memory_bytes == 0u || s->file_bytes > s->memory_bytes ||
             !span(s->image_offset, s->memory_bytes, candidate.bytes) ||
-            s->file_offset < tables_end || !span(s->file_offset, s->file_bytes, size) ||
+            s->file_offset < tables_end || !span(s->file_offset, s->file_bytes, data_end) ||
             (s->flags & ~7u) != 0u || (s->flags & FX_READ) == 0u ||
             (s->flags & (FX_WRITE | FX_EXECUTE)) == (FX_WRITE | FX_EXECUTE) ||
             s->alignment == 0u || s->alignment > 4096u ||
@@ -100,12 +201,26 @@ FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t fi
             if (u32(package + relocations_start + j * 16u) == offset) return FX_BOUNDS;
     }
     /* Metadata only: no image, relocation, mapping or executable publication. */
-    *out=candidate;return FX_OK;
+    if(u32(package+8u)<4u && candidate.entry_abi==FX_MODULE_ENTRY_SERVICES && env && env->service_abi!=1u)
+        return issue(report,FX_MODULE_SERVICE_ABI,1u,env->service_abi);
+    compatibility=check_contract(package,size,data_end,candidate.required_capabilities,env,report);
+    if(compatibility!=FX_OK)return compatibility;
+    *out=candidate;if(report)memset(report,0,sizeof(*report));return FX_OK;
 }
 
 FxResult fx_module_prepare(const uint8_t *package, uint32_t size,
                           const uint8_t expected_digest[32], const uint8_t firmware[32],
                           uint64_t caps, uint8_t *image, uint32_t capacity, FxModule *out) {
+    return fx_module_prepare_report(package,size,expected_digest,firmware,caps,image,capacity,out,0);
+}
+FxResult fx_module_prepare_report(const uint8_t *package,uint32_t size,const uint8_t expected_digest[32],
+    const uint8_t firmware[32],uint64_t caps,uint8_t *image,uint32_t capacity,FxModule *out,FxModuleIssue *report) {
+    return fx_module_prepare_environment(package,size,expected_digest,firmware,caps,image,capacity,environment(),out,report);
+}
+FxResult fx_module_prepare_environment(const uint8_t *package,uint32_t size,const uint8_t expected_digest[32],
+    const uint8_t firmware[32],uint64_t caps,uint8_t *image,uint32_t capacity,const FxModuleEnvironment *env,
+    FxModule *out,FxModuleIssue *report) {
+    if(report)memset(report,0,sizeof(*report));
     FxModule candidate;
     uint8_t hash[32];
     uint32_t i, j, relocations_start;
@@ -120,8 +235,8 @@ FxResult fx_module_prepare(const uint8_t *package, uint32_t size,
         (source_address < destination_address + capacity && destination_address < source_address + size))
         return FX_ARGUMENT;
     fx_sha256(package, size, hash);
-    if (memcmp(hash, expected_digest, 32u) != 0) return FX_INTEGRITY;
-    FxResult result=fx_module_inspect(package,size,firmware,caps,capacity,&candidate);
+    if(memcmp(hash,expected_digest,32u))return issue(report,FX_MODULE_CHECKSUM,0u,0u);
+    FxResult result=fx_module_inspect_environment(package,size,firmware,caps,capacity,env,&candidate,report);
     if(result!=FX_OK)return result;
     relocations_start=FX_MODULE_HEADER+candidate.segment_count*24u;
     /* No image mutation happens until all descriptors and relocations pass. */
