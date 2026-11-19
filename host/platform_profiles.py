@@ -204,6 +204,9 @@ def generate(target,firmware,output):
     lines.append('{"core.translation",FX_BIND_FUNCTION,FX_CALL_U64_8,1,FX_BIND_ESCAPE,FX_SDK_NATIVE,0,(uintptr_t)fx_native_translation,{0}},')
     records.append(dict(name='core.translation',kind='function',abi='aapcs64-u64x8',version=1,native_builtin=True,
                         origin='src/platform_native.c:fx_native_translation',original=None))
+    for name in ('core.providers','core.streams','core.logs','core.time','core.self'):
+        lines.append('{"%s",FX_BIND_DEVICE,FX_CALL_DEVICE,1,FX_BIND_PROVIDER,FX_SDK_BINDING,0,(uintptr_t)fx_extensions_resource,{0}},'%name)
+        records.append(dict(name=name,kind='device',abi='device',version=1,native_provider=True))
     for name,kind,abi,cap in [('core.schedule','DEVICE','DEVICE','QUERY'),('core.critical','DEVICE','DEVICE','NATIVE'),('rtos.mappings','DEVICE','DEVICE','NATIVE'),('rtos.events','DEVICE','DEVICE','NATIVE'),('core.machine','DEVICE','DEVICE','NATIVE'),('core.memory','DEVICE','DEVICE','MEMORY'),('card.files','DEVICE','DEVICE','FILES'),('core.hooks','HOOK','EVENTS','NATIVE'),('core.tick','HOOK','EVENTS','QUERY'),('core.services','DEVICE','DEVICE','BINDING')]:
         records.append(dict(name=name,kind=kind.lower(),abi=abi.lower(),version=1,native_provider=True))
         lines.append('{'+json.dumps(name)+',FX_BIND_'+kind+',FX_CALL_'+abi+',1,0,FX_SDK_'+cap+',0,1,{0}},')

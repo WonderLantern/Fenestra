@@ -14,10 +14,14 @@ from module_header import validate_package
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def main():
+def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('source', type=Path)
     p.add_argument('--id', required=True)
+    p.add_argument('--native',action='store_true',help='build a v4 native resident extension')
+    p.add_argument('--include-dir',type=Path,action='append',default=[])
+    p.add_argument('--library',type=Path,action='append',default=[])
+    p.add_argument('--debug',action='store_true',help='keep source line information and frame pointers')
     p.add_argument('--source',dest='support',type=Path,action='append',default=[],help='additional owned C translation unit')
     p.add_argument('--output-dir', type=Path, required=True)
     p.add_argument('--required', type=lambda x: int(x, 0), default=0x3f0000)
@@ -29,13 +33,13 @@ def main():
     p.add_argument('--user-stack-bytes', type=lambda x: int(x,0),
                    help='v3: EL0 module stack, 4096..1048576 bytes, page aligned')
     p.add_argument('--target',choices=tuple(PROFILES),default='zr-c110')
-    args = p.parse_args()
+    args = p.parse_args(argv)
     if args.simd:args.required|=0x400000
     source, out = args.source.resolve(strict=True), args.output_dir.resolve()
-    if not source.is_relative_to(ROOT) or not out.is_relative_to(ROOT) or out == ROOT:
-        raise ValueError('owned source and output required')
+    if source.suffix!='.c' or out==ROOT:
+        raise ValueError('C entry source and a new output directory required')
     support=[f.resolve(strict=True) for f in args.support]
-    if any(not f.is_relative_to(ROOT) or f.suffix!='.c' for f in support) or len(set([source,*support]))!=1+len(support):
+    if any(f.suffix!='.c' for f in support) or len(set([source,*support]))!=1+len(support):
         raise ValueError('distinct owned C support sources required')
     # Validate names/limits before creating files.
     row = dict(id=args.id, file=args.id + '.wlm', sha256='00' * 32, bytes=129,
@@ -53,6 +57,11 @@ def main():
                     '-Wconversion', '-Wshadow', '-ffreestanding', '-fno-builtin', *([] if args.simd else ['-mgeneral-regs-only']),
                     '-mstrict-align', '-fno-stack-protector', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables',
                     '-fpie','-ffunction-sections','-fdata-sections','-DFX_FREESTANDING=1','-I', str(ROOT / 'include')]
+    if args.native and (args.native_stack_bytes is not None or args.user_stack_bytes is not None):p.error('native entry uses the Loader stack; create owned RTOS tasks for resident work')
+    for directory in args.include_dir:compile_flags+=['-I',str(directory.resolve(strict=True))]
+    if args.debug:compile_flags+=['-g','-fno-omit-frame-pointer']
+    libraries=[f.resolve(strict=True) for f in args.library]
+    if any(f.suffix!='.a' for f in libraries):p.error('static .a libraries required')
     objects=[];dependencies=set()
     for i,path in enumerate([source,*support,ROOT/'src/memory.c']):
         destination=obj if i==0 else out/f'support-{i}.o';objects.append(destination)
@@ -65,12 +74,11 @@ def main():
         for token in re.findall(r'(?:\\.|[^\s])+',body):
             name=re.sub(r'\\([ #:\\])',r'\1',token)
             dependency=Path(name).resolve(strict=True)
-            if not dependency.is_relative_to(ROOT):raise ValueError('module dependency outside owned project')
             dependencies.add(dependency)
     subprocess.run([linker, '-m', 'aarch64elf', '-pie', '--no-dynamic-linker', '-Bsymbolic','--gc-sections',
-                    '-z', 'max-page-size=4096', '-e', 'fenestra_module_entry',*map(str,objects),'-o',str(elf)], check=True, timeout=30)
+                    '-z', 'max-page-size=4096', '-e', 'fenestra_native_entry' if args.native else 'fenestra_module_entry',*map(str,objects),*map(str,libraries),'-o',str(elf)], check=True, timeout=30)
     identity=PROFILES[args.target]['module_identity']
-    data = pack(elf.read_bytes(), bytes.fromhex(identity), args.required,entry_abi=1,
+    data = pack(elf.read_bytes(), bytes.fromhex(identity), args.required,entry_abi=2 if args.native else 1,
                 native_stack_bytes=args.native_stack_bytes,user_stack_bytes=args.user_stack_bytes)
     if args.target=='zr-c110':require_module_target(data)
     elif data[24:56]!=bytes.fromhex(identity):raise ValueError('module target identity differs')
@@ -80,11 +88,11 @@ def main():
     # -MMD already records every actual owned transitive include. Unrelated
     # profile/UI headers are not inputs to this module and must not invalidate
     # its compiled source identity merely because another adapter changed.
-    sources = [source,*support,*sorted(dependencies),
+    sources = [source,*support,*libraries,*sorted(dependencies),
                ROOT / 'host/build_sdk_module.py', ROOT / 'host/pack_module.py',
                ROOT / 'host/target_c110.py',ROOT/'host/module_header.py',ROOT/'host/platform_profiles.py',ROOT/'src/memory.c']
     report = dict(modules=[row], target=args.target, preflight=preflight, simd=args.simd, optimize=args.optimize,
-                  sources={str(f.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(f.read_bytes()).hexdigest() for f in sources})
+                  sources={(f.relative_to(ROOT).as_posix() if f.is_relative_to(ROOT) else 'external/'+hashlib.sha256(str(f.parent).encode()).hexdigest()[:12]+'/'+f.name): hashlib.sha256(f.read_bytes()).hexdigest() for f in sources})
     (out / 'module.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(report, indent=2))
 

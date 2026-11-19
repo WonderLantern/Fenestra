@@ -71,9 +71,8 @@ FxResult fx_c110_module_read(const char *file,uint8_t *data,uint32_t capacity,ui
     FxFileObserver observer=file_observer();FxCapacityClaim claim=fx_file_observe_open(observer,fd);
     if((uint32_t)fd==UINT32_C(0x80000010))return FX_EMPTY;
     if(fd<0)return FX_IO;
-    uint32_t r=0,calls=0;
+    uint32_t r=0;
     while(*bytes<capacity) {
-        if(++calls>FX_READ_CALL_LIMIT) {r=1u;break;}
         uint32_t done=0,n=capacity-*bytes;
         r=FN(UINT64_C(0x402e8a0c),uint32_t (*)(int32_t,void *,uint32_t,uint32_t *))(fd,data+*bytes,n,&done);
         if(r || done>n) {r=1u;break;}

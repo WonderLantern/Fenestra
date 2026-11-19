@@ -12,7 +12,10 @@ FILE_LIMIT = 1024 * 1024
 
 def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int = 0,
          native_stack_bytes=None, user_stack_bytes=None):
-    if type(entry_abi) is not int or entry_abi not in (0,1):raise ValueError('unsupported module entry ABI')
+    if type(entry_abi) is not int or entry_abi not in (0,1,2):raise ValueError('unsupported module entry ABI')
+    native=entry_abi==2
+    memory_limit=64*1024*1024 if native else MEMORY_LIMIT
+    file_limit=32*1024*1024 if native else FILE_LIMIT
     explicit_stacks = native_stack_bytes is not None or user_stack_bytes is not None
     if explicit_stacks:
         native_stack_bytes = 65536 if native_stack_bytes is None else native_stack_bytes
@@ -47,7 +50,7 @@ def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int =
         if ptype != 1 or memsz == 0:
             continue
         if (not pflags & 4 or pflags & ~7 or pflags & 3 == 3 or filesz > memsz or
-            offset + filesz > len(elf) or address + memsz > MEMORY_LIMIT or alignment == 0 or
+            offset + filesz > len(elf) or address + memsz > memory_limit or alignment == 0 or
             alignment > 4096 or alignment & (alignment - 1) or (address - offset) % alignment):
             raise ValueError("invalid load segment; use a 4096-byte maximum page size")
         permissions = (1 if pflags & 4 else 0) | (2 if pflags & 2 else 0) | (4 if pflags & 1 else 0)
@@ -63,7 +66,7 @@ def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int =
                 raise ValueError("overlapping segments")
     if entry % 4 or not any(s[3] & 4 and s[0] <= entry and entry + 4 <= s[0] + len(s[1]) for s in segments):
         raise ValueError("entry is not in file-backed executable text")
-    relocations = []
+    relocations = [];relocation_offsets=set()
     for i in range(shcount):
         name, stype, sflags, address, offset, size, link, info, align, entsize = struct.unpack_from(
             "<IIQQQQIIQQ", elf, shoff + i * 64)
@@ -79,10 +82,11 @@ def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int =
                 raise ValueError("relocation does not belong to writable module data")
             if not any(s[0] <= addend < s[0] + s[2] for s in segments):
                 raise ValueError("relocation leaves module memory")
-            if any(old[0] == target for old in relocations):
+            if target in relocation_offsets:
                 raise ValueError("duplicate relocation")
-            relocations.append((target, 1, addend))
-    if len(relocations) > 128:
+            relocations.append((target, 1, addend));relocation_offsets.add(target)
+    if native:relocations.sort()
+    if len(relocations) > (65536 if native else 128):
         raise ValueError("too many relocations")
     table_end = HEADER + len(segments) * 24 + len(relocations) * 16
     position = table_end
@@ -95,7 +99,7 @@ def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int =
     body = bytes(table) + b"".join(struct.pack("<IIQ", *r) for r in relocations) + bytes(payload)
     header = bytearray(HEADER)
     header[:8] = b"FENESTRA"
-    struct.pack_into("<4I", header, 8, 3 if explicit_stacks else 2 if entry_abi else 1, HEADER, 1, 1)
+    struct.pack_into("<4I", header, 8, 4 if native else 3 if explicit_stacks else 2 if entry_abi else 1, HEADER, 1, 1)
     if entry_abi:struct.pack_into('<I',header,116,entry_abi)
     if explicit_stacks:struct.pack_into('<2I',header,120,native_stack_bytes,user_stack_bytes)
     header[24:56] = firmware
@@ -103,8 +107,8 @@ def pack(elf: bytes, firmware: bytes, capabilities: int = 0, *, entry_abi: int =
     struct.pack_into("<5IQ", header, 88, HEADER + len(body), max(s[0] + s[2] for s in segments),
                      entry, len(segments), len(relocations), capabilities)
     result = bytes(header) + body
-    if len(result) > FILE_LIMIT:
-        raise ValueError("module package exceeds 1 MiB")
+    if len(result) > file_limit:
+        raise ValueError("module package exceeds its entry ABI capacity")
     return result
 
 
@@ -116,19 +120,21 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--firmware-sha256", required=True)
     parser.add_argument("--capabilities", default="0")
-    parser.add_argument('--entry-abi', choices=('legacy','services'), default='legacy')
+    parser.add_argument('--entry-abi', choices=('legacy','services','native'), default='legacy')
+    parser.add_argument('--target',choices=('zr-c110','z9-c532'),default='zr-c110')
     parser.add_argument('--native-stack-bytes', type=lambda x: int(x,0))
     parser.add_argument('--user-stack-bytes', type=lambda x: int(x,0))
     args = parser.parse_args()
-    if args.firmware_sha256 != PACKAGE_SHA256:
-        parser.error("current module build target is fixed to ZR C1.10")
+    from platform_profiles import PROFILES
+    if args.firmware_sha256 != PROFILES[args.target]['module_identity']:
+        parser.error("module identity differs from selected target")
     try:
         value = pack(args.elf.read_bytes(), bytes.fromhex(args.firmware_sha256), int(args.capabilities, 0),
-                     entry_abi=int(args.entry_abi=='services'), native_stack_bytes=args.native_stack_bytes,
+                     entry_abi={'legacy':0,'services':1,'native':2}[args.entry_abi], native_stack_bytes=args.native_stack_bytes,
                      user_stack_bytes=args.user_stack_bytes)
     except (OSError, ValueError, struct.error) as exc:
         parser.error(str(exc))
-    require_module_target(value)
+    if args.target=='zr-c110':require_module_target(value)
     args.output.write_bytes(value)
     print(json.dumps({"path": str(args.output), "bytes": len(value),
                       "sha256": hashlib.sha256(value).hexdigest(), "camera_executed": False}))

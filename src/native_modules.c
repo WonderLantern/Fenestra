@@ -62,10 +62,9 @@ static FxResult read_module(void *ctx,const char *file,uint8_t *out,uint32_t cap
     if(!op || !rd || !cl)return FX_CAPABILITY;
     int32_t fd=((int32_t (*)(const char *,uint32_t,uint32_t))op)(name,0u,0u);
     FxCapacityClaim claim=fx_file_observe_open(m->file_observer,fd);if(fd<0)return FX_IO;
-    uint32_t error=0,calls=0;
+    uint32_t error=0;
     while(*bytes<capacity) {
         uint32_t done=0,room=capacity-*bytes;
-        if(++calls>FX_READ_CALL_LIMIT){error=1u;break;}
         error=((uint32_t (*)(int32_t,void *,uint32_t,uint32_t *))rd)(fd,out+*bytes,room,&done);
         if(error || done>room){error=1u;break;}
         *bytes+=done;if(!done)break;

@@ -54,6 +54,7 @@ typedef struct {
     char id[16],file[32];uint8_t digest[32];
     uint32_t bytes,required,optional,enabled,period_ms,budget_ms,dependencies,image_bytes;
     FxModuleStacks stacks;
+    uint32_t entry_abi;
 } FxDiscoveredModule;
 /* Discovery owns this movable, transient RAM vector. No native callback may
  * retain an entry pointer. Runtime owners copy descriptors into stable state.
