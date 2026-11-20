@@ -118,6 +118,15 @@ static uint32_t is_current(const FxNativeDisplay *d) {
 uint32_t fx_native_display_is_current(const FxNativeDisplay *d) {
     lock();uint32_t current=is_current(d);unlock();return current;
 }
+uint32_t fx_native_display_is_visible(const FxNativeDisplay *d) {
+    lock();uint32_t visible=is_current(d);
+    if(visible && d->global_overlay) {
+        visible=(FN(gui_get_visible,uint32_t (*)(void *))(d->surface)&1u) &&
+            FN(native_graphics_target_enabled,uint32_t (*)(uint32_t,uint32_t,uint32_t))
+                (d->target[0],d->target[1],d->target[2]);
+    }
+    unlock();return visible;
+}
 static void bind(FxNativeDisplay *d) {
     FN(gui_bind_target,void (*)(void *))(d->object);
 }
@@ -407,7 +416,22 @@ static FxResult restore_pages(void *page) {
 }
 FxResult fx_native_menu_restore(const FxNativePage *page) {
     if(!page || !native_ram(page,sizeof(*page)))return FX_ARGUMENT;
-    if(fx_native_page_modal(page))return fx_native_backdrop_restore(page);
+    if(fx_native_page_modal(page)) {
+        FxResult captured=fx_native_backdrop_restore(page);
+        if(captured!=FX_EMPTY)return captured;
+        /* Some targets construct a modal foreground before it is readable.
+         * Its owned widget ancestry can repaint without a pixel snapshot.
+         * Clear only that foreground to transparent, then draw the retained
+         * native parents and modal widgets through their original methods. */
+        if(!native_ram((void *)page->surface,0x118u))return FX_STATE;
+        FN(gui_bind_target,void (*)(void *))((void *)page->surface);
+        uint32_t size=FN(gui_target_dimensions,uint32_t (*)(void *))((void *)page->surface);
+        uint32_t width=size&65535u,height=size>>16;
+        if(!width || !height || width>4096u || height>4096u)return FX_BOUNDS;
+        const uint16_t rect[4]={0u,0u,(uint16_t)width,(uint16_t)height};
+        FN(native_transparent_clear_rectangle,void (*)(const uint16_t *,const uint32_t *,void *))(rect,&size,0);
+        return restore_pages((void *)(uintptr_t)page);
+    }
     if(!native_ram((void *)page->surface,0x118u))return FX_STATE;
     FN(gui_bind_target,void (*)(void *))((void *)page->surface);
     uint32_t size=FN(gui_target_dimensions,uint32_t (*)(void *))((void *)page->surface);
@@ -529,7 +553,7 @@ FxResult fx_native_display_attach(FxNativeDisplay *d,void *page,const FxDemoScen
     }
     d->viewport[0]=d->viewport[1]=0u;
     d->viewport[2]=(uint16_t)d->width;d->viewport[3]=(uint16_t)d->height;
-    if(d->global_overlay) {
+    if(d->global_overlay || fx_native_display_profile.page_visible_viewport) {
         const uint32_t *target=(const uint32_t *)((const uint8_t *)surface+0x108u);
         memcpy(d->target,target,sizeof(d->target));
         /* Native composition rectangle within the backing allocation.
@@ -572,6 +596,17 @@ FxResult fx_native_display_present(FxNativeDisplay *d,const FxDemoScene *scene) 
     if(r!=FX_OK) return r;
     lock();
     if(!is_current(d)) { unlock();return FX_STATE; }
+    if(d->global_overlay) {
+        /* Native menu transitions can mask the same shooting target without
+         * replacing its tuple. An explicit new submission republishes this
+         * owned foreground; attachment alone is not visibility. */
+        if(!FN(native_graphics_target_enabled,uint32_t (*)(uint32_t,uint32_t,uint32_t))
+            (d->target[0],d->target[1],d->target[2]))
+            FN(native_graphics_target_enable,void (*)(uint32_t,uint32_t,uint32_t,uint32_t))
+                (d->target[0],d->target[1],d->target[2],1u);
+        if(!(FN(gui_get_visible,uint32_t (*)(void *))(d->surface)&1u))
+            FN(gui_set_visible,void (*)(void *,uint32_t))(d->surface,1u);
+    }
     d->scene=scene;
     d->object[0x3cu]=1u;
     /* Original extended GUI renderer, under the native GUI mutex.

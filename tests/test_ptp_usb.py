@@ -90,6 +90,17 @@ class UsbTests(unittest.TestCase):
             self.assertEqual(t.identity['model'],'Z 9')
             self.assertEqual(t.read(0x95e0,(),64),b'hello')
         self.assertEqual(self.opcodes(),[0x1001,0x1002,0x95e0,0x1003])
+    def test_z63_identity_and_wrong_firmware_before_session(self):
+        self.device.model='Nikon Z6III';self.device.version='C 2.01'
+        with UsbPtp(profile='z63-c201') as t:
+            self.assertEqual(t.profile,'z63-c201')
+        self.device.writes.clear();self.device.model='Z6_3';self.device.version='V2.01'
+        with UsbPtp(profile='z63-c201') as t:
+            self.assertEqual(t.identity['model'],'Z6_3')
+        self.device.writes.clear();self.device.version='C 2.00'
+        with self.assertRaises(ValueError):UsbPtp(profile='z63-c201').__enter__()
+        self.assertEqual(self.opcodes(),[0x1001])
+
     def test_explicit_wrong_profile_does_not_open_session(self):
         with self.assertRaises(ValueError):UsbPtp(profile='z9-c532').__enter__()
         self.assertEqual(self.opcodes(),[0x1001])

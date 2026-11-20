@@ -65,6 +65,7 @@ typedef struct {
     uintptr_t vgCreateImage,vgDestroyImage,vgImageSubData,vgDrawImage;
     uintptr_t vgLoadMatrix,vgGetMatrix;
     uintptr_t vgGetPixels,vgSetPixels;
+    uint32_t page_visible_viewport;
 } FxNativeDisplayProfile;
 /* Owned modal page only, on the original GUI task. Capture precedes first
  * native paint; restore does not redraw a hidden logical parent. */
@@ -102,6 +103,7 @@ FxNativeView fx_native_current_view(void);
 uint32_t fx_native_display_capabilities(void);
 uint32_t fx_native_display_global_ready(void);
 uint32_t fx_native_display_is_current(const FxNativeDisplay *);
+uint32_t fx_native_display_is_visible(const FxNativeDisplay *);
 FxResult fx_native_display_attach_global(FxNativeDisplay *,const FxDemoScene *);
 FxResult fx_native_display_attach(FxNativeDisplay *,void *,const FxDemoScene *);
 FxResult fx_native_display_present(FxNativeDisplay *,const FxDemoScene *);

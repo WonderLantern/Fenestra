@@ -11,6 +11,11 @@ typedef struct {
 } FxNativeModules;
 FxResult fx_native_modules_init(FxNativeModules *,const FxPlatform *,const FxNativeMenuProfile *,
     void *(*allocate)(uint32_t),uint32_t texts,uint32_t rows,const uintptr_t callbacks[5],int active);
+/* Target-owned filesystem semantics; initialized boot-retained storage and
+ * IO context must outlive the manager. No path/rename policy is inferred. */
+FxResult fx_native_modules_init_io(FxNativeModules *,const FxPlatform *,const FxNativeMenuProfile *,
+    void *(*allocate)(uint32_t),uint32_t texts,uint32_t rows,const uintptr_t callbacks[5],int active,
+    const FxModuleManagerIO *);
 /* Explicit menu actions only: native serialized card APIs on Nikon's task. */
 FxResult fx_native_modules_open(FxNativeModules *);
 void fx_native_modules_input(FxNativeUi *);

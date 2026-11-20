@@ -116,7 +116,13 @@ FxResult fx_native_modules_init(FxNativeModules *m,const FxPlatform *p,const FxN
     if(!m->release_index)return FX_CAPABILITY;
     FxModuleManagerIO io={{m,open_directory,next_directory,close_directory,read_module},rename_module,m,current,
         {m,allocate_index,release_index},FX_MODULE_INDEX_BUDGET};
-    FxResult r=fx_module_manager_init(&m->manager,p,&io,active);if(r!=FX_OK)return r;
+    return fx_native_modules_init_io(m,p,profile,allocate,texts,rows,callbacks,active,&io);
+}
+FxResult fx_native_modules_init_io(FxNativeModules *m,const FxPlatform *p,const FxNativeMenuProfile *profile,
+    void *(*allocate)(uint32_t),uint32_t texts,uint32_t rows,const uintptr_t callbacks[5],int active,
+    const FxModuleManagerIO *io) {
+    if(!m || !p || !profile || !allocate || !io)return FX_ARGUMENT;
+    FxResult r=fx_module_manager_init(&m->manager,p,io,active);if(r!=FX_OK)return r;
     r=fx_native_ui_init(&m->ui,&m->manager.ui,profile,allocate,FX_NATIVE_MANAGER_PAGE_BASE,texts,rows,
         fx_native_ui_actions,fx_native_ui_options,callbacks);
     if(r==FX_OK)m->ui.input_ready=fx_native_modules_input;
@@ -141,4 +147,5 @@ const uint32_t fx_native_modules_metadata[]={0x46584d47u,2u,sizeof(FxNativeModul
     sizeof(FxManagedModule),offsetof(FxManagedModule,present),offsetof(FxManagedModule,enabled),
     offsetof(FxManagedModule,current),offsetof(FxManagedModule,valid),offsetof(FxManagedModule,file),
     offsetof(FxPlatformOwner,control_count),offsetof(FxPlatformOwner,controls),offsetof(FxPlatformOwner,owner),
-    sizeof(FxUiControl),offsetof(FxUiControl,label),offsetof(FxUiControl,text),offsetof(FxUiControl,kind)};
+    sizeof(FxUiControl),offsetof(FxUiControl,label),offsetof(FxUiControl,text),offsetof(FxUiControl,kind),
+    offsetof(FxModuleManager,filter),offsetof(FxModuleManager,filtered_count)};

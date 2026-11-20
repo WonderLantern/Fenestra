@@ -1,0 +1,1541 @@
+{
+  "schema": "fenestra.port-bindings/v1",
+  "target": "z63-c201",
+  "model": "Nikon Z6III",
+  "version": "C 2.01",
+  "status": "experimental-native-sdk-and-emulator-runtime",
+  "image_base": 1075183616,
+  "application_bytes": 88830367,
+  "application_sha256": "d78e4d0358f550d9f3a3a9da3a8beee314a3b90de8bcc13117e029f7821cf252",
+  "payload_sha256": "236bbd874e0942fd91fb54a99af456f4ebcc0fd966af930753c43efd1839fe87",
+  "bindings": [
+    {
+      "name": "camera.card.open",
+      "address": 1076770420,
+      "bytes": 96,
+      "sha256": "a06921944206e714eec637b7e697852e152841aceab1e39b476bc123db37b407"
+    },
+    {
+      "name": "camera.card.read",
+      "address": 1076770676,
+      "bytes": 108,
+      "sha256": "ac8b8dbecf2f21b95c6d94b72c57c0b274e98690c45baac9fb50546ab81d632f"
+    },
+    {
+      "name": "camera.card.close",
+      "address": 1076770516,
+      "bytes": 76,
+      "sha256": "17e5268fef3e13a5bde03e446aa548f6ff1d42e7328b1e48918370c056c24a9c"
+    },
+    {
+      "name": "rtos.task.create",
+      "address": 1075359672,
+      "bytes": 980,
+      "sha256": "ec941af0f14d83d0030e9ede2a154239e72a48f0a60c55c1a6eebe2b9cb1427d"
+    },
+    {
+      "name": "rtos.task.resume",
+      "address": 1075361084,
+      "bytes": 408,
+      "sha256": "1ac1450f665179633d8b7c67a0eeca531e294987200c356f0142ac148b257cc5"
+    },
+    {
+      "name": "rtos.memory.allocate",
+      "address": 1087581440,
+      "bytes": 64,
+      "sha256": "bb5458f5e15aacc100b0378cf0ba1bbf83f52e91053eecd3ff0d410d899d43be"
+    },
+    {
+      "name": "rtos.memory.release",
+      "address": 1087581504,
+      "bytes": 104,
+      "sha256": "5d70e2a8c805d89ac80f24a19f9c73db5367de373269613e91238838343ecbf9"
+    },
+    {
+      "name": "camera.card.directory.open",
+      "address": 1076783452,
+      "bytes": 80,
+      "sha256": "c90d4e109d475c9a51ae5247599d96fab8a105b448b7a07726df4744ec72722c"
+    },
+    {
+      "name": "camera.card.directory.next",
+      "address": 1076783628,
+      "bytes": 80,
+      "sha256": "201f324f80a8ab463984db55c5fea5a0c0224070124917fa85a012a39d848d15"
+    },
+    {
+      "name": "camera.card.directory.close",
+      "address": 1076783708,
+      "bytes": 72,
+      "sha256": "dc2d6f82e165d89e8ea2c5249058c7ed9fa04b7d1a1e28586d7611ba9d5e511c"
+    },
+    {
+      "name": "rtos.task.delay",
+      "address": 1075371464,
+      "bytes": 368,
+      "sha256": "f831a01b2b0f4fbb4c469b6153f861a7dacc2714807844fda959b78c3d84b132"
+    },
+    {
+      "name": "camera.ptp.payload",
+      "address": 1082331904,
+      "bytes": 28,
+      "sha256": "be02c56bf222718d794bb5ae352d135f60d6e050fdb44056f114040e8a4233ba"
+    },
+    {
+      "name": "camera.ptp.capacity",
+      "address": 1082331964,
+      "bytes": 8,
+      "sha256": "e7faac6675aa155fee654b059e50adb7f4436b1f67906ac00edd187decebb138"
+    },
+    {
+      "name": "camera.ptp.incoming",
+      "address": 1082332132,
+      "bytes": 4,
+      "sha256": "885a9440d084230ad6d8f67cae3ab13684ea6e8fed27e9f29715c04a1ff239e1"
+    },
+    {
+      "name": "camera.ptp.response",
+      "address": 1082332144,
+      "bytes": 708,
+      "sha256": "9456d4c60fb8ad2ae0265e5832edfde5113804f1aa659465b635cdcdedb02a38"
+    },
+    {
+      "name": "camera.ptp.send",
+      "address": 1082332864,
+      "bytes": 224,
+      "sha256": "dc178ff82f9f54c588f9188442ff2b8c937203884d6cd3d3a0a5b383e883fdfd"
+    },
+    {
+      "name": "camera.usb.device.start",
+      "address": 1077021444,
+      "bytes": 72,
+      "sha256": "a5160f53677b3255e949ccf5f05bb8d56c803544c9c86228e98f12ba8f90ea48"
+    },
+    {
+      "name": "camera.usb.polling.start",
+      "address": 1077023948,
+      "bytes": 128,
+      "sha256": "c40902ed08f5356fc9177a0d2f5304988b444b802051d9c129e54ab2e0d369df"
+    },
+    {
+      "name": "rtos.context.is-irq",
+      "address": 1075352640,
+      "bytes": 40,
+      "sha256": "c1b26e3eb23a8b2cb244d3083f649f470deb5e0caec42bcf6a2eb8fa15624920",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.event.create",
+      "address": 1075313732,
+      "bytes": 452,
+      "sha256": "80e5fcfbb92bd39e5e7b69f0420bf008ef8abcc9159b4e1b3d4986f4552ae5a5",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.event.delete",
+      "address": 1075314184,
+      "bytes": 444,
+      "sha256": "938d3c0ff9f61b9a087fe7fbf488f59e8dd4af759d4f1a2a67e80de5a041eda4",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.event.set",
+      "address": 1075314628,
+      "bytes": 448,
+      "sha256": "c4fa2a4de0f3468aeb6bd73977c6a6cf470f5ce4a723fd5901daf8aab588ef3d",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.event.set-irq",
+      "address": 1075315076,
+      "bytes": 448,
+      "sha256": "163d59b35eb6acddf3115d5b93146bec1cb9e5c9d7d56c0c4672bb23debe5a93",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.event.clear-keep",
+      "address": 1075315524,
+      "bytes": 280,
+      "sha256": "c33aff1fea56c789920d172ef5f433a32965f2c66745bbeb0f7552412f38c2d2",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.event.clear-keep-irq",
+      "address": 1075315804,
+      "bytes": 256,
+      "sha256": "4b8de56c08a181cc74a92c195bcc7c6f77cf0f2def5bfcb203e9a46c76442831",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.event.wait",
+      "address": 1075317224,
+      "bytes": 512,
+      "sha256": "7a044a6ed0b1f239606ef8f9fc6a4f8b4fd618e9ef2d72c05fddaab67e9fd908",
+      "evidence": "Original C2.01 event-flag implementation, TPIDR+0x50 context gate, ID validation and bit/mode operations; full-system service exercise required."
+    },
+    {
+      "name": "rtos.task.status",
+      "address": 1075366092,
+      "bytes": 964,
+      "sha256": "c0fa385f7416815ce2186e227221a2185b487ca07fdf8e980131fc232563e628",
+      "evidence": "Original USB service task start and kernel task status; the latter writes its state at output +0 and a bounded status record, caller supplies 256 bytes."
+    },
+    {
+      "name": "camera.usb.service.start",
+      "address": 1077019424,
+      "bytes": 20,
+      "sha256": "de844057c5f1f96b369b061641004c629d292174a581edabd6c51d0ca03f29cd",
+      "evidence": "Original USB service task start and kernel task status; the latter writes its state at output +0 and a bounded status record, caller supplies 256 bytes."
+    },
+    {
+      "name": "camera.card.write",
+      "address": 1076770784,
+      "bytes": 108,
+      "sha256": "e8e49a316f3abbed4a947956b84e085a1b2e1509a9fbe8dca0484204b8e77d13",
+      "evidence": "Original FILESRV command 8 copies fd/buffer/count/actual-count; command 10 copies 64-bit offset and position pointer, preserving native BOOL return. Normal filesystem only."
+    },
+    {
+      "name": "camera.card.seek64",
+      "address": 1076771004,
+      "bytes": 112,
+      "sha256": "560b6277f021162c9d7e403f5e965a8669b9c0fdc8cd9ad29d4dcb6d33446f78",
+      "evidence": "Original FILESRV command 8 copies fd/buffer/count/actual-count; command 10 copies 64-bit offset and position pointer, preserving native BOOL return. Normal filesystem only."
+    },
+    {
+      "name": "rtos.spinlock.try-lock",
+      "address": 1075276824,
+      "bytes": 168,
+      "sha256": "64c5c92e4a6d10d1dd3ead4bac0d00cf11f38db6f738489f9e443b1c67ac0480",
+      "evidence": "Original recursive 16-byte CPU lock: owner +0 is MPIDR&15 or free 255, nesting +4, saved DAIF +8; try returns -1009 on contention, release returns -1004 for a different owner; final release preserves original IRQ masking."
+    },
+    {
+      "name": "rtos.spinlock.unlock",
+      "address": 1075276992,
+      "bytes": 108,
+      "sha256": "271e91f19963463580abe87464c0eb80d21727d2a4a2ff41cf923078845001f1",
+      "evidence": "Original recursive 16-byte CPU lock: owner +0 is MPIDR&15 or free 255, nesting +4, saved DAIF +8; try returns -1009 on contention, release returns -1004 for a different owner; final release preserves original IRQ masking."
+    },
+    {
+      "name": "camera.card.rename",
+      "address": 1076782828,
+      "bytes": 80,
+      "sha256": "86b493d0628fd8bd3ba8d5849828408fd30595d5eda7bf5babc774630032ce56"
+    },
+    {
+      "name": "rtos.mutex.create",
+      "address": 1075335268,
+      "bytes": 492,
+      "sha256": "3a453cc0c746ea84b9a2c3ee02fd7f1c617e47bcca93ff554a28e4310711c262",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.mutex.delete",
+      "address": 1075335760,
+      "bytes": 604,
+      "sha256": "af1c053002ee24baaa39f57ddbbfa056e9a1e65d612d8ba4d6172109537e0b09",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.mutex.lock",
+      "address": 1075336364,
+      "bytes": 732,
+      "sha256": "efd88b04d77f12f7e316198f5840d96cf6dec3013aafbcd39906fce10a790c6b",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.mutex.try-lock",
+      "address": 1075337096,
+      "bytes": 492,
+      "sha256": "ff05d33db81cce74ae7b3977841ed30a12456da345507c567250ef8df90d77ef",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.mutex.lock-timeout",
+      "address": 1075337588,
+      "bytes": 932,
+      "sha256": "cec0268613fa375139448fe86f0e6e3900f5426aaaa107d2320a7b53436f2981",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.mutex.unlock",
+      "address": 1075338520,
+      "bytes": 444,
+      "sha256": "1148400e343fd521966b363f6e2e5f847b3bb8dd2985063842829b6ff4ddb480",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.semaphore.create",
+      "address": 1075340692,
+      "bytes": 468,
+      "sha256": "08f2e4c15696565e15f7eca9bdd7927e48d7523ceace21d5c80e6fbdbcf4d3a2",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.semaphore.delete",
+      "address": 1075341160,
+      "bytes": 444,
+      "sha256": "14cd6f597227593fd7de803786a2eaa19ab80819b38d4f6682c596b7b8208b34",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.semaphore.signal",
+      "address": 1075341604,
+      "bytes": 500,
+      "sha256": "0ae41cd970f9fb150b4057ae8cf2b827a13ee9ab0c4b021ab18c7fcd259c2306",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.semaphore.signal-irq",
+      "address": 1075342104,
+      "bytes": 480,
+      "sha256": "20777f8e2450d45f211ce1ee1f1314ae87b0a33a802a38491a88f9aae3c70bf6",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.semaphore.wait",
+      "address": 1075342584,
+      "bytes": 404,
+      "sha256": "ccad8e121b994e08d3e3b03b18e328b0b797dcdcc300750974cebb318aa2ce4d",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.semaphore.poll",
+      "address": 1075342988,
+      "bytes": 288,
+      "sha256": "a9a4e9ecd394da31f1d1c538896f41faa391f6dd5007a0b1a56215e634daa9c4",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.semaphore.wait-timeout",
+      "address": 1075343276,
+      "bytes": 456,
+      "sha256": "baa8bfc5b24f1d34d75107fc20802ecc7df34837a4a9da994387c3f29429a5f4",
+      "evidence": "Original C2.01 complete entry/prologue through following function boundary; TPIDR+0x50/DAIF gates, ID validation, native object/configuration and wait semantics inspected."
+    },
+    {
+      "name": "rtos.mmu.protect",
+      "address": 1075249464,
+      "bytes": 92,
+      "sha256": "edbcabf7635abc455ee0e02938a68290121469bf6dd8f2715d1963ae2f1fd304",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.mmu.map",
+      "address": 1075249556,
+      "bytes": 52,
+      "sha256": "7bb52377beb9ad6c9d6317edb40dafbd7482709b7954c2828e52e56341f4349d",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.mmu.unmap",
+      "address": 1075249608,
+      "bytes": 40,
+      "sha256": "024b3ed4c0bf6f8a67fc03563152c3f478b5e04557f4083828f3f8b99d2a04e7",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.mmu.translate",
+      "address": 1075250328,
+      "bytes": 48,
+      "sha256": "f72cbbfe271fcf14a90e21c0485e433b0bbf8c4c08e7545079c5cf377b21b4f4",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.mmu.mapped",
+      "address": 1075250808,
+      "bytes": 52,
+      "sha256": "699dc2e9d40233db08a28bc54d56be2eeebfee327a4534d48b955e66409c581c",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.mmu.attributes",
+      "address": 1075250860,
+      "bytes": 48,
+      "sha256": "c3fdc57ff2505142a6a091acb226c4013ccb61451b7663d82b514620210cc922",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.mmu.invalidate",
+      "address": 1075251068,
+      "bytes": 76,
+      "sha256": "7789256b9369cd48f438cc4e1c3fc83059fe7567323d808a2c81996f67be86f3",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.mmu.invalidate-all",
+      "address": 1075251144,
+      "bytes": 20,
+      "sha256": "4c9d3f1c667d92429a947a46f3015547a6e637e61b5e1ab2c0f02aef9ff96abc",
+      "evidence": "Original C2.01 public wrapper selects context 0xA04EDB048 with selector -1; complete wrapper/normalization/barrier sequence checked."
+    },
+    {
+      "name": "rtos.irq.register",
+      "address": 1075239292,
+      "bytes": 32,
+      "sha256": "311d0760fe1c7b866ce972cdcfcab09425bf50698522f45da1def46db8703a2e",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.register-affinity",
+      "address": 1075239324,
+      "bytes": 32,
+      "sha256": "2423352fe7c4623f5bca92e4dbe1ef4ecc5457db35535228ebf7fc9f5dfbbe48",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.unregister",
+      "address": 1075239356,
+      "bytes": 24,
+      "sha256": "475b1c9056c8067858924a077ec7581161d2cb86427b725fd425c6f5ea80b6de",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.disable",
+      "address": 1075239476,
+      "bytes": 24,
+      "sha256": "f7ccf978787de2178837127cbad99763d3545a6e478549eb10e91d6020d7f11f",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.enable",
+      "address": 1075239500,
+      "bytes": 24,
+      "sha256": "fe17189f2ddd88cb19e0b357c7b86733cc2a57e1a6c218fd9b0ba666e766fd73",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.status",
+      "address": 1075239524,
+      "bytes": 32,
+      "sha256": "1c35646aae601befeef1c76887e9783644816da32e3769af93c9986a49cbafce",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.priority-levels",
+      "address": 1075239636,
+      "bytes": 24,
+      "sha256": "34952edc0f4369ef0897db78a3b6293467f13e288e01a3d3adccc126adecabe8",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.limit",
+      "address": 1075239684,
+      "bytes": 24,
+      "sha256": "7988aac3577663067ddbbf8eb3afeb561964991c9b7e224bd8cdc985ceb69592",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.priority.get",
+      "address": 1075239708,
+      "bytes": 124,
+      "sha256": "ca03d593aed2b30ce64cc2e388c71a6c6ab592bffe4635988062b136ac0b40b0",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.priority.set",
+      "address": 1075239832,
+      "bytes": 32,
+      "sha256": "3e0514f813831f8d01a61bdb77fe55c1a42c5d83b3516ed7bb238d1122b44c52",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.trigger.get",
+      "address": 1075239864,
+      "bytes": 104,
+      "sha256": "42574f159fa0780e4134f666088d109aebfdc4b465d9447891cf4c147f9e7c3c",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.trigger.set",
+      "address": 1075239968,
+      "bytes": 80,
+      "sha256": "0ca6479f134cfb3dad9616daa9085bd476f7a1ca7cf653d07e75b6c7976ad9e0",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.pending.clear",
+      "address": 1075240048,
+      "bytes": 76,
+      "sha256": "af925c911114034ba50338e00473760cb5eccba2b44255a5f288a39c12a3a706",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.pending.set",
+      "address": 1075240124,
+      "bytes": 76,
+      "sha256": "687b5b2947cd5a9926faca7a64afbed433aca4fb118bb6baeff6e374aaed6ea5",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.pending.is-set",
+      "address": 1075240200,
+      "bytes": 76,
+      "sha256": "77a9bb27fbc5f895a72fc61c612134623e9325a304fa8470860959cd8526817a",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.affinity.set",
+      "address": 1075240504,
+      "bytes": 88,
+      "sha256": "00246871ce8d11078e6e6461e43a4397343312e39c63150aed7381de49fc934c",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.affinity.get",
+      "address": 1075240592,
+      "bytes": 104,
+      "sha256": "2677a408a4c94bfb4387ddec9f306bc041fdfb11ccdb3e698d70c8b36efc335b",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.context.register",
+      "address": 1075237116,
+      "bytes": 256,
+      "sha256": "0eaef55572ba013ff2b400a7ac90c6467d4fa2c17d99e67d1788cd1b3931432f",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "rtos.irq.context.unregister",
+      "address": 1075237380,
+      "bytes": 124,
+      "sha256": "73500468a7e9553864b5308fad4796c9472710a476b97089dc400b7b23f06475",
+      "evidence": "Original C2.01 complete wrapper and native controller 0xA04ED3B38; descriptor/limit/priority/trigger/pending/affinity ABI checked. Registration retains caller storage."
+    },
+    {
+      "name": "camera.card.remove",
+      "address": 1076782908,
+      "bytes": 72,
+      "sha256": "26cd8246cea1c8210cf8cf032804c52086f088f946a0f5f7e75492cbd3753beb"
+    },
+    {
+      "name": "rtos.mmu.context.map",
+      "address": 1075268812,
+      "bytes": 612,
+      "sha256": "159fd2ae91727a41edb9ef96b14f6d8a45dabccadcc238d0d2afa77941de9fae"
+    },
+    {
+      "name": "rtos.mmu.context.unmap",
+      "address": 1075266752,
+      "bytes": 504,
+      "sha256": "cac1d207411580ad60bb75f41ed218cfb1150601bb751120e51e373fddd9c226"
+    },
+    {
+      "name": "rtos.mmu.context.protect",
+      "address": 1075270388,
+      "bytes": 500,
+      "sha256": "e58232eefe8c570175f2bec9a5496fd59bef734a723eda0047b73a905f4be401"
+    },
+    {
+      "name": "rtos.mmu.context.translate",
+      "address": 1075270108,
+      "bytes": 108,
+      "sha256": "24e5cbd9312ca7ccdadb413c285f72a97161ec57f77ea010221748c137740321"
+    },
+    {
+      "name": "rtos.mmu.context.attributes",
+      "address": 1075270216,
+      "bytes": 172,
+      "sha256": "c4b6583b992e302ed99e02f4283145781181299b29165479060bbca6f9039598"
+    },
+    {
+      "name": "rtos.spinlock.init",
+      "address": 1075276624,
+      "bytes": 40,
+      "sha256": "1db7eb988b98cfd55bba771d5754b8bd0508ff13cd49ece80f63cabeceb91c72"
+    },
+    {
+      "name": "rtos.mmu.context.walk",
+      "address": 1075267396,
+      "bytes": 280,
+      "sha256": "e815a6f70b3cde8cced665a275528a4ec2273a4b7955325444cf421e371fb697"
+    },
+    {
+      "name": "camera.menu.page.get",
+      "address": 1077861144,
+      "bytes": 16,
+      "sha256": "54e75251c0cb5d5edf38a74fc5bd5cb732c4c2f38f3e8ed3fc010cd1d3b2fbf2"
+    },
+    {
+      "name": "camera.menu.text.get",
+      "address": 1077124912,
+      "bytes": 16,
+      "sha256": "b732734448c74620287ec793eeb61f1b439c1136fe9a838830305ff419ec28b1"
+    },
+    {
+      "name": "camera.ui.editor.init",
+      "address": 1080282268,
+      "bytes": 356,
+      "sha256": "bcabf078d9c720eb680873ac2f6c90851ccccec4e5ecac2a120d2392725ed0ce"
+    },
+    {
+      "name": "camera.ui.editor.read",
+      "address": 1080291512,
+      "bytes": 148,
+      "sha256": "b4bcb7e85af502a3c9348347acf87fbbd4d3f38a6410de45a285bbaf53cb0a9c"
+    },
+    {
+      "name": "camera.ui.editor.insert-byte",
+      "address": 1080298012,
+      "bytes": 372,
+      "sha256": "eaf1793e880ceb94ea9f4ef9cf9aeae98f9256dbae32574a39100eeb7f11660d"
+    },
+    {
+      "name": "camera.ui.editor.delete-byte",
+      "address": 1080291888,
+      "bytes": 156,
+      "sha256": "72ca87caed7a9f63a8399beaa3b88159d203613ae59c3a84142f4dee346aca1e"
+    },
+    {
+      "name": "camera.ui.editor.hit",
+      "address": 1080298600,
+      "bytes": 320,
+      "sha256": "1fced85a371460e86a8ac5eeca6af49a54c05c0597f70278ed4efde4ae66a68b"
+    },
+    {
+      "name": "camera.ui.text.measure",
+      "address": 1077061652,
+      "bytes": 152,
+      "sha256": "75d84b24331c702e0696fae6354612c962e06f459bd847a9010d96ae8bc579da"
+    },
+    {
+      "name": "camera.ui.text.align",
+      "address": 1077958320,
+      "bytes": 64,
+      "sha256": "8eb1d0c7a5143094b3ba204073c8ac848b09f86bbcc22553b6a900bb2909abc1"
+    },
+    {
+      "name": "camera.ui.bounds.get",
+      "address": 1077061372,
+      "bytes": 36,
+      "sha256": "b5b08d2482481e6c0c27c01aab9d12a6e0f6c7122bfb2463e81df08a4b57f731"
+    },
+    {
+      "name": "camera.ui.bounds.set",
+      "address": 1077061280,
+      "bytes": 92,
+      "sha256": "ebc5f2abe3aab51939f42439a4e9b4d28e81a6bcf7c68d86d2b8b90643ef39d2"
+    }
+  ],
+  "sysctl": {
+    "dispatcher": 1087794928,
+    "event_table": 1141419112,
+    "event_stride": 88,
+    "message_event_offset": 32,
+    "events": {
+      "startup_sync_hook": 19,
+      "startup_complete": 20,
+      "shutdown": 8,
+      "card_remove": 24,
+      "card_mount": 25
+    },
+    "hook_bytes": 16,
+    "hook_sha256": "305e1a78a035b8a30156b6c821947e2f9f11b2b92e205cce9dbe6f7998840714"
+  },
+  "probe_code_region": {
+    "begin": 1075445760,
+    "end": 1075838976,
+    "original_fill": 0
+  },
+  "guard_region": {
+    "begin": 1075396992,
+    "end": 1075400704,
+    "evidence": "Zero padding after the last W3 instruction and inside the W3 copy range, so original startup copies it to DRAM with the surrounding code."
+  },
+  "text_relocation": {
+    "evidence": "Original startup runs MAIN text in place, then copies each window's content to DRAM and remaps the whole window. Bytes a package places between copy_end and remap_end are replaced by unwritten DRAM. The in-place range is never remapped. Static trace, confirmed by a read-only page-table walk on a stock C2.01 camera.",
+    "routines": [
+      {"address": 1092131584, "bytes": 364, "sha256": "cf987f8e041aa4cb5cff9612a6908478f77fa1802ead3093e0b8904269f08f01"},
+      {"address": 1092132016, "bytes": 156, "sha256": "15e10546fd4cee120387973c6602135de756628e6a805059a94c2af196c968d3"}
+    ],
+    "windows": [
+      {"name": "W3", "begin": 1075216384, "copy_end": 1075400704, "remap_end": 1075400704},
+      {"name": "W1", "begin": 1075838976, "copy_end": 1083239400, "remap_end": 1086324736},
+      {"name": "W2", "begin": 1086324736, "copy_end": 1097241336, "remap_end": 1098907648}
+    ],
+    "in_place_executable": {"begin": 1075404800, "end": 1075838976},
+    "loader_places_padding_verified": false,
+    "physical_install_qualified": false
+  },
+  "menu_hooks": {
+    "page": {
+      "address": 1077861144,
+      "bytes": 52,
+      "sha256": "00bc14103c5f91003185846a0eaaafa473b32de86fe2948b4707f8b833532204"
+    },
+    "text": {
+      "address": 1077124912,
+      "bytes": 108,
+      "sha256": "366c1a304e32e745c6f2641d084d2c334960f26e895eb9b35d98a02f863af2ce"
+    },
+    "navigate": {
+      "address": 1077675108,
+      "bytes": 16,
+      "sha256": "f6cefc70ffdb159bac2c5e629dd86637f8fb701a59dc51f827ffd429a3ba3d31"
+    }
+  },
+  "capabilities": 8323072,
+  "filename_contract": "lowercase 8.3 .wlm only",
+  "ptp_hooks": {
+    "lookup": {
+      "address": 1082330340,
+      "bytes": 16,
+      "sha256": "e7a0eaaf88320d5ef968d15c8dc951f897a1eb0710b84ff341da5f9a633c8e7c"
+    },
+    "session": {
+      "address": 1082325212,
+      "bytes": 16,
+      "sha256": "16af5555c915553621fbc027032c6a295e86d76ea60ee7aa3c15122e251e6d20"
+    },
+    "operations": {
+      "address": 1077296052,
+      "bytes": 16,
+      "sha256": "0b5edb347f954483ab00f9ef40d860b249ac4f7ec3aaa1c23a169c9fbfb513e6"
+    },
+    "rtos_printf": {
+      "address": 1086346052,
+      "bytes": 16,
+      "sha256": "fab4a3f15b86861f5a3d1f97f228693930a3fc79a1a61db5981b779870bee9bf"
+    }
+  },
+  "display_bindings": [
+    {
+      "name": "native_menu_progress",
+      "address": 1077951084,
+      "bytes": 16,
+      "sha256": "7219666689c65dd1132958143f7968cd3c26f2a803a5e38e3e66ce9df5ee3a27"
+    },
+    {
+      "name": "native_menu_compositor_submit",
+      "address": 1077951184,
+      "bytes": 16,
+      "sha256": "9b91d348f206527ae6e5ac785c57fea5d83bdfbe7703a6c280b81b5f456a2522"
+    },
+    {
+      "name": "compound_draw",
+      "address": 1077082120,
+      "bytes": 16,
+      "sha256": "de98841a43754d2447f8f09a89daaa5afd3d2527082f840560e47c78f911e2bf"
+    },
+    {
+      "name": "second_compound_draw",
+      "address": 1077104092,
+      "bytes": 16,
+      "sha256": "bd285587b41e1ab0770b2b5137baa4af7b4448e65635fd4153f3c7d39a745cf6"
+    },
+    {
+      "name": "gui_base_initialize",
+      "address": 1077061456,
+      "bytes": 16,
+      "sha256": "994a2b5baac579efc5564b0afa69a29710d973820f62197160e259803e2f055c"
+    },
+    {
+      "name": "gui_bind_target",
+      "address": 1077061516,
+      "bytes": 16,
+      "sha256": "0a3764a9a2a57ef121f36da15ea069eefbe2b19dc414c1380995658c51607cce"
+    },
+    {
+      "name": "gui_draw_body",
+      "address": 1077090892,
+      "bytes": 16,
+      "sha256": "54a111480d69414ddb76f3759411a39c9a9f60d947896a70d5a0e8eeced4c67d"
+    },
+    {
+      "name": "gui_extended_draw_body",
+      "address": 1077106716,
+      "bytes": 16,
+      "sha256": "5c51c1cab9a1141e6ec3f57963551164fc5ad9e72cd7127111fb7347e8dcf6f3"
+    },
+    {
+      "name": "gui_get_visible",
+      "address": 1077957780,
+      "bytes": 16,
+      "sha256": "8f4c3ba9c81e56236ba4edccf77559bddd08a68d4cc47bd83557da83af27fc5d"
+    },
+    {
+      "name": "gui_mark_object_dirty",
+      "address": 1077957752,
+      "bytes": 16,
+      "sha256": "e34eae24988e9c805c34e62b0c7954c535f75636ded35faa66524b87c51ab1bb"
+    },
+    {
+      "name": "gui_object_insert",
+      "address": 1077954472,
+      "bytes": 16,
+      "sha256": "2c4419729cf272a92e6733d465cbcb7b0e52512c5bcc0201d835dfb6a91c4eb3"
+    },
+    {
+      "name": "gui_object_remove",
+      "address": 1077954480,
+      "bytes": 16,
+      "sha256": "dc117fae8e23c26c2c647ddc92545b861c9f84db0e15246e63ea06085aaea664"
+    },
+    {
+      "name": "gui_set_visible",
+      "address": 1077957768,
+      "bytes": 16,
+      "sha256": "ebce67395cd356611808f43f28bbd4b7ed406c174555b95b3464df0be66aa646"
+    },
+    {
+      "name": "gui_target_dimensions",
+      "address": 1077061564,
+      "bytes": 16,
+      "sha256": "3e30cb7c62e967e2a8b881b76a4762250b95d5844ed60acb0ac2f4abf7df5c5b"
+    },
+    {
+      "name": "native_constant_paint_rectangle",
+      "address": 1077107868,
+      "bytes": 16,
+      "sha256": "b6593cfc3845a74c5dfeb7f14bc484b5503a9b5b9392ae9a481e558c6b0f462e"
+    },
+    {
+      "name": "native_graphics_acquire",
+      "address": 1077060316,
+      "bytes": 16,
+      "sha256": "23fc45330cabc2cd3f4f42fdc888bf3008706eb38a85c15cb0208d609fb057e2"
+    },
+    {
+      "name": "native_graphics_release",
+      "address": 1077060320,
+      "bytes": 16,
+      "sha256": "31cc9d3883276c1ff1573ff317e0d22e1ab165aac1f8afff652c09f9a7d2f28c"
+    },
+    {
+      "name": "native_list_begin",
+      "address": 1086817916,
+      "bytes": 16,
+      "sha256": "f6368f0b0487c5e5687b2881e50bedff722285e5504fa3871c9a01538654e7e7"
+    },
+    {
+      "name": "native_list_count",
+      "address": 1086817016,
+      "bytes": 16,
+      "sha256": "b9a25412bba0ca78454430d6d5849aa3aa6f410f438c3295fd0cbfbcca9c8cbf"
+    },
+    {
+      "name": "native_list_next",
+      "address": 1086817380,
+      "bytes": 16,
+      "sha256": "6c14a3b503c67f9d9527d54e2ca477af329db77a55b742b718819976d087422d"
+    },
+    {
+      "name": "native_menu_find_row_by_id",
+      "address": 1077954476,
+      "bytes": 16,
+      "sha256": "e12453fbfd167148414436cddc2f96a81caf431f0544cb150bbca3d34438820f"
+    },
+    {
+      "name": "native_mutex_acquire",
+      "address": 1087580344,
+      "bytes": 16,
+      "sha256": "a7512002a5480f819d831ac4639ed5441aa343bd9f289a23a0a951f601e7635d"
+    },
+    {
+      "name": "native_mutex_release",
+      "address": 1087580260,
+      "bytes": 16,
+      "sha256": "8d298430257aa4a89a1660d857d80741f3db0540ef6afb44577ece32e10cf3f2"
+    },
+    {
+      "name": "native_object_dispatch",
+      "address": 1077092928,
+      "bytes": 16,
+      "sha256": "a355ca770ec09e0cfbcd224cda1e20cf89ba46e3113c7fb801839217ecb9a295"
+    },
+    {
+      "name": "native_rgba_float_conversion",
+      "address": 1076826440,
+      "bytes": 16,
+      "sha256": "202fec777b3285286aeb4ee2668d99634d65e614b6a5b5ebf72e326b6e998d37"
+    },
+    {
+      "name": "native_transparent_clear_rectangle",
+      "address": 1077110012,
+      "bytes": 16,
+      "sha256": "ad772f40c64a395e72348047c181aef45b2a62d03451a96804559a785161d992"
+    },
+    {
+      "name": "row_draw",
+      "address": 1077064668,
+      "bytes": 16,
+      "sha256": "7512093707783d4263121e23fd604fcb71ae05d3351a81dc64f6898df0a188fd"
+    },
+    {
+      "name": "vgAppendPathData",
+      "address": 1076166724,
+      "bytes": 16,
+      "sha256": "5876a72bbfe22c388fed332b1d4799b6c3416c27be5a3d7a3ac0a3685282f64d"
+    },
+    {
+      "name": "vgClear",
+      "address": 1076165836,
+      "bytes": 16,
+      "sha256": "af96f11a2092c2b27f8ca91aa5f9431694387db2bd1b86375650c688b17835cf"
+    },
+    {
+      "name": "vgClearPath",
+      "address": 1076166124,
+      "bytes": 16,
+      "sha256": "a126e84f978ea098a85f42799bfdf199a331d9690dd1185b631cccdcbe308916"
+    },
+    {
+      "name": "vgCreatePaint",
+      "address": 1076168600,
+      "bytes": 16,
+      "sha256": "a126e84f978ea098a85f42799bfdf199a331d9690dd1185b631cccdcbe308916"
+    },
+    {
+      "name": "vgCreatePath",
+      "address": 1076165960,
+      "bytes": 16,
+      "sha256": "a126e84f978ea098a85f42799bfdf199a331d9690dd1185b631cccdcbe308916"
+    },
+    {
+      "name": "vgDestroyPaint",
+      "address": 1076168708,
+      "bytes": 16,
+      "sha256": "42f1cc76c783ef2bc73b111da6ae0b7768a378923d7f0ba724a60d4aa4523d51"
+    },
+    {
+      "name": "vgDestroyPath",
+      "address": 1076166228,
+      "bytes": 16,
+      "sha256": "42f1cc76c783ef2bc73b111da6ae0b7768a378923d7f0ba724a60d4aa4523d51"
+    },
+    {
+      "name": "vgDrawPath",
+      "address": 1076168448,
+      "bytes": 16,
+      "sha256": "a126e84f978ea098a85f42799bfdf199a331d9690dd1185b631cccdcbe308916"
+    },
+    {
+      "name": "vgGetError",
+      "address": 1076160260,
+      "bytes": 16,
+      "sha256": "c06601ed577755d80e25087a74374206b120f0065954156138b8308049f279ce"
+    },
+    {
+      "name": "vgGetPaint",
+      "address": 1076168996,
+      "bytes": 16,
+      "sha256": "491b583deb6242973ef9d4306c9203beb818b8645d79d990050fc4752278018b"
+    },
+    {
+      "name": "vgGetfv",
+      "address": 1076160972,
+      "bytes": 16,
+      "sha256": "9adc9b0d9508e98a7f6c1c365d3ccfbeec36232562748916f7aff2946bddfd53"
+    },
+    {
+      "name": "vgGeti",
+      "address": 1076160876,
+      "bytes": 16,
+      "sha256": "f09836a69cd44dd76ae72d693cd492bc447e77d314ba1fe7413ddaf81eb13cb4"
+    },
+    {
+      "name": "vgSetPaint",
+      "address": 1076168816,
+      "bytes": 16,
+      "sha256": "a126e84f978ea098a85f42799bfdf199a331d9690dd1185b631cccdcbe308916"
+    },
+    {
+      "name": "vgSetParameterfv",
+      "address": 1076162012,
+      "bytes": 16,
+      "sha256": "5c51c1cab9a1141e6ec3f57963551164fc5ad9e72cd7127111fb7347e8dcf6f3"
+    },
+    {
+      "name": "vgSetParameteri",
+      "address": 1076161648,
+      "bytes": 16,
+      "sha256": "d955e74febfb78c7c29ba406e1d4cf3cc85ecce276c9de23b9edc36bfd2dea04"
+    },
+    {
+      "name": "vgSetfv",
+      "address": 1076160524,
+      "bytes": 16,
+      "sha256": "9adc9b0d9508e98a7f6c1c365d3ccfbeec36232562748916f7aff2946bddfd53"
+    },
+    {
+      "name": "vgSeti",
+      "address": 1076160428,
+      "bytes": 16,
+      "sha256": "587ed79308743bfef72d78a11f9b6dc537c1fa8767787dc3d76f7f08b09d5723"
+    },
+    {
+      "name": "vgCreateImage",
+      "address": 1076169464,
+      "bytes": 16,
+      "sha256": "00d04c350350d1fa1f67a374ac17d09f212336000b9541ce97ed10129c27502c"
+    },
+    {
+      "name": "vgDestroyImage",
+      "address": 1076169748,
+      "bytes": 108,
+      "sha256": "e70ffd44ece3cedcaa8b07e4a8dc001c23b3d152df35d7182f70f0c7812f2427"
+    },
+    {
+      "name": "vgImageSubData",
+      "address": 1076170048,
+      "bytes": 16,
+      "sha256": "381b41196e230617b170d91b181fd83e658c69782c70e644a006d7f6f3479959"
+    },
+    {
+      "name": "vgDrawImage",
+      "address": 1076171352,
+      "bytes": 16,
+      "sha256": "42f1cc76c783ef2bc73b111da6ae0b7768a378923d7f0ba724a60d4aa4523d51"
+    },
+    {
+      "name": "vgLoadMatrix",
+      "address": 1076164772,
+      "bytes": 16,
+      "sha256": "68768192e817a10ee576654605d0a072e7b1b995a9e5df3ce330c1c25d072bb0"
+    },
+    {
+      "name": "vgGetMatrix",
+      "address": 1076164860,
+      "bytes": 16,
+      "sha256": "8fefe3d354b4ebb0cb64c5a1f9f0719a3f24b09fbdf3087acd07c8bbff32f0f9"
+    },
+    {
+      "name": "vgGetPixels",
+      "address": 1076172008,
+      "bytes": 16,
+      "sha256": "80799d2d79753023b5ef138bdb9e6de1cd55707a759ede8ba79edaba4706e057"
+    },
+    {
+      "name": "vgSetPixels",
+      "address": 1076171500,
+      "bytes": 16,
+      "sha256": "80799d2d79753023b5ef138bdb9e6de1cd55707a759ede8ba79edaba4706e057"
+    }
+  ],
+  "ui_calls": [
+    {
+      "address": 1078015176,
+      "original_target": 1077843592,
+      "symbol": "fx_native_ui_wait_native",
+      "window": 1078015144,
+      "bytes": 100,
+      "sha256": "bf6aac3af38805e1b13b7fe6b51ac0640dd2c5a7fbc1c81af1b3d996603be78c"
+    },
+    {
+      "address": 1078015268,
+      "original_target": 1077843216,
+      "symbol": "fx_native_ui_poll_native",
+      "window": 1078015236,
+      "bytes": 100,
+      "sha256": "cd5b56c105b45f94f8bc2c784e224b5f181bca0573af9525527df6e1331a793b"
+    },
+    {
+      "address": 1078027776,
+      "original_target": 1077843592,
+      "symbol": "fx_native_ui_wait_native",
+      "window": 1078027744,
+      "bytes": 100,
+      "sha256": "c5047135fab4fefa435c8f558ea5ca6e10e47163d3bd4c0347f7dd3d0eccdbc4"
+    },
+    {
+      "address": 1078027856,
+      "original_target": 1077843216,
+      "symbol": "fx_native_ui_poll_native",
+      "window": 1078027824,
+      "bytes": 100,
+      "sha256": "a7d72c99e194a878fc6fc79dfb70557e927425913291f190effcc07ed9764265"
+    },
+    {
+      "address": 1079152980,
+      "original_target": 1077843592,
+      "symbol": "fx_native_ui_wait_native",
+      "window": 1079152948,
+      "bytes": 100,
+      "sha256": "0fc423b69b73c713f7399511bcb70752b5990fd3aa5cabb169b1cdd360fcdeee"
+    },
+    {
+      "address": 1079153052,
+      "original_target": 1077843216,
+      "symbol": "fx_native_ui_poll_native",
+      "window": 1079153020,
+      "bytes": 100,
+      "sha256": "d3b7b530753956807da7e7fd4d9263a4c56698e8df82d2ec9cbeba4471c48d6c"
+    },
+    {
+      "address": 1080314440,
+      "original_target": 1077843592,
+      "symbol": "fx_native_ui_wait_native",
+      "window": 1080314408,
+      "bytes": 100,
+      "sha256": "814acd772a296f6858bff111371d6c59414a84e8f894f46169a69d908c96615a"
+    },
+    {
+      "address": 1080314592,
+      "original_target": 1077843216,
+      "symbol": "fx_native_ui_poll_native",
+      "window": 1080314560,
+      "bytes": 100,
+      "sha256": "b0fdbfbe46f08c2cb375023fb032831bd93fc8db0a746506d821d488e4989fb6"
+    },
+    {
+      "address": 1080323568,
+      "original_target": 1077843592,
+      "symbol": "fx_native_ui_wait_native",
+      "window": 1080323536,
+      "bytes": 100,
+      "sha256": "1508855fa2719d288042d8143c96f6d74a18a8ead27d6c81381bd1d4483e4f46"
+    },
+    {
+      "address": 1080323664,
+      "original_target": 1077843216,
+      "symbol": "fx_native_ui_poll_native",
+      "window": 1080323632,
+      "bytes": 100,
+      "sha256": "95db023927da782b9f4e5a0d26d2fedf3bd454d1d04c5a3e82039c67f883de77"
+    }
+  ],
+  "ui_condition": {
+    "address": 1079160140,
+    "bytes": 152,
+    "sha256": "4a35bc9fb95ca9be9f117d236bb55276f62d2cca0aa15e3f79bdaaf29229d335",
+    "source_page": "x20",
+    "selected_event": "x22",
+    "call": 1079160284
+  },
+  "ui_bindings": [
+    {
+      "address": 1077091112,
+      "bytes": 64,
+      "sha256": "871f1337008089ace443e58c91953fa3394455c77838e1f79a8b614618c44a28"
+    },
+    {
+      "address": 1077065916,
+      "bytes": 64,
+      "sha256": "be680387d552a3d73a8131538f0f2df779a2c8db6dab9ed3d6cde1c353a712af"
+    },
+    {
+      "address": 1077957800,
+      "bytes": 64,
+      "sha256": "8ed302f9337e42abfcd2a2bcce471f8bd9799c9330a5313a3d20acbafd17ef7f"
+    },
+    {
+      "address": 1077957832,
+      "bytes": 64,
+      "sha256": "b7f7aefb4111d306b85fe9fc04a18b19008ab65effe7572cab1c50041319dfe8"
+    },
+    {
+      "address": 1077957864,
+      "bytes": 64,
+      "sha256": "525566d398b28497f5dddf3a42d817ab1cf595796b053c3d27ae7b9ef74cd1a4"
+    },
+    {
+      "address": 1077115152,
+      "bytes": 64,
+      "sha256": "8d19e7c733faaafd652e6bf95d1ae23fd8827678e00b8bb16eb70042eed92a9d"
+    },
+    {
+      "address": 1077958320,
+      "bytes": 64,
+      "sha256": "8eb1d0c7a5143094b3ba204073c8ac848b09f86bbcc22553b6a900bb2909abc1"
+    },
+    {
+      "address": 1077677468,
+      "bytes": 108,
+      "sha256": "61ad95470a07216ab3198cddc6162b5f0319dd4cc669691e3c9f86610238e37b",
+      "name": "count_all_visible_rows"
+    },
+    {
+      "address": 1077677740,
+      "bytes": 64,
+      "sha256": "5e692a48e28bba2633c141bcf2134dfb957fd95511da1e13db416052d8565a75"
+    },
+    {
+      "address": 1077678076,
+      "bytes": 64,
+      "sha256": "c4b22aa34251121e5d3207a579f626cad1d31bcd9c6594d56e2e5d06a703815c"
+    },
+    {
+      "address": 1077677588,
+      "bytes": 64,
+      "sha256": "d1a77a822f006edf9b1b84ddf718a429444d0fafd4a1ea877dcaccaacce82b32"
+    },
+    {
+      "address": 1077671980,
+      "bytes": 64,
+      "sha256": "7712534cc52f2a83eed0c6d39d4a1598373ddc8cdfc529b8260961d7643f0260"
+    },
+    {
+      "address": 1077672688,
+      "bytes": 64,
+      "sha256": "ebecb60778afbdcddd0d03f76735ca3d31ac396dff6750b1fc73e8855a51867d"
+    },
+    {
+      "address": 1077678736,
+      "bytes": 64,
+      "sha256": "a5645f8574788fbdb909c04cd46578b8fbc48c4d43d451f60e75656b4f244cd7"
+    },
+    {
+      "address": 1077673300,
+      "bytes": 64,
+      "sha256": "3a7e03b4f76e0bae555b3bd42505253af9954489bbcb29d64e4d35f127a2227e"
+    },
+    {
+      "address": 1077843216,
+      "bytes": 64,
+      "sha256": "084c3200a22cc818b9abcd942510c32df8bdcad77afce0f386cf7063ea20275f"
+    },
+    {
+      "address": 1077843592,
+      "bytes": 64,
+      "sha256": "03e048f8ee04f45b3cb7a1cf8ccae339820687c19046248573cd15f691642e58"
+    },
+    {
+      "address": 1077861872,
+      "bytes": 64,
+      "sha256": "b99d3a309537c7e5c78daf6ce1e685276246735b11319f5089f1fa7b30555985"
+    },
+    {
+      "address": 1077862076,
+      "bytes": 64,
+      "sha256": "3bd49c6e84c6808d41feac9977312443c1808f255e2efb2d1d0043f42a23361e"
+    },
+    {
+      "name": "text_measure",
+      "address": 1077061652,
+      "bytes": 152,
+      "sha256": "75d84b24331c702e0696fae6354612c962e06f459bd847a9010d96ae8bc579da"
+    },
+    {
+      "name": "text_bounds",
+      "address": 1077061372,
+      "bytes": 36,
+      "sha256": "b5b08d2482481e6c0c27c01aab9d12a6e0f6c7122bfb2463e81df08a4b57f731"
+    },
+    {
+      "name": "title_destructor",
+      "address": 1077095116,
+      "bytes": 44,
+      "sha256": "b34a3d5ba3e043691393da368cb385e8d5bb4ddbf1d8b6967123792d4f7bed70"
+    },
+    {
+      "name": "editor_initialize",
+      "address": 1080282268,
+      "bytes": 356,
+      "sha256": "bcabf078d9c720eb680873ac2f6c90851ccccec4e5ecac2a120d2392725ed0ce"
+    },
+    {
+      "name": "editor_read",
+      "address": 1080291512,
+      "bytes": 148,
+      "sha256": "b4bcb7e85af502a3c9348347acf87fbbd4d3f38a6410de45a285bbaf53cb0a9c"
+    },
+    {
+      "name": "editor_ready",
+      "address": 1079201396,
+      "bytes": 116,
+      "sha256": "b4979ede17b5e70a70b43186659406d7d53ece84f9ede0dfd177a1f8952493ee"
+    },
+    {
+      "name": "editor_transition",
+      "address": 1077687172,
+      "bytes": 24,
+      "sha256": "dff3400f9bffaa84ff0ce519c62220a666c66205fa2f3c0a4c280ca51f5f2833"
+    },
+    {
+      "name": "editor_key_callbacks",
+      "address": 1079177384,
+      "bytes": 104,
+      "sha256": "3111ca87313dfef3acc7be906e21a526b5513550203f6a9ec3d96326ddadf289"
+    },
+    {
+      "name": "editor_repeat_condition",
+      "address": 1077685524,
+      "bytes": 24,
+      "sha256": "1328ad2def8896d01eaad3c030c0460c078bd7d03ccd4aa48f8dadcbf6358438"
+    },
+    {
+      "name": "editor_style_page",
+      "address": 42992746704,
+      "file_offset": 85594320,
+      "bytes": 96,
+      "sha256": "c6fc15c57f82ef150f0c409ef157d163157eb39a0643c31938c3abd41a6bc15d"
+    },
+    {
+      "name": "editor_style_descriptor",
+      "address": 42992493872,
+      "file_offset": 85341488,
+      "bytes": 80,
+      "sha256": "846feac9850342fef105840bb9e98e544d7e8406346313843a51f95c6c6e25cf"
+    },
+    {
+      "name": "editor_style_header",
+      "address": 1138973008,
+      "file_offset": 63789392,
+      "bytes": 204,
+      "sha256": "d767b8ac9dc0857c38f45dbe3df9f1906434d1abc33637862583252a65a484e6"
+    },
+    {
+      "name": "editor_style_row",
+      "address": 1138973212,
+      "file_offset": 63789596,
+      "bytes": 44,
+      "sha256": "492189e724417a54a82f36af80c8bffc2c964264fdda1ac24fb269c2d9c6ec20"
+    },
+    {
+      "name": "editor_hit_records",
+      "address": 1140523280,
+      "file_offset": 65339664,
+      "bytes": 32,
+      "sha256": "6110ec18d253c6742c91480699f307fbe30a58cbf2e04802d69aea9d93275367"
+    },
+    {
+      "name": "global_surface",
+      "address": 1077580824,
+      "bytes": 28,
+      "sha256": "da1f12d6f762c8b583489c4be269836d1a8dab89d8a16a1680217e621ad8ea27"
+    },
+    {
+      "name": "global_target",
+      "address": 1077955080,
+      "bytes": 52,
+      "sha256": "f8f652ab57709d48222b64a85ecf7377c37f13bea3f978cd1f537ede350717a1"
+    },
+    {
+      "name": "surface_initialize",
+      "address": 1077106564,
+      "bytes": 152,
+      "sha256": "41df945513416df367e00ab4202e448594862561458d18c2a22a2d8db114527c"
+    },
+    {
+      "name": "graphics_current_device",
+      "address": 1077958808,
+      "bytes": 24,
+      "sha256": "fb80e12311eae4eecb60ff855195a9782837178c1a34fe751fa5252336eb98dc"
+    },
+    {
+      "name": "graphics_target_enable",
+      "address": 1077202044,
+      "bytes": 48,
+      "sha256": "e62038fc1d16d58fd5c659d7c2e7f3448b439750879fdba49eefea59277dd033"
+    },
+    {
+      "name": "graphics_target_enabled",
+      "address": 1077202092,
+      "bytes": 60,
+      "sha256": "5ca73e3be1f5ffe0e3c2de5634b7c9afcf4afb8f88a2b15e148f3b1aa26d23d7"
+    },
+    {
+      "name": "graphics_backing_rectangle",
+      "address": 1077203144,
+      "bytes": 144,
+      "sha256": "3f192d73783126d37afc0adc6b694731a2d21471f09cb036cb5498c9c8bfac53"
+    },
+    {
+      "name": "current_view_pointer_getter",
+      "address": 1077498036,
+      "bytes": 24,
+      "sha256": "d47ae86850f5494d7975e05f529b00fedd43f488791bbe607108d06ba9e9f83f"
+    },
+    {
+      "name": "view_id",
+      "address": 1077554592,
+      "bytes": 8,
+      "sha256": "1d508a88eaa79472130512ca701fa0b73bba28f7bab8307aae4939584f8e7bf8"
+    },
+    {
+      "name": "view_state",
+      "address": 1077554524,
+      "bytes": 8,
+      "sha256": "4b46609e0ce16dfa458b2093a5aa32e0be6fa4e0112e46820cf1249c219167dc"
+    },
+    {
+      "name": "modal_style_descriptor",
+      "address": 42992408512,
+      "file_offset": 85256128,
+      "bytes": 80,
+      "sha256": "bf88468c08fbf411f7a92d18c2fc005c73833526a2eb8aa0e90cee40ffcfcbc1"
+    },
+    {
+      "name": "modal_style_header",
+      "address": 1135824560,
+      "file_offset": 60640944,
+      "bytes": 340,
+      "sha256": "0038d1cbc87caa8016557dba7c1e6014d3be6b115d057fb978ef44827c44f984"
+    },
+    {
+      "name": "modal_style_rows",
+      "address": 1135824900,
+      "file_offset": 60641284,
+      "bytes": 88,
+      "sha256": "2ce92c0ef4b7d198cc4844610a16922a066877d7a82eaee817d76bbb8c81b907"
+    },
+    {
+      "name": "modal_destructor",
+      "address": 1077086252,
+      "file_offset": 1902636,
+      "bytes": 124,
+      "sha256": "b0fcb7a5a47edff762a77807240cf19a765d91217abc51a641f6f804a63b6fc9"
+    },
+    {
+      "name": "modal_body_identity_window",
+      "address": 1077692728,
+      "file_offset": 2509112,
+      "bytes": 64,
+      "sha256": "34fe9d7f6d43824d6f6504deeaa2d91f6dd95e87f4d2200d450addd25220bcab"
+    },
+    {
+      "name": "graphics_owner_target_enable",
+      "address": 1077960916,
+      "bytes": 200,
+      "sha256": "159e1696844dfc56d58bdaaf879eda52c6e6ce4ba0905099b64bd6021929f15f"
+    },
+    {
+      "name": "graphics_owner_rebuild",
+      "address": 1077954328,
+      "bytes": 144,
+      "sha256": "bc9ae2da8d90410c77c76891efe2b0acf258fad7a115b8c2b57af2893cc88563"
+    },
+    {
+      "name": "graphics_foreground_publication_caller",
+      "address": 1077829732,
+      "bytes": 84,
+      "sha256": "e28e70c69b606eb3fec36977f8b0a208afe8d6bd4fddbdc13f023a0a2685827e"
+    }
+  ],
+  "native_pages": {
+    "first_file": 85523376,
+    "stop": 1810,
+    "kinds": {
+      "2": 1480,
+      "0": 3,
+      "3": 144,
+      "5": 182
+    },
+    "bytes": 173664,
+    "sha256": "7013a90f5f4e00f84f061e21fbd54254458b458f506ad3d5c4170894c42a65c2"
+  },
+  "debug_bindings": [
+    {
+      "name": "rtos.command",
+      "address": 1086330496,
+      "bytes": 464,
+      "sha256": "294bcfb453f8d2638324e436b6d5cd62a40cbb48c8dee391f9208b9475f86339"
+    },
+    {
+      "name": "rtos.format",
+      "address": 1075226784,
+      "bytes": 88,
+      "sha256": "60cc1ba49eeb24bd5516d03e3cbb8aef8e7111a7fbca43f89a0c772bfa436271"
+    },
+    {
+      "name": "rtos.printf",
+      "address": 1086346052,
+      "bytes": 276,
+      "sha256": "c88caa3835e2245d4014a487840ab0309aebd59b1e85ce9aa6858fe4d3db6e62"
+    },
+    {
+      "name": "linux.receive",
+      "address": 1086974680,
+      "bytes": 32,
+      "sha256": "b43b016c389f690e7d002e5b6d5d5352832b2047910c55e284e5f9c44ba364b6"
+    },
+    {
+      "name": "linux.allocate",
+      "address": 1086977236,
+      "bytes": 464,
+      "sha256": "ec8daa87ae16acaec3475afed076dae8694cf503c086fa95bcfbd91c59ec6b4c"
+    },
+    {
+      "name": "linux.release",
+      "address": 1086977700,
+      "bytes": 448,
+      "sha256": "77c0750d7e5d68b4fc0bcca06c9a9b3111e3b9e93263ff13fa719fa8fd07fc31"
+    },
+    {
+      "name": "linux.offset",
+      "address": 1086978148,
+      "bytes": 76,
+      "sha256": "5cdf43f14ba379feb90134c7c996136cc0a877b8cb771f1e4c4f23087084b6e1"
+    },
+    {
+      "name": "linux.free_offset",
+      "address": 1086978540,
+      "bytes": 80,
+      "sha256": "4fecca55222c7c9ace9694b187aa90034b283e1adf1620a1e37f3b58ac9e4fda"
+    },
+    {
+      "name": "linux.fifo_try_lock",
+      "address": 1097030016,
+      "bytes": 180,
+      "sha256": "48f438cdeff2f521eb470e086e2ddc213e8b3b318ff5a346ac620cd790ae5c82"
+    },
+    {
+      "name": "linux.fifo_unlock",
+      "address": 1097030200,
+      "bytes": 116,
+      "sha256": "4b4e9bb34e758bf7b57e0ea89e3ddc37474bab45fd8c18c6e27a4a5a6d7f0334"
+    },
+    {
+      "name": "linux.fifo_enqueue",
+      "address": 1097028664,
+      "bytes": 400,
+      "sha256": "1438ec8041f50d9ac33270071d3ae293ec848132afce2cae606e36a02b4e1415"
+    },
+    {
+      "name": "linux.fifo_notify",
+      "address": 1097026112,
+      "bytes": 148,
+      "sha256": "b0b8e46b1ca09656ce44164c8448618a5e6cbb733c7f67c07a4d35ab7023a77e"
+    },
+    {
+      "name": "linux.callback_registration",
+      "address": 1086974552,
+      "bytes": 128,
+      "sha256": "5e8025e877ce3efba5247b6bf9cc4aeabcffdd7f3aecb73f3fa424735e932bda"
+    },
+    {
+      "name": "linux.fifo_slot",
+      "address": 1086964640,
+      "bytes": 104,
+      "sha256": "6e7b73a1e1b5d33b6ecfff32ae1bcb49f2d3795a0250d1acce01fa34e5993f78"
+    }
+  ],
+  "native_tables": [
+    {
+      "name": "rtos.mmu.context",
+      "address": 43032358984,
+      "bytes": 88,
+      "source_bindings": [
+        "rtos.mmu.map",
+        "rtos.mmu.unmap",
+        "rtos.mmu.protect",
+        "rtos.mmu.translate",
+        "rtos.mmu.attributes"
+      ]
+    },
+    {
+      "name": "rtos.irq.controller",
+      "address": 43032329016,
+      "bytes": 9016,
+      "source_bindings": [
+        "rtos.irq.register",
+        "rtos.irq.status",
+        "rtos.irq.priority.get"
+      ]
+    },
+    {
+      "name": "camera.ui.editor.template",
+      "address": 42992746704,
+      "bytes": 96
+    },
+    {
+      "name": "camera.menu.page-roots",
+      "address": 43004333392,
+      "bytes": 56
+    },
+    {
+      "name": "camera.locale.font-root",
+      "address": 43000396160,
+      "bytes": 8
+    }
+  ]
+}
