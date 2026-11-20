@@ -355,6 +355,24 @@ void fx_module_manager_tick(FxModuleManager *m) {
 }
 void fx_module_manager_shutdown(FxModuleManager *m){if(m){atomic_store(&m->shutdown,1u);if(acquire(m))release(m);}}
 
+#ifdef FX_Z8_C311_FULL
+FxResult fx_module_manager_resume(FxModuleManager *m) {
+    if(!m || !atomic_load(&m->shutdown))return FX_STATE;
+    if(!acquire(m))return FX_BUSY;
+    if(m->uncertain){release(m);return FX_CLOSE;}
+    /* Keep this UI owner and its published native routes alive. A fresh owner
+     * must never be bound over the same retained page IDs. */
+    for(uint32_t i=0u;i<FX_UI_EVENTS;++i) {
+        FxUiTextEvent event;uint32_t bytes;
+        if(fx_ui_poll_message(&m->ui,&event,sizeof(event),&bytes)!=FX_OK)break;
+    }
+    invalidate_rows(m);m->search_ready=0u;m->page=0u;
+    m->activated=0u;
+    m->loading=0u;m->scanned=0u;m->ui_pending=1u;
+    atomic_store(&m->ready_requested,0u);atomic_store(&m->scan_requested,1u);
+    atomic_store(&m->shutdown,0u);release(m);return FX_OK;
+}
+#endif
 FxResult fx_module_manager_page(FxModuleManager *m,uint32_t page) {
     if(!m || atomic_load(&m->shutdown))return FX_STATE;
     if(!acquire(m))return FX_BUSY;

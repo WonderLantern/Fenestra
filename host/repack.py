@@ -97,9 +97,14 @@ def build_core(target, firmware, output):
         command = ['build_c110_menu.py', '--firmware', str(firmware), '--output-dir', str(output),
                    '--native-capture', '--sensor-trace', '--event-trace']
         candidate = output/'c110-menu.snapshot'
-    else:
+    elif target == 'z8-c311':
+        command = ['build_z8_core.py', '--firmware', str(firmware), '--output-dir', str(output)]
+        candidate = output/'z8-core.main'
+    elif target == 'z9-c532':
         command = ['build_z9_core.py', '--firmware', str(firmware), '--output-dir', str(output)]
         candidate = output/'z9-core.main'
+    else:
+        raise ValueError('unknown full-core target')
     subprocess.run([sys.executable, '-B', str(ROOT/'host'/command[0]), *command[1:]], cwd=ROOT, check=True)
     subprocess.run([sys.executable, '-B', str(ROOT/'host/verify_platform_build.py'), '--target', target,
                     '--firmware', str(firmware), '--build', str(output), '--output', str(output/'verification.json')], cwd=ROOT, check=True)

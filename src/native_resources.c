@@ -1,3 +1,6 @@
+#ifdef FX_Z8_C311_FULL
+#include "fenestra_z8_file_read.h"
+#endif
 #include "fenestra_resources.h"
 #include "fenestra_hooks.h"
 #include "fenestra_machine.h"
@@ -217,6 +220,9 @@ static FxResult file_call(FxPlatformOwner *o,Resources *s,const FxServiceRequest
         if(q->bytes!=sizeof(r) || r.handle || r.mode>FX_FILE_CREATE_EXCLUSIVE || !fx_service_name(r.name,64u,1))return FX_ARGUMENT;
 
         char path[80]={0};memcpy(path,"A:\\FENESTRA\\",12u);uint32_t n=0;while(r.name[n])++n;memcpy(path+12u,r.name,n+1u);
+#ifdef FX_Z8_C311_FULL
+        path[0]=fx_z8_card_drive();if(!path[0])return FX_STATE;
+#endif
         uintptr_t fn=native(o,"camera.card.open");if(!fn)return FX_CAPABILITY;
         void *item=0;uint64_t handle=0u;FxResult result=resource_slot(o,&s->file,&item,&handle);File *f=item;
         if(result!=FX_OK)return result;
@@ -233,7 +239,11 @@ static FxResult file_call(FxPlatformOwner *o,Resources *s,const FxServiceRequest
     uint32_t done=0,result;
     if(op==FX_FILE_READ && q->bytes==sizeof(r) && f->mode==FX_FILE_READ_ONLY) {
         uintptr_t fn=native(o,"camera.card.read");if(!fn)return FX_CAPABILITY;
+#ifdef FX_Z8_C311_FULL
+        result=fx_z8_file_read(f->fd,a->data,r.bytes,&done);
+#else
         result=((uint32_t (*)(int32_t,void *,uint32_t,uint32_t *))fn)(f->fd,a->data,r.bytes,&done);
+#endif
         if(done>r.bytes){f->uncertain=1u;fx_capacity_retain(&f->claim);(void)retain_object(&s->file,f->id,s->files,0u);return FX_INTEGRITY;}
         if(!result)a->bytes=done;
     } else if(op==FX_FILE_WRITE && q->bytes==sizeof(r)+r.bytes && f->mode==FX_FILE_CREATE_EXCLUSIVE) {

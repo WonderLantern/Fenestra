@@ -1,3 +1,6 @@
+#ifdef FX_Z8_C311_FULL
+#include "fenestra_z8_file_read.h"
+#endif
 #include "fenestra_native_modules.h"
 #include "fenestra_native_namespace.h"
 #include "fenestra_native_ui_callbacks.h"
@@ -15,13 +18,22 @@ static int path(char out[64],const char *file) {
     if(!fx_service_name(file,32u,1))return 0;
     memset(out,0,64u);memcpy(out,"A:\\FENESTRA\\",12u);uint32_t n=0;
     while(n<32u && file[n])++n;
+#ifdef FX_Z8_C311_FULL
+    out[0]=fx_z8_card_drive();if(!out[0])return 0;
+#endif
     memcpy(out+12u,file,n+1u);return 1;
 }
 static FxResult open_directory(void *ctx) {
     FxNativeModules *m=ctx;if(m->poisoned)return FX_CLOSE;
     m->directory=-1;
     uintptr_t fn=function(m,"camera.card.directory.open");if(!fn)return FX_CAPABILITY;
+#ifdef FX_Z8_C311_FULL
+    char directory[]="A:\\FENESTRA";
+    directory[0]=fx_z8_card_drive();if(!directory[0])return FX_STATE;
+    uint32_t r=((uint32_t (*)(const char *,int32_t *))fn)(directory,&m->directory);
+#else
     uint32_t r=((uint32_t (*)(const char *,int32_t *))fn)("A:\\FENESTRA",&m->directory);
+#endif
     return r==UINT32_C(0x80000010)?FX_EMPTY:r || m->directory<0?FX_IO:FX_OK;
 }
 static uint32_t u32(const uint8_t *p){return (uint32_t)p[0]|(uint32_t)p[1]<<8|(uint32_t)p[2]<<16|(uint32_t)p[3]<<24;}
@@ -66,7 +78,12 @@ static FxResult read_module(void *ctx,const char *file,uint8_t *out,uint32_t cap
     while(*bytes<capacity) {
         uint32_t done=0,room=capacity-*bytes;
         if(++calls>FX_READ_CALL_LIMIT){error=1u;break;}
+#ifdef FX_Z8_C311_FULL
+        if(room>32768u)room=32768u;
+        error=fx_z8_file_read(fd,out+*bytes,room,&done);
+#else
         error=((uint32_t (*)(int32_t,void *,uint32_t,uint32_t *))rd)(fd,out+*bytes,room,&done);
+#endif
         if(error || done>room){error=1u;break;}
         *bytes+=done;if(!done)break;
     }

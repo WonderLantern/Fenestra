@@ -8,7 +8,8 @@ def verify(root,build,target,report,nm):
     root=Path(root).resolve(strict=True);build=Path(build).resolve(strict=True)
     config=report.get('debug_identity_configuration')
     if not isinstance(config,dict):raise ValueError('debug identity configuration missing')
-    header=report.get('debug_identity_header',(build/('z9_debug_identity.h' if target=='z9-c532' else 'c110_debug_identity.h')).relative_to(root).as_posix())
+    core_target=target in ('z9-c532','z8-c311')
+    header=report.get('debug_identity_header',(build/(('z8_debug_identity.h' if target=='z8-c311' else 'z9_debug_identity.h') if core_target else 'c110_debug_identity.h')).relative_to(root).as_posix())
     graph={}
     for command in report['commands']:
         if '-c' not in command or '-MF' not in command:continue
@@ -33,9 +34,9 @@ def verify(root,build,target,report,nm):
             raise ValueError('identity input missing from source receipt '+name)
     identity=hashlib.sha256(json.dumps(config,sort_keys=True,separators=(',',':')).encode()).digest()
     if identity.hex()!=report['debug_build_identity']:raise ValueError('debug identity digest differs')
-    elf=build/('core.elf' if target=='z9-c532' else 'menu.elf')
-    code=(build/('core.bin' if target=='z9-c532' else 'menu.bin')).read_bytes()
-    wanted='fx_z9_debug_build' if target=='z9-c532' else 'fx_c110_debug_identity'
+    elf=build/('core.elf' if core_target else 'menu.elf')
+    code=(build/('core.bin' if core_target else 'menu.bin')).read_bytes()
+    wanted=('fx_z8_debug_build' if target=='z8-c311' else 'fx_z9_debug_build') if core_target else 'fx_c110_debug_identity'
     # Static symbols repeat across translation units. A dict silently drops
     # all but one copy, so preserve every address independently from llvm-nm.
     addresses=[]

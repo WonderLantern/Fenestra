@@ -42,6 +42,12 @@ typedef struct {
 } FxExecLayout;
 FxResult fx_exec_layout_stacks(uint32_t metadata_bytes,uint32_t package_bytes,uint32_t image_bytes,
                         uint32_t exchange_bytes,uint32_t extra_bytes,FxModuleStacks,FxExecLayout *);
+#ifdef FX_Z8_C311_FULL
+/* The native stack is a disjoint, page-aligned allocation in the session's
+ * 1 GiB RAM window. Its bytes are excluded from the session allocation. */
+FxResult fx_exec_layout_split_stack(uint32_t metadata_bytes,uint32_t package_bytes,uint32_t image_bytes,
+                        uint32_t exchange_bytes,FxModuleStacks,FxExecLayout *);
+#endif
 FxResult fx_exec_layout(uint32_t metadata_bytes,uint32_t package_bytes,uint32_t image_bytes,
                         uint32_t exchange_bytes,uint32_t extra_bytes,FxExecLayout *);
 FxResult fx_exec_publish(FxExecArena *, const FxModule *);

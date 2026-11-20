@@ -1,0 +1,64 @@
+{
+  "schema": "fenestra.z8-port/v1",
+  "target": "z8-c311",
+  "model": "Nikon Z8",
+  "version": "C 3.11",
+  "identities": {
+    "package": {
+      "bytes": 99051117,
+      "sha256": "d67413c2ede6b9ce8887175f20700bd9fbad2a973a4820968c45503d15d80d96"
+    },
+    "component": {
+      "bytes": 81807711,
+      "sha256": "f85e0138e2f5e660ece8560de62e0d12cb795e0e14983e50f20b61dce906c46c"
+    },
+    "application": {
+      "bytes": 81807709,
+      "sha256": "2b43a31c9de838f84b12416de4348a7004e65be07f853ec56ec2b10f3a8e3853"
+    }
+  },
+  "module_name": "eg2070_0311b0.bi",
+  "modules": [
+    {
+      "name": "ex2070_030000.bi",
+      "start": 208,
+      "bytes": 524290,
+      "sha256": "4b7ea2ea40360717ceffd3d8db6fe48f5fae9d5c13b69632dc750bdc41b571c2"
+    },
+    {
+      "name": "_tpj01_0210.bin",
+      "start": 524498,
+      "bytes": 57346,
+      "sha256": "689f80feb0d271d73ac719e0c5872cfc0dac643097e528b6a1b156d4c55efe1a"
+    },
+    {
+      "name": "eg2070_0311b0.bi",
+      "start": 581844,
+      "bytes": 81807711,
+      "sha256": "f85e0138e2f5e660ece8560de62e0d12cb795e0e14983e50f20b61dce906c46c"
+    },
+    {
+      "name": "vr2070_010100.bi",
+      "start": 82389555,
+      "bytes": 838664,
+      "sha256": "30e363077655f9936894fdc00104263eac4a33892e621199f84bf8f4cecea3bb"
+    },
+    {
+      "name": "li2070_0311b0.bi",
+      "start": 83228219,
+      "bytes": 15822850,
+      "sha256": "804a55508cd6b323336fbba14034810e4b22fcc5fd1030d3a7dc08d62767cc55"
+    }
+  ],
+  "external_reader": {
+    "relative_path": "z8prores/package.py",
+    "sha256": "2f24ea0214ca7e8bae044f91a4ba2980bc4e6471bb47b75d5afe1bdfcc42cd29",
+    "license": "GPL-3.0-only (external project)",
+    "interface": "Package(raw).eg, Package(raw).modules and Package(raw).replace_eg(component, name)",
+    "scope": "Optional local MAIN extraction and container round-trip verification.",
+    "resource": {
+      "relative_path": "resources/input.json",
+      "sha256": "d100e8f0f8d2ceddc3ea38f2298aac30143d19514a4c571b63eedbb887cb00be"
+    }
+  }
+}

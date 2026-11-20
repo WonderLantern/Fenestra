@@ -6,6 +6,9 @@ from platform_profiles import ROOT,BASE,load
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--target',required=True);p.add_argument('--firmware',required=True)
     p.add_argument('--build',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    if a.target=='z8-c311':
+        from verify_z8_core import main as verify_z8
+        return verify_z8(['--firmware',a.firmware,'--build',str(a.build),'--output',str(a.output)])
     profile,original=load(a.target,a.firmware);build=a.build.resolve(strict=True)
     namespace_output=a.output.with_suffix('.namespace.json')
     if not build.is_relative_to(ROOT) or not a.output.resolve().is_relative_to(ROOT) or a.output.exists() or namespace_output.exists():raise ValueError('new owned verification outputs required')
