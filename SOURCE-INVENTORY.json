@@ -3253,8 +3253,8 @@
     },
     {
       "path": "src/services.c",
-      "bytes": 21683,
-      "sha256": "09cc9abfb8a5bf1a24a73ea2587e115ca7ca24ff07d4c4c9dd69c7240df605a3",
+      "bytes": 21788,
+      "sha256": "16bbe3b091d088383e737aacba8f37f38f43f9c2fda22693b6d4eea6241e4bb0",
       "origin": "project-source",
       "snapshot_sha256": "a93182e34b1e297e4b5cb3bf4af56d5c39be775d875dcce579de4288871470ab",
       "transformed": true,
@@ -3445,6 +3445,26 @@
       "path": "tests/test_cipher_patch.py",
       "bytes": 5861,
       "sha256": "5e122c7a6f27ac53495a9401c9f88e703f910b3a8e6de0d5913636236b792fbd",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/test_discovery.c",
+      "bytes": 1801,
+      "sha256": "c11de7f699816c8146638fdfa6142ca011e2a08013d5ba1a225d134be10d9e8a",
+      "origin": "authored-for-public-distribution",
+      "snapshot_sha256": null,
+      "transformed": false,
+      "license": "CC-BY-NC-SA-4.0",
+      "additional_permission": "EXCEPTIONS.md"
+    },
+    {
+      "path": "tests/test_discovery.py",
+      "bytes": 1246,
+      "sha256": "c4ac4ae077cc3c6a443bb53f7d7514d6f763db819829b3c7e85970e88c0ed258",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
