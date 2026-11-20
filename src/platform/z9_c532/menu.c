@@ -14,6 +14,7 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
 #include "fenestra_native_visibility.h"
 #include "fenestra_native_title.h"
 #include "fenestra_platform_native.h"
+#include "fenestra_audio_output.h"
 #include "fenestra_native_modules.h"
 #include "fenestra_module_bus.h"
 #include "fenestra_hooks.h"
@@ -83,6 +84,7 @@ typedef struct {
     FxSharedAccounts accounting;
     FxCapacityRegistry capacity_registry;FxNativeCapacityDomains capacity_domains;
     FxNativeApps apps_storage;
+    FxAudioDomain audio;
 
 } State;
 static FxNativePage *stock(uint32_t group, uint32_t id) {
@@ -194,6 +196,7 @@ static const FxNativeDialogStyle ui_dialog={
     (const FxNativeDescriptor *)(uintptr_t)UINT64_C(0xa028be460),
     (const FxNativeRow *)(uintptr_t)UINT64_C(0x42e9b81c),340u,2u};
 FxNativeUiDispatch *fx_native_ui_dispatch_domain(void){State *s=state();return s?&s->ui_dispatch:0;}
+FxAudioDomain *fx_audio_domain(void){State *s=state();return s?&s->audio:0;}
 const uint32_t fx_native_ui_dispatch_metadata[10]={0x46585544u,2u,offsetof(State,ui_dispatch),sizeof(FxNativeUiDispatch),
     offsetof(FxNativeUiDispatch,task),offsetof(FxNativeUiDispatch,pending),offsetof(FxNativeUiDispatch,running),
     offsetof(FxNativeUiDispatch,submitted),offsetof(FxNativeUiDispatch,completed),offsetof(FxNativeUiDispatch,last_task)};

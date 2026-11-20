@@ -13,6 +13,7 @@ This index follows the SDK headers and profiles in this distribution. Refer to t
 | Mapping and MMU | `fenestra_mapping_sdk.h`, `fenestra_mmu_sdk.h` | Address spaces, permissions, caches, invalidation, and reclamation. |
 | Tasks, locks, and events | `fenestra_tasks_sdk.h`, `fenestra_mutex_sdk.h`, `fenestra_events_sdk.h` | Context and blocking rules depend on the operation. |
 | Video configuration | `fenestra_video_sdk.h` | General record/configuration services do not add sensor capabilities by themselves. |
+| PCM audio playback | `fenestra_audio_sdk.h` | Owner-scoped queues and mixing; query `camera.audio.output`. Physical playback requires a registered platform adapter. See [audio](audio.md). |
 | Resources and communication | `fenestra_accounting_sdk.h`, `fenestra_bus_sdk.h` | Owner/generation, shared budgets, drops, and congestion handling. |
 
 ## Before calling a service
@@ -39,6 +40,15 @@ Source: [fenestra_bus_sdk.h](../include/fenestra_bus_sdk.h)
 - `fx_sdk_bus_send`
 - `fx_sdk_bus_poll`
 - `fx_sdk_bus_remove`
+
+### fenestra_audio_sdk.h
+
+Source: [fenestra_audio_sdk.h](../include/fenestra_audio_sdk.h)
+
+- `fx_sdk_audio_query`
+- `fx_sdk_audio_configure`
+- `fx_sdk_audio_write`
+- `fx_sdk_audio_control`
 
 ### fenestra_critical_sdk.h
 
