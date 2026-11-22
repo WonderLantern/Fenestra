@@ -11,6 +11,17 @@ python -B verify_source.py
 
 Unit tests cover patch round trips, input identity, truncation, overlapping and out-of-bounds ranges, content digests, file protection, and host protocols. `verify_source.py` compares files with the distribution inventory. In a freshly extracted tree without local outputs, add `--distribution` to reject unlisted files as well.
 
+`test_native_extensions.py` compiles C runtime tests for provider withdrawal,
+concurrent stream payloads, PCM samples and BUSY operation continuation,
+absolute timers, logs, direct file I/O, native initialization and retained
+resources. `test_native_package.py` exports an independent SDK, builds an
+actual native `.wlm` for both profiles, then executes its entry, provider and
+shutdown code under Unicorn with explicit bootstrap stubs. Its payload and
+relocation count exceed the older managed limits. These tests need a host C
+compiler and LLVM/Unicorn respectively; unavailable tools are reported as skips.
+They do not simulate the original camera OS, real MMU publication or audio
+hardware. `--tracked` also checks that the inventory covers all Git source paths.
+
 ## Core builds
 
 Install LLVM and the Python dependencies, then supply the original application component matching each target profile:

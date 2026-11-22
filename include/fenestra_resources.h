@@ -14,9 +14,10 @@ enum {FX_MEMORY_COPY_ALLOCATE=5u,FX_MEMORY_EXPORT,FX_MEMORY_RECLAIM,FX_MEMORY_QU
 enum {FX_MEMORY_FROM_MODULE=9u,FX_MEMORY_TO_MODULE};
 typedef struct {uint32_t abi,bytes,operations,max_buffers,max_bytes,retained_buffers,active_buffers,reserved;} FxMemoryInfo;
 enum {FX_FILE_OPEN=1u,FX_FILE_READ,FX_FILE_WRITE,FX_FILE_CLOSE};
-enum {FX_FILE_SEEK=5u};
+enum {FX_FILE_SEEK=5u,FX_FILE_QUERY,FX_FILE_READ_MODULE,FX_FILE_WRITE_MODULE,
+      FX_FILE_RENAME,FX_FILE_DIRECTORY_OPEN,FX_FILE_DIRECTORY_NEXT,FX_FILE_DIRECTORY_CLOSE};
 enum {FX_SEEK_SET,FX_SEEK_CURRENT,FX_SEEK_END};
-enum {FX_FILE_READ_ONLY,FX_FILE_CREATE_EXCLUSIVE};
+enum {FX_FILE_READ_ONLY,FX_FILE_CREATE_EXCLUSIVE,FX_FILE_ORIGINAL_FLAGS};
 enum {FX_HOOK_TICK=0x100u};
 typedef struct {uint64_t handle;uint32_t bytes,offset;} FxMemoryRequest;
 typedef struct {uint64_t handle;uint32_t bytes,offset;uint64_t module_address;} FxModuleMemoryRequest;
@@ -25,6 +26,11 @@ typedef struct {uint64_t handle;uint32_t bytes,mode;char name[64];} FxFileReques
  * extend or truncate a file. Successful reply.value[0] is the new position. */
 typedef struct {uint64_t handle;int64_t offset;uint32_t whence,reserved;} FxFileSeekRequest;
 _Static_assert(sizeof(FxFileSeekRequest)==24u,"copied 64-bit file seek ABI");
+typedef struct {FxFileRequest file;uint32_t flags,attributes;} FxFileOriginalOpen;
+typedef struct {uint64_t handle,address;uint32_t bytes,reserved;} FxFileModuleRequest;
+typedef struct {char from[64],to[64];} FxFileRename;
+typedef struct {uint64_t bytes;uint32_t attributes,reserved;uint16_t name[256];} FxFileDirectoryEntry;
+typedef struct {uint32_t abi,bytes,operations,max_chunk,max_module_bytes,path_bytes,reserved[2];} FxFileInfo;
 /* Bound native providers; no camera/module names or firmware addresses here. */
 FxResult fx_native_resource(void *,uint32_t,const FxNamedBinding *,FxPlatformOwner *,uint64_t,uint64_t *,
     const FxServiceRequest *,FxServiceReply *);

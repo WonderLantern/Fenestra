@@ -27,10 +27,11 @@ FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t fi
                            uint64_t caps,uint32_t capacity,FxModule *out) {
     if(!out)return FX_ARGUMENT;
     memset(out,0,sizeof(*out));
-    if(!package || !firmware || size<FX_MODULE_HEADER || size>FX_CARD_LIMIT)return FX_ARGUMENT;
+    if(!package || !firmware || size<FX_MODULE_HEADER || size>FX_NATIVE_MODULE_PACKAGE_LIMIT)return FX_ARGUMENT;
     FxModule candidate;uint8_t hash[32];uint32_t i,j,tables_end,relocations_start;
     uint32_t entry_abi=fx_module_header_entry(package,size);
     if (memcmp(package, "FENESTRA", 8u) != 0 || entry_abi==UINT32_MAX ||
+        (entry_abi!=FX_MODULE_ENTRY_NATIVE && size>FX_CARD_LIMIT) ||
         u32(package + 12u) != FX_MODULE_HEADER || u32(package + 88u) != size)
         return FX_BOUNDS;
     if (u32(package + 16u) != FX_ABI || u32(package + 20u) != FX_ISA_AARCH64 ||
@@ -38,7 +39,7 @@ FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t fi
     fx_sha256(package + FX_MODULE_HEADER, size - FX_MODULE_HEADER, hash);
     if (memcmp(hash, package + 56u, 32u) != 0) return FX_INTEGRITY;
     memset(&candidate, 0, sizeof(candidate));
-    candidate.stacks=(FxModuleStacks){FX_MODULE_STACK_DEFAULT,FX_MODULE_STACK_DEFAULT};
+    candidate.stacks=entry_abi==FX_MODULE_ENTRY_NATIVE?(FxModuleStacks){0u,0u}:(FxModuleStacks){FX_MODULE_STACK_DEFAULT,FX_MODULE_STACK_DEFAULT};
     if(u32(package+8u)==3u) {
         candidate.stacks=(FxModuleStacks){u32(package+120u),u32(package+124u)};
         if(!fx_module_stacks_valid(candidate.stacks))return FX_BOUNDS;
@@ -52,9 +53,9 @@ FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t fi
     candidate.relocation_count = u32(package + 104u);
     candidate.required_capabilities = u64(package + 108u);
     if ((candidate.required_capabilities & ~caps) != 0u) return FX_CAPABILITY;
-    if (candidate.bytes == 0u || candidate.bytes > capacity || candidate.bytes > FX_MODULE_MEMORY_LIMIT ||
+    if (candidate.bytes == 0u || candidate.bytes > capacity || candidate.bytes > (entry_abi==FX_MODULE_ENTRY_NATIVE?FX_RESIDENT_IMAGE_LIMIT:FX_MODULE_MEMORY_LIMIT) ||
         candidate.segment_count == 0u || candidate.segment_count > FX_MODULE_SEGMENTS ||
-        candidate.relocation_count > FX_MODULE_RELOCATIONS) return FX_BOUNDS;
+        candidate.relocation_count > (entry_abi==FX_MODULE_ENTRY_NATIVE?FX_RESIDENT_RELOCATIONS:FX_MODULE_RELOCATIONS)) return FX_BOUNDS;
     relocations_start = FX_MODULE_HEADER + candidate.segment_count * 24u;
     tables_end = relocations_start + candidate.relocation_count * 16u;
     if (tables_end > size) return FX_BOUNDS;
@@ -96,7 +97,9 @@ FxResult fx_module_inspect(const uint8_t *package,uint32_t size,const uint8_t fi
         if (kind != 1u || (offset & 7u) != 0u ||
             !in_segment(&candidate, offset, 8u, FX_WRITE, 0) ||
             value > UINT32_MAX || !in_segment(&candidate, (uint32_t)value, 1u, FX_READ, 0)) return FX_BOUNDS;
-        for (j = 0u; j < i; ++j)
+        if(entry_abi==FX_MODULE_ENTRY_NATIVE) {
+            if(i && u32(package+relocations_start+(i-1u)*16u)>=offset)return FX_BOUNDS;
+        } else for (j = 0u; j < i; ++j)
             if (u32(package + relocations_start + j * 16u) == offset) return FX_BOUNDS;
     }
     /* Metadata only: no image, relocation, mapping or executable publication. */
@@ -113,7 +116,7 @@ FxResult fx_module_prepare(const uint8_t *package, uint32_t size,
     if (out == NULL) return FX_ARGUMENT;
     memset(out, 0, sizeof(*out));
     if (package == NULL || image == NULL || expected_digest == NULL || firmware == NULL ||
-        size < FX_MODULE_HEADER || size > FX_CARD_LIMIT) return FX_ARGUMENT;
+        size < FX_MODULE_HEADER || size > FX_NATIVE_MODULE_PACKAGE_LIMIT) return FX_ARGUMENT;
     source_address = (uintptr_t)package;
     destination_address = (uintptr_t)image;
     if ((destination_address & 4095u) != 0u || size > UINTPTR_MAX - source_address || capacity > UINTPTR_MAX - destination_address ||
@@ -125,10 +128,10 @@ FxResult fx_module_prepare(const uint8_t *package, uint32_t size,
     if(result!=FX_OK)return result;
     relocations_start=FX_MODULE_HEADER+candidate.segment_count*24u;
     /* No image mutation happens until all descriptors and relocations pass. */
-    memset(image, 0, candidate.bytes);
+    fx_ram_zero(image,candidate.bytes);
     for (i = 0u; i < candidate.segment_count; ++i) {
         const FxSegment *s = &candidate.segments[i];
-        memcpy(image + s->image_offset, package + s->file_offset, s->file_bytes);
+        fx_ram_copy(image+s->image_offset,package+s->file_offset,s->file_bytes);
     }
     for (i = 0u; i < candidate.relocation_count; ++i) {
         const uint8_t *p = package + relocations_start + i * 16u;

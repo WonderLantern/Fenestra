@@ -1,4 +1,5 @@
 #include "fenestra_resources.h"
+#include "fenestra_extensions.h"
 #include "fenestra_hooks.h"
 #include "fenestra_machine.h"
 #include "fenestra_memory.h"
@@ -11,7 +12,7 @@
 #include "fenestra_worker_wait.h"
 #include "fenestra_capacity.h"
 typedef struct {void *address;uint64_t token;uint32_t bytes,released,escaped;FxCapacityClaim claim;} Buffer;
-typedef struct {int32_t fd;uint32_t uncertain,mode;uint64_t id;FxCapacityClaim claim;} File;
+typedef struct {int32_t fd;uint32_t uncertain,mode,directory;uint64_t id;FxCapacityClaim claim;} File;
 typedef struct {int32_t id;uint32_t released,escaped;uint64_t token;uintptr_t context,set,set_irq;FxPlatformOwner *owner;FxCapacityClaim claim;} Event;
 typedef struct FxNativeMappingLease Mapping;
 struct FxNativeMappingLease {Mapping *next;uint64_t token,address,physical,bytes;uintptr_t table;uint32_t released,root;uint64_t writer_lock;FxCapacityClaim claim;};
@@ -186,14 +187,16 @@ static FxResult memory_call(FxPlatformOwner *o,Resources *s,const FxServiceReque
 static FxResult close_file(FxPlatformOwner *o,Resources *s,File *f,FxServiceReply *a) {
     if(!f)return FX_OK;
     if(f->uncertain)return FX_CLOSE;
-    uintptr_t cl=native(o,"camera.card.close");if(!cl)return FX_CAPABILITY;
+    uintptr_t cl=native(o,f->directory?"camera.card.directory.close":"camera.card.close");if(!cl)return FX_CAPABILITY;
     uint32_t r=((uint32_t (*)(int32_t))cl)(f->fd);
     if(a)a->value[3]=r;
     fx_capacity_release(&f->claim,r);
     if(r){f->uncertain=1u;(void)retain_object(&s->file,f->id,s->files,0u);return FX_CLOSE;}
     return release_object(&s->file,f->id,s->files,0u);
 }
+#include "native_files.inc"
 static FxResult file_call(FxPlatformOwner *o,Resources *s,const FxServiceRequest *q,FxServiceReply *a) {
+    if(q->arg[2]>=FX_FILE_QUERY)return extended_file_call(o,s,q,a);
     if(q->arg[2]==FX_FILE_SEEK) {
         if(q->bytes!=sizeof(FxFileSeekRequest))return FX_ARGUMENT;
         FxFileSeekRequest seek;memcpy(&seek,q->data,sizeof(seek));
@@ -201,6 +204,7 @@ static FxResult file_call(FxPlatformOwner *o,Resources *s,const FxServiceRequest
         File *file=fx_slot_pool_get(&s->file,seek.handle);
         if(!file)return FX_STALE;
         if(file->uncertain)return FX_CLOSE;
+        if(file->directory)return FX_ARGUMENT;
         uintptr_t fn=native(o,"camera.card.seek64");if(!fn)return FX_CAPABILITY;
         uint64_t position=0;
         /* This native API returns BOOL, unlike read/write's zero-success
@@ -214,13 +218,16 @@ static FxResult file_call(FxPlatformOwner *o,Resources *s,const FxServiceRequest
     if(q->bytes<sizeof(FxFileRequest))return FX_ARGUMENT;
     FxFileRequest r;memcpy(&r,q->data,sizeof(r));uint64_t op=q->arg[2];
     if(op==FX_FILE_OPEN) {
-        if(q->bytes!=sizeof(r) || r.handle || r.mode>FX_FILE_CREATE_EXCLUSIVE || !fx_service_name(r.name,64u,1))return FX_ARGUMENT;
+        if((q->bytes!=sizeof(r) && q->bytes!=sizeof(FxFileOriginalOpen)) || r.handle || r.mode>FX_FILE_ORIGINAL_FLAGS || !fx_service_name(r.name,64u,1))return FX_ARGUMENT;
+        uint32_t flags=r.mode==FX_FILE_READ_ONLY?0u:0x101u,attributes=0u;
+        if(r.mode==FX_FILE_ORIGINAL_FLAGS){if(q->bytes!=sizeof(FxFileOriginalOpen))return FX_ARGUMENT;FxFileOriginalOpen original;memcpy(&original,q->data,sizeof(original));flags=original.flags;attributes=original.attributes;}
+        else if(q->bytes!=sizeof(r))return FX_ARGUMENT;
 
         char path[80]={0};memcpy(path,"A:\\FENESTRA\\",12u);uint32_t n=0;while(r.name[n])++n;memcpy(path+12u,r.name,n+1u);
         uintptr_t fn=native(o,"camera.card.open");if(!fn)return FX_CAPABILITY;
         void *item=0;uint64_t handle=0u;FxResult result=resource_slot(o,&s->file,&item,&handle);File *f=item;
         if(result!=FX_OK)return result;
-        int32_t fd=((int32_t (*)(const char *,uint32_t,uint32_t))fn)(path,r.mode==FX_FILE_READ_ONLY?0u:0x101u,0u);
+        int32_t fd=((int32_t (*)(const char *,uint32_t,uint32_t))fn)(path,flags,attributes);
         FxCapacityClaim claim=fx_capacity_file_open(fx_capacity_find(o->capacity,"camera.card.streams.a"),fd);
         if(fd<0){(void)fx_slot_pool_release(&s->file,handle);a->value[3]=(uint32_t)fd;return (uint32_t)fd==UINT32_C(0x80000010)?FX_EMPTY:FX_IO;}
         *f=(File){.fd=fd,.mode=r.mode,.id=handle,.claim=claim};acquired(s->files,0u);a->value[0]=f->id;return FX_OK;
@@ -228,15 +235,16 @@ static FxResult file_call(FxPlatformOwner *o,Resources *s,const FxServiceRequest
     File *f=fx_slot_pool_get(&s->file,r.handle);
     if(!f)return FX_STALE;
     if(f->uncertain)return FX_CLOSE;
+    if(f->directory)return FX_ARGUMENT;
     if(op==FX_FILE_CLOSE)return q->bytes==sizeof(r)?close_file(o,s,f,a):FX_ARGUMENT;
     if(!r.bytes || r.bytes>FX_SERVICE_BYTES-sizeof(r))return FX_BOUNDS;
     uint32_t done=0,result;
-    if(op==FX_FILE_READ && q->bytes==sizeof(r) && f->mode==FX_FILE_READ_ONLY) {
+    if(op==FX_FILE_READ && q->bytes==sizeof(r) && (f->mode==FX_FILE_READ_ONLY || f->mode==FX_FILE_ORIGINAL_FLAGS)) {
         uintptr_t fn=native(o,"camera.card.read");if(!fn)return FX_CAPABILITY;
         result=((uint32_t (*)(int32_t,void *,uint32_t,uint32_t *))fn)(f->fd,a->data,r.bytes,&done);
         if(done>r.bytes){f->uncertain=1u;fx_capacity_retain(&f->claim);(void)retain_object(&s->file,f->id,s->files,0u);return FX_INTEGRITY;}
         if(!result)a->bytes=done;
-    } else if(op==FX_FILE_WRITE && q->bytes==sizeof(r)+r.bytes && f->mode==FX_FILE_CREATE_EXCLUSIVE) {
+    } else if(op==FX_FILE_WRITE && q->bytes==sizeof(r)+r.bytes && (f->mode==FX_FILE_CREATE_EXCLUSIVE || f->mode==FX_FILE_ORIGINAL_FLAGS)) {
         uintptr_t fn=native(o,"camera.card.write");if(!fn)return FX_CAPABILITY;
         result=((uint32_t (*)(int32_t,const void *,uint32_t,uint32_t *,void *))fn)(f->fd,q->data+sizeof(r),r.bytes,&done,0);
         if(done>r.bytes){f->uncertain=1u;fx_capacity_retain(&f->claim);(void)retain_object(&s->file,f->id,s->files,0u);return FX_INTEGRITY;}
@@ -309,6 +317,7 @@ FxResult fx_native_resource(void *context,uint32_t op,const FxNamedBinding *b,Fx
     return mappings?mapping_call(o,s,q,a):memory?memory_call(o,s,q,a):events?event_call(o,s,q,a):file_call(o,s,q,a);
 }
 void fx_platform_pulse(FxPlatformOwner *o,uint64_t time_ms) {
+    if(o)fx_extensions_pulse(o,time_ms);
     if(!o || !o->platform || o->phase!=FX_OWNER_RUNNING)return;
     uint32_t zero=0u,queued=0u;
     if(!atomic_compare_exchange_strong_explicit(&o->binding_lock,&zero,1u,memory_order_acquire,memory_order_relaxed))return;

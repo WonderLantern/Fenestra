@@ -19,6 +19,8 @@ extern const uint8_t __fx_core_code_begin[],__fx_core_code_end[];
 #include "fenestra_hooks.h"
 #include "fenestra_native_mapping.h"
 #include "module_worker.h"
+#include "fenestra_resident.h"
+#include "fenestra_resources.h"
 #include "menu_data.h"
 #include "services.h"
 #include "fenestra_accounting_service.h"
@@ -58,6 +60,7 @@ typedef struct {
     uint8_t scratch[16385];
     FxZ9ModuleWorker **workers;
     FxZ9Services **services;uint32_t capacity;
+    FxResident **residents;FxPlatformOwner **owners;
     FxNativeUi **ui;uint32_t ui_count,ui_capacity;
     _Atomic(FxNativeApps *) apps;
     _Atomic(FxNativeModules *) management;
@@ -278,6 +281,7 @@ FxResult fx_native_ui_flush_owner(FxPlatformOwner *owner) {
 uint32_t fx_native_module_loaded(const char *id) {
     State *s=state();if(!s || atomic_load(&s->phase)!=2u)return 0u;
     uint32_t count=atomic_load_explicit(&s->modules,memory_order_acquire);
+    for(uint32_t i=0;i<count;++i)if(s->residents[i] && !memcmp(fx_resident_identity(s->residents[i]),id,16u))return fx_resident_phase(s->residents[i])!=FX_RESIDENT_LOADING;
     for(uint32_t i=0;i<count;++i)if(s->workers[i] && !memcmp(fx_z9_worker_identity(s->workers[i]),id,16u)) {
         uint32_t phase=fx_z9_worker_phase(s->workers[i]);
         return phase!=FX_Z9_WORKER_EMPTY && phase!=FX_Z9_WORKER_LOADING?1u:0u;
@@ -392,7 +396,7 @@ static void ui_pager_if_needed(State *s,FxNativeUi *u) {
     if(ui_space_ready(s)==FX_OK)(void)fx_native_ui_pager_enable(u,&s->ui_space);
 }
 static FxNativeUi *instance_ui(State *s,uint32_t index,const FxNativePage *parent) {
-    FxPlatformOwner *owner=index<atomic_load_explicit(&s->modules,memory_order_acquire) && s->services[index]?&s->services[index]->platform:0;
+    FxPlatformOwner *owner=index<atomic_load_explicit(&s->modules,memory_order_acquire) && s->owners[index]?s->owners[index]:0;
     if(!owner || (owner->phase!=FX_OWNER_RUNNING && owner->phase!=FX_OWNER_FINISHED))return 0;
     FxNativeUi *cached=(FxNativeUi *)atomic_load_explicit(&owner->native_ui,memory_order_acquire);
     if(cached) {
@@ -425,7 +429,7 @@ static FxNativeUi *instance_ui(State *s,uint32_t index,const FxNativePage *paren
     u->dialog=&ui_dialog;u->editor_profile=&ui_editor_profile;u->reader_profile=&ui_reader_profile;
     u->request_refresh=fx_native_ui_refresh_owner;
     if(fx_ui_dispatch_bind_page(&s->ui_dispatch,u)!=FX_OK){fx_native_ui_space_rollback(&s->ui_space,physical,primary_pages);map_release(0,u);fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_FREE_PENDING);return 0;}
-    fx_native_ui_identity(u,fx_z9_worker_identity(s->workers[index]));
+    fx_native_ui_identity(u,(s->residents[index]?fx_resident_identity(s->residents[index]):fx_z9_worker_identity(s->workers[index])));
     s->ui[slot]=u;s->ui_count=slot+1u;
     atomic_store_explicit(&owner->native_ui,(uintptr_t)u,memory_order_release);
     fx_allocation_observe(observer,(uint32_t)sizeof(*u),FX_ALLOC_PUBLISHED);ui_pager_if_needed(s,u);return u;
@@ -434,7 +438,7 @@ static FxNativeUi *instance_ui(State *s,uint32_t index,const FxNativePage *paren
 FxNativeApps *fx_native_apps_domain(void){State *s=state();return s?s->apps:0;}
 static uint32_t apps_count(void *context){State *s=context;return atomic_load(&s->phase)==2u?atomic_load_explicit(&s->modules,memory_order_acquire):0u;}
 static FxResult apps_entry(void *context,uint32_t index,const FxNativePage *parent,int selected,FxNativeAppEntry *entry) {
-    State *s=context;FxPlatformOwner *owner=index<atomic_load_explicit(&s->modules,memory_order_acquire) && s->services[index]?&s->services[index]->platform:0;if(!owner)return FX_EMPTY;
+    State *s=context;FxPlatformOwner *owner=index<atomic_load_explicit(&s->modules,memory_order_acquire) && s->owners[index]?s->owners[index]:0;if(!owner)return FX_EMPTY;
     if(owner->phase!=FX_OWNER_RUNNING && owner->phase!=FX_OWNER_FINISHED)return FX_EMPTY;
     uint32_t controls=0u;int visible=0;FxResult present=fx_ui_presence(owner,&controls,&visible);if(present!=FX_OK)return present;
     if(controls && !visible)return FX_EMPTY;
@@ -541,12 +545,8 @@ static FxResult module_read(void *context, const char *file, uint8_t *out, uint3
     FxCapacityClaim claim=fx_file_observe_open(directory->observer,fd);
     if (fd < 0)
         return FX_IO;
-    uint32_t error = 0, calls = 0;
+    uint32_t error = 0;
     while (*bytes < capacity) {
-        if (++calls > FX_READ_CALL_LIMIT) {
-            error = 1;
-            break;
-        }
         uint32_t done = 0, room = capacity - *bytes;
         error = FN(0x402dcb30, uint32_t (*)(int32_t, void *, uint32_t, uint32_t *))(fd, out + *bytes, room,
                                                                                     &done);
@@ -576,6 +576,10 @@ static FxResult load_poll(void *context) {
         fx_native_module_fault(wait->owner,error);return error;
     }
     return phase==FX_Z9_WORKER_ACTIVE || phase==FX_Z9_WORKER_FINISHED?FX_OK:FX_STATE;
+}
+static FxResult resident_owner_ready(void *context,FxPlatformOwner *owner) {
+    State *s=context;owner->capacity=&s->capacity_registry;
+    return fx_ui_dispatch_register(&s->ui_dispatch,owner);
 }
 static void load_once(State *s) {
     if(!atomic_load_explicit(&s->accounting.ready,memory_order_acquire)) {
@@ -609,12 +613,13 @@ static void load_once(State *s) {
         &inventory,(FxIndexMemory){0,index_allocate,index_release},fx_account_observer(&s->accounting.indexes),fx_account_observer(&s->accounting.inspect));
     if(r==FX_OK && inventory.count>FX_MODULE_OWNER_LIMIT)r=FX_BUDGET;
     if(r==FX_OK && inventory.count) {
-        uint32_t bytes=inventory.count*2u*(uint32_t)sizeof(uintptr_t);
+        uint32_t bytes=inventory.count*4u*(uint32_t)sizeof(uintptr_t);
         s->workers=allocate(bytes);
         if(!s->workers)r=FX_BUDGET;
         else {FxAllocationObserver observer=fx_account_observer(&s->accounting.loader);
             fx_allocation_observe(observer,bytes,FX_ALLOC_REQUESTED);
-            memset(s->workers,0,bytes);s->services=(FxZ9Services **)(s->workers+inventory.count);s->capacity=inventory.count;
+            memset(s->workers,0,bytes);s->services=(FxZ9Services **)(s->workers+inventory.count);
+            s->residents=(FxResident **)(s->services+inventory.count);s->owners=(FxPlatformOwner **)(s->residents+inventory.count);s->capacity=inventory.count;
             fx_allocation_observe(observer,bytes,FX_ALLOC_PUBLISHED);}
     }
     if (r != FX_OK && r != FX_EMPTY) {
@@ -626,6 +631,13 @@ static void load_once(State *s) {
             FxDiscoveredModule *entry = &inventory.entries[i];
             if (!entry->enabled) {
                 ++s->skipped;
+                continue;
+            }
+            if(entry->entry_abi==FX_MODULE_ENTRY_NATIVE) {
+                FxResidentHost host=fx_native_resident_host(platform);host.context=s;host.prepare_owner=resident_owner_ready;
+                r=fx_resident_start(&s->residents[i],platform,entry,i+1u,1u,&io,host);
+                if(s->residents[i]){s->owners[i]=fx_resident_owner(s->residents[i]);atomic_store_explicit(&s->modules,i+1u,memory_order_release);}
+                if(r!=FX_OK)break;
                 continue;
             }
             FxExecLayout layout;
@@ -647,6 +659,7 @@ static void load_once(State *s) {
             memset(session, 0, session_bytes);
             memset(services, 0, sizeof(*services));
             uint32_t caps = (entry->required | entry->optional) & FX_SDK_CAPS;
+            s->owners[i]=&services->platform;
             s->services[i]=services; /* Retain failed-start ownership as well. */
             r=fx_runtime_accounts_init(&services->accounting,i+1u,1u,(FxIndexMemory){0,map_allocate,map_release});
             if(r==FX_OK)services->accounting.state.shared=&s->accounting.state;
@@ -710,6 +723,12 @@ static FxResult startup_health(void *context) {
     if(atomic_load(&s->phase)==5u)return FX_INTEGRITY;
     int pending=0;
     for(uint32_t i=0;i<atomic_load(&s->modules);++i) {
+        if(s->residents[i]) {
+            uint32_t phase=fx_resident_phase(s->residents[i]);
+            if(phase==FX_RESIDENT_FAULT)return fx_resident_error(s->residents[i]);
+            if(phase!=FX_RESIDENT_RUNNING)pending=1;
+            continue;
+        }
         uint32_t phase=fx_z9_worker_phase(s->workers[i]);
         if(phase==FX_Z9_WORKER_PANIC)return (FxResult)fx_z9_worker_error(s->workers[i]);
         if(phase!=FX_Z9_WORKER_ACTIVE && phase!=FX_Z9_WORKER_FINISHED)pending=1;
@@ -723,6 +742,7 @@ static FxResult startup_stop(void *context) {
     fx_linux_revoke();
     int pending=!fx_rtos_quiesced() || !fx_linux_quiesced();
     for(uint32_t i=0;i<atomic_load(&s->modules);++i) {
+        if(s->residents[i]){fx_resident_request_stop(s->residents[i],0u);FxResult r=fx_resident_poll(s->residents[i]);if(r!=FX_OK)pending=1;continue;}
         fx_z9_worker_shutdown(s->workers[i]);
         uint32_t phase=fx_z9_worker_phase(s->workers[i]);
         if(phase==FX_Z9_WORKER_PANIC)return (FxResult)fx_z9_worker_error(s->workers[i]);
@@ -742,7 +762,8 @@ static void show_panic(State *s) {
         uint32_t owner=(uint32_t)(record>>32),count=atomic_load_explicit(&s->modules,memory_order_acquire);
         p->report=(FxPanicReport){.module="Fenestra",.error=(FxResult)(uint32_t)record,.module_result=INT32_MIN};
         for(uint32_t i=0;i<count;++i)if(i+1u==owner) {
-            if(fx_z9_worker_panic_report(s->workers[i],&p->report)!=FX_OK)return;
+            if(s->residents[i])p->report=(FxPanicReport){.module=fx_resident_identity(s->residents[i]),.error=fx_resident_error(s->residents[i])};
+            else if(fx_z9_worker_panic_report(s->workers[i],&p->report)!=FX_OK)return;
             break;
         }
         p->captured=1u;
@@ -757,6 +778,14 @@ static void loader(void *context) {
         fx_startup_service_tick(&s->startup);
         fx_z9_ptp_poll();
         uint32_t count = atomic_load_explicit(&s->modules, memory_order_acquire);
+        for(uint32_t i=0u;i<count;++i)if(s->residents[i]) {
+            FxPlatformOwner *owner=s->owners[i];
+            uint64_t n,hz;__asm__ volatile("mrs %0,cntpct_el0; mrs %1,cntfrq_el0":"=r"(n),"=r"(hz));
+            if(hz)fx_platform_pulse(owner,n/hz*1000u+n%hz*1000u/hz);
+            if(atomic_load(&s->shutdown))fx_resident_request_stop(s->residents[i],atomic_load(&s->phase)==5u);
+            FxResult result=fx_resident_poll(s->residents[i]);
+            if(result!=FX_OK && result!=FX_BUSY)fx_native_module_fault(owner,result);
+        }
         for (uint32_t i = 0; i < count; ++i)
             if (s->workers[i]) {
                 if (atomic_load(&s->shutdown))
