@@ -65,6 +65,7 @@ typedef struct {
     _Atomic uint32_t stack_accounted,panic_accounted;
     _Atomic(FxModuleBus *) bus;
     FxHookRegistry hooks;
+    FxResourceRegistry conflicts;
     FxNativeMappingRegistry mappings;
     FxNativeUiDispatch ui_dispatch;FxNativeUiSpace ui_space;
 
@@ -131,6 +132,7 @@ void fx_native_module_fault(FxPlatformOwner *owner,FxResult error) {
     atomic_store_explicit(&s->phase,5u,memory_order_release);atomic_store_explicit(&s->shutdown,1u,memory_order_release);
 }
 FxHookRegistry *fx_native_hooks(void) {State *s=state();return s?&s->hooks:0;}
+FxResourceRegistry *fx_native_conflicts(void) {State *s=state();return s?&s->conflicts:0;}
 FxAccountState *fx_native_shared_accounts(void){State *s=state();return s && atomic_load_explicit(&s->accounting.ready,memory_order_acquire)?&s->accounting.state:0;}
 FxCapacityRegistry *fx_native_capacity_registry(void){State *s=state();return s && atomic_load_explicit(&s->capacity_registry.ready,memory_order_acquire)?&s->capacity_registry:0;}
 FxNativeMappingRegistry *fx_native_mappings(void) {State *s=state();return s?&s->mappings:0;}

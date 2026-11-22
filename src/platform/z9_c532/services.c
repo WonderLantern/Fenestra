@@ -4,7 +4,9 @@
 FxResult fx_z9_services_init(FxZ9Services *s, uint32_t owner, uint32_t generation, uint32_t caps) {
     if (!s)
         return FX_ARGUMENT;
-    return fx_platform_init(&s->platform, fx_platform_target(), owner, generation, caps);
+    FxResult r=fx_platform_init(&s->platform, fx_platform_target(), owner, generation, caps);
+    if(r==FX_OK)s->platform.conflicts=fx_native_conflicts();
+    return r;
 }
 FxResult fx_z9_service_call(void *context, const FxServiceRequest *q, FxServiceReply *a) {
     FxZ9Services *s = context;

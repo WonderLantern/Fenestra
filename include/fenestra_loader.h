@@ -12,6 +12,7 @@ typedef struct {
     uint8_t *image;
     FxExecArena *exec_arena;
     uint32_t source_reserved; /* Temporary package accounting; no package pointer escapes. */
+    FxModuleIssue issue; /* First load incompatibility, before executable publication. */
 } FxLoader;
 
 void fx_loader_init(FxLoader *, uint64_t verified_capabilities, uint64_t private_ram_budget);
