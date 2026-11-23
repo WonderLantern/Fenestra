@@ -19,7 +19,7 @@ from native_ui_dispatch_sites import call as ui_call,sites as ui_sites,verify_or
 from native_font_sites import sites as font_sites,verify_original as verify_font
 HOOKS.update(ui_sites('z9-c532'));HOOKS.update(font_sites('z9-c532'))
 
-def build(firmware,output):
+def build(firmware,output,*,card_port_inputs=False):
     profile,original=load('z9-c532',firmware);out=Path(output).resolve()
     verify_ui('z9-c532',original);verify_font('z9-c532',original)
     if not out.is_relative_to(ROOT/'build') or out.exists():raise ValueError('new owned evidence output required')
@@ -76,6 +76,8 @@ def build(firmware,output):
                '-fno-unwind-tables','-fno-asynchronous-unwind-tables','-ffunction-sections','-fdata-sections',
                '-DFX_FREESTANDING=1','-DFX_PLATFORM_PROFILE=1','-DFX_NATIVE_SCENE=1','-DFX_NATIVE_TASKS=1','-DFX_NATIVE_UI_INPUT=1','-I','include','-I',str(out/'bindings'),'-I',str(out)]
         if name.endswith('.S'):flags=['--target=aarch64-none-elf','-I','include','-I',str(out)]
+        if card_port_inputs and name=='src/platform/z9_c532/menu.c':
+            flags.append('-DFX_CARD_PORT_INPUTS=1')
         dep=obj.with_suffix('.d')
         command=[cc,*flags,'-MMD','-MF',str(dep),'-MT','fx_core','-c',name,'-o',str(obj)]
         run(command);compilations[name]=command
@@ -85,15 +87,21 @@ def build(firmware,output):
         lambda source:run(compilations[source]))
     elf=out/'core.elf';binary=out/'core.bin'
     run([ld,'-m','aarch64elf','-T','emulation/z9_core.ld','--gc-sections',
+         *(['--undefined=fx_z9_card_port_attach'] if card_port_inputs else []),
          *['--undefined='+name for name in [*HOOKS.values(),'fx_z9_menu_metadata','fx_z9_panic_metadata','fx_z9_startup_metadata','fx_z9_ptp_metadata','fx_native_rtos_metadata','fx_native_modules_metadata','fx_native_scene_metadata','fx_native_load_buffer_metadata','fx_native_load_owner_metadata','fx_worker_wait_metadata','fx_native_font_index_metadata','fx_native_ui_dispatch_metadata','fx_native_ui_topology_metadata','fx_native_ui_editor_metadata','fx_native_ui_reader_metadata','fx_ui_controls_metadata','fx_native_ui_pager_metadata']],*objects,'-o',str(elf)])
     run([objcopy,'-O','binary',str(elf),str(binary)])
     symbols={p[2]:int(p[0],16) for line in subprocess.check_output([nm,'--defined-only',str(elf)],text=True).splitlines() if len(p:=line.split())==3}
-    extension=binary.read_bytes();candidate=bytearray(original);candidate[CODE-BASE:CODE-BASE+len(extension)]=extension
+    link=commands[-2]
+    extension=binary.read_bytes()
     for address,name in ((0x40d65a98,'fx_z9_system_original'),(0x403afa44,'fx_z9_navigate_original'),
                          (0x407e2e0c,'fx_z9_ptp_original_lookup'),(0x407e1834,'fx_z9_ptp_original_session'),
                          (0x4035705c,'fx_z9_ptp_original_operations'),(0x40c05714,'fx_z9_rtos_original_printf')):
         offset=symbols[name]-CODE
         if extension[offset:offset+16]!=original[address-BASE:address-BASE+16]:raise ValueError('displaced native instructions differ')
+    if card_port_inputs:
+        from card_port_inputs import write
+        return write(out,'z9-c532',original,compilations,link,HOOKS,ui_sites('z9-c532').keys() | font_sites('z9-c532').keys())
+    candidate=bytearray(original);candidate[CODE-BASE:CODE-BASE+len(extension)]=extension
     changes=[]
     for address,name in HOOKS.items():
         delta=symbols[name]-address
@@ -137,6 +145,10 @@ def build(firmware,output):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--firmware',required=True);p.add_argument('--output-dir',required=True)
-    a=p.parse_args();r=build(a.firmware,a.output_dir);print(json.dumps({k:r[k] for k in ('target','code_bytes','candidate_sha256','boot_prefix_unchanged','flashable')}))
+    p.add_argument('--card-port-inputs',action='store_true',help='compile native inputs for a card Port')
+    a=p.parse_args()
+    r=build(a.firmware,a.output_dir,card_port_inputs=a.card_port_inputs)
+    if not a.card_port_inputs:
+        print(json.dumps({k:r[k] for k in ('target','code_bytes','candidate_sha256','boot_prefix_unchanged','flashable')}))
 
 if __name__=='__main__':main()

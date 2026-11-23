@@ -12,7 +12,9 @@ def main():
     make = commands.add_parser('make-patch', help='decode, build, verify, re-encode and produce ciphertext replacements')
     loader = commands.add_parser('card-loader', help='build an experimental payload-independent card loader')
     payload = commands.add_parser('card-payload', help='wrap a flat AArch64 image for the card loader')
-    for c in (build, make, loader):
+    core = commands.add_parser('card-core', help='build one shared Fenestra BOOT.BIN without firmware inputs')
+    port = commands.add_parser('card-port', help='build a camera Port for a shared card Core')
+    for c in (build, make, loader, port):
         c.add_argument('--target', choices=('zr-c110', 'z9-c532'), required=True)
         c.add_argument('--firmware', type=Path, required=True)
     build.add_argument('--output', type=Path, required=True)
@@ -27,6 +29,9 @@ def main():
     payload.add_argument('--image', type=Path, required=True)
     payload.add_argument('--entry-offset', type=lambda value:int(value,0), default=0)
     payload.add_argument('--output', type=Path, required=True)
+    core.add_argument('--output', type=Path, required=True)
+    port.add_argument('--core', type=Path, required=True)
+    port.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
     if args.command == 'card-loader':
         from build_card_loader import build
@@ -35,6 +40,12 @@ def main():
     if args.command == 'card-payload':
         from card_payload import write
         print(f'{write(args.image,args.entry_offset,args.output)} bytes written to {args.output}')
+        return
+    if args.command in ('card-core','card-port'):
+        from build_card_fenestra import build_core, build_port
+        report = (build_core(args.output) if args.command=='card-core'
+                  else build_port(args.target,args.firmware,args.core,args.output))
+        print(json.dumps(report,indent=2))
         return
     from repack import build_core, produce
     if args.command == 'build':

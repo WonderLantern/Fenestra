@@ -1,8 +1,8 @@
+#include "core_port_profiles.h"
 #include "fenestra_native_title.h"
 
 static int ram(const void *p,uint32_t bytes) {
-    uintptr_t a=(uintptr_t)p;
-    return p && !(a&7u) && a>=UINT64_C(0xa00000000) && a<=UINT64_C(0xa40000000)-bytes;
+    return fx_native_ram_contains(p,bytes,8u);
 }
 FxResult fx_native_title_object(const FxNativeTitleProfile *p,FxNativePage *page,void **out) {
     if(!out || !p || !ram(page,sizeof(*page)) || !p->current_page || !p->lookup ||

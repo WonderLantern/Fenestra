@@ -34,3 +34,19 @@ python fenestra.py card-payload --image build/return.raw --output build/BOOT.BIN
 The example's `ret` instruction is position-independent and exercises the entry/return convention. A C payload or a multi-section assembly payload should link first. For a linked flat image, pass the entry offset to `card-payload` as `--entry-offset`.
 
 The public source tests exercise two unrelated instruction bodies, entry bounds, variable lengths, mount failure and timeout, missing files, and closing errors with synthetic I/O. Physical cold boot, card timing, and native multicore cache behavior require device qualification.
+
+## Fenestra Core and camera Ports
+
+Build the common Core once, then build the Port for each original application. Both card outputs contain the same `BOOT.BIN`.
+
+```sh
+python fenestra.py card-core --output build/fenestra-card-core
+python fenestra.py card-port --target zr-c110 --firmware inputs/zr-c110-main.bin --core build/fenestra-card-core --output build/zr-card
+python fenestra.py card-port --target z9-c532 --firmware inputs/z9-c532-main.bin --core build/fenestra-card-core --output build/z9-card
+```
+
+Use the `FENESTRA` directory from either card output. To share a card, keep one `BOOT.BIN` and put both model files under `FENESTRA/PORTS/`. Existing `.wlm` modules keep their own format and use the model's existing SDK bindings. Build the demo separately for each model using the [module tutorial](module-development.md). The ZR Port includes the public capture, sensor trace and event trace adapters. The Z9 Port uses its own native menus and PTP adapters.
+
+The Core reads the Port identified by the loader's target string. It checks the Port's original-application identity, the digest of the running Core, its ABI, callback addresses, and profile boundaries before copying it. The Port verifies displaced instructions, installs single-word RAM branches, and publishes its own state. A missing, unsuitable or uninstalled Port leaves the original dispatch active. With a valid Port, the Fenestra menu retains normal Activate and card startup settings.
+
+Port ABI 1 combines a native callback table with the shared Core's link addresses. A new compatible model supplies verified native bindings and a Port in the existing ABI, and uses the same Core build. A new Core binary needs corresponding Ports linked from that Core's new build receipt. Both updates happen on the card with the existing loader. Device boot, normal shutdown and multicore publication still require qualification.
