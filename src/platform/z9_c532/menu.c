@@ -1055,6 +1055,9 @@ void fx_z9_menu_text(int32_t language,int32_t id,const uint16_t **text,uint32_t 
 }
 
 extern uint64_t fx_z9_system_original(void *, uint32_t);
+#ifdef FX_CARD_PORT_INPUTS
+void fx_z9_card_port_attach(void) { install(); }
+#endif
 extern uint64_t fx_z9_navigate_original(uint32_t);
 uint64_t fx_z9_menu_navigate(uint32_t page) {
     if(page>=FENESTRA && page<FX_NATIVE_EXTENSION_PAGE_LIMIT)

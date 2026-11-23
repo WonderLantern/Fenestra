@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--sensor-trace',action='store_true',
         help='link bounded passive native sensor submit/return tracing; no active sensor commands')
     parser.add_argument('--event-trace',action='store_true',help='fixed consumed-input/native event templates; implies --sensor-trace')
+    parser.add_argument('--card-port-inputs',action='store_true',help='compile native inputs for a card Port')
     parser.set_defaults(qemu_test=False,capture_experiment=False,native_file_test_backend=False,fault_case=None,fault_module_dir='',fault_on_shooting=False)
     args=parser.parse_args()
     if args.event_trace:args.sensor_trace=True
@@ -243,6 +244,7 @@ def main():
          "--undefined=fx_c110_menu_text","--undefined=fx_c110_menu_metadata",
          '--undefined=fx_native_modules_metadata','--undefined=fx_c110_menu_ui_metadata','--undefined=fx_c110_manager_ui_metadata',
          '--undefined=fx_native_load_buffer_metadata','--undefined=fx_native_load_owner_metadata','--undefined=fx_worker_wait_metadata','--undefined=fx_native_font_index_metadata','--undefined=fx_native_ui_dispatch_metadata','--undefined=fx_native_ui_topology_metadata','--undefined=fx_native_ui_editor_metadata','--undefined=fx_native_ui_reader_metadata','--undefined=fx_ui_controls_metadata','--undefined=fx_native_ui_pager_metadata',*objects,"-o",str(elf)])
+    link=commands[-1]
     binary=out / "menu.bin"
     run([objcopy,"-O","binary","--only-section=.text","--only-section=.rodata",str(elf),str(binary)])
     symbols={}
@@ -256,6 +258,10 @@ def main():
         offset=symbols[trampoline]-CODE
         if original[address-BASE:address-BASE+16]!=expected or extension[offset:offset+16]!=expected:
             raise ValueError('C1.10 PTP displaced instructions differ')
+    if args.card_port_inputs:
+        from card_port_inputs import write
+        write(out,'zr-c110',original,compilations,link,hooks,ui_hooks.keys() | font_hooks.keys())
+        return
     # The existing pinned padding capacity is independent of trace features.
     # Larger generic SDK builds must not force unrelated debugger hooks on.
     reserved=0x60000 if args.sensor_trace or len(extension)>0x20000 else 0x20000

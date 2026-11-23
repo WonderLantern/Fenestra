@@ -1,7 +1,7 @@
+#include "core_port_profiles.h"
 #include "fenestra_native_visibility.h"
 static int aligned_ram(const void *p,uint32_t n,uintptr_t alignment) {
-    uintptr_t a=(uintptr_t)p;
-    return p && !(a&(alignment-1u)) && a>=UINT64_C(0xa00000000) && a<=UINT64_C(0xa40000000)-n;
+    return fx_native_ram_contains(p,n,alignment);
 }
 static int ram(const void *p,uint32_t n) {return aligned_ram(p,n,8u);}
 uint32_t fx_native_row_draw_guard(void *row,void *clip,void *progress) {

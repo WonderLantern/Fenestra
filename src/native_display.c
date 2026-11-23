@@ -1,3 +1,4 @@
+#include "core_port_profiles.h"
 /* Shared Nikon native GUI/render service binding. No MMIO, physical address
  * arithmetic, emulator register layout or owned scanout buffer is used.
  * The base-object/list/paint ABI is derived from this firmware's own menu

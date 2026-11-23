@@ -1,3 +1,4 @@
+#include "core_port_profiles.h"
 #include "fenestra_tasks.h"
 #include "fenestra_native_ui_dispatch.h"
 static void *allocate(void *context,uint32_t bytes) {

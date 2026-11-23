@@ -1,3 +1,4 @@
+#include "core_port_profiles.h"
 #include "fenestra_native_panic.h"
 FxResult fx_native_panic_show(FxNativeDisplay *display,FxScene *scene,const FxPanicReport *report) {
     if(!display || !scene || !report)return FX_ARGUMENT;

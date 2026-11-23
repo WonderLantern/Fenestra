@@ -1,9 +1,9 @@
+#include "core_port_profiles.h"
 #include "fenestra_native_text.h"
 #include "fenestra_text_fit.h"
 #include "fenestra_memory.h"
 static int ram(const void *p, uint32_t n) {
-    uintptr_t a = (uintptr_t)p;
-    return p && !(a & 7u) && a >= UINT64_C(0xa00000000) && a <= UINT64_C(0xa40000000) - n;
+    return fx_native_ram_contains(p,n,8u);
 }
 typedef struct { const FxNativeTextProfile *profile;void *objects[2]; } TextMeasure;
 static int32_t measure(void *context,uint32_t column) {

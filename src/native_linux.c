@@ -1,3 +1,4 @@
+#include "core_port_profiles.h"
 /* Normal original Linux IPC, activated only by a local USB Debug gate.
  * No boot hook, maintenance mode or external shell tooling. Original receive
  * dispatcher is always called; only its otherwise discarded text is copied.
@@ -119,7 +120,7 @@ static int install(FxLinuxBridge *s) {
  * Nested original queue calls cannot wait on another core in this window. */
 static int send_command(const uint8_t *command,uint32_t bytes) {
     uintptr_t queue=*fx_native_linux_profile.queue;
-    if(queue<UINT64_C(0xa00000000) || queue>UINT64_C(0xa40000000)-16u)return 0;
+    if(!fx_native_ram_contains((const void *)queue,16u,1u))return 0;
     uintptr_t block=*(volatile uintptr_t *)(queue+8u);
     if(block<POOL || block>=fx_native_linux_profile.queue_block_end)return 0;
     void *lock=(void *)(block+0x30u);

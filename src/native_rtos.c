@@ -1,3 +1,4 @@
+#include "core_port_profiles.h"
 /* Privileged local USB debug. Native commands run on a dedicated Nikon task,
  * never on the USB/core worker. Explicitly cancelled tasks are retained while
  * native code may still hold locks. This is not a native-fault recovery sandbox. */
