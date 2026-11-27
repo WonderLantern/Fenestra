@@ -15,8 +15,8 @@ MAX_U32 = (1 << 32) - 1
 def integer(value, name):
     if isinstance(value, str):
         value = int(value, 0)
-    if type(value) is not int or not 0 <= value <= MAX_U32:
-        raise ValueError(f'{name} must fit an unsigned 32-bit offset')
+    if type(value) is not int or not 0 <= value <= (1 << 64) - 1:
+        raise ValueError(f'{name} must fit an unsigned 64-bit offset')
     return value
 
 
@@ -44,8 +44,8 @@ def pack(manifest, directory):
         identities.add(identity)
         start = integer(version['region']['start'], 'region start')
         end = integer(version['region']['end'], 'region end')
-        if start >= end:
-            raise ValueError('region must be nonempty')
+        if start >= end or end - start > MAX_U32:
+            raise ValueError('region must have 1..UINT32_MAX bytes')
         original_path = directory / version['original']
         with original_path.open('rb') as source:
             source.seek(0, 2)
