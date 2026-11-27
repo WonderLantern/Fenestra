@@ -9,7 +9,8 @@ This index follows the SDK headers and profiles in this distribution. Refer to t
 | Messages and bindings | `fenestra_sdk.h` | One in-flight request per client; retrieve the reply for the matching sequence. |
 | UI and input | `fenestra_sdk.h`, `fenestra_document_sdk.h` | Owner, control ID, revision, and focus epoch. |
 | Drawing | `fenestra_scene_sdk.h` | Submission acknowledgment does not confirm physical display scanout. |
-| Files and substitution | `fenestra_file_sdk.h` | User files and owner lifetime; no system ROM rewrite. |
+| Card streams | `fenestra_file_sdk.h` | Module file handles and their owner lifetime. |
+| Resource substitution | [Resource substitution](file-substitution.md) | Read-only replacements for resources registered by a trusted consumer. |
 | Mapping and MMU | `fenestra_mapping_sdk.h`, `fenestra_mmu_sdk.h` | Address spaces, permissions, caches, invalidation, and reclamation. |
 | Tasks, locks, and events | `fenestra_tasks_sdk.h`, `fenestra_mutex_sdk.h`, `fenestra_events_sdk.h` | Context and blocking rules depend on the operation. |
 | Video configuration | `fenestra_video_sdk.h` | General record/configuration services do not add sensor capabilities by themselves. |
