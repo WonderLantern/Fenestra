@@ -51,12 +51,16 @@ class LinuxFileOverlayTests(unittest.TestCase):
             source = root / 'replacement'
             source.write_bytes(replacement)
             digest = hashlib.sha256(replacement).hexdigest()
+            ram = root / 'ram'
+            ram.mkdir()
+            # Hosted runners may have swap enabled. ramfs cannot swap.
+            subprocess.run(['mount', '-t', 'ramfs', '-o', 'mode=0700', 'ramfs', str(ram)], check=True)
             subprocess.run(['mount', '--bind', str(lower), str(lower)], check=True)
             subprocess.run(['mount', '-o', 'remount,bind,ro', str(lower)], check=True)
             published = False
             old = target.open('rb')
             try:
-                run = subprocess.run([str(self.binary), str(source), str(target), digest, str(root)],
+                run = subprocess.run([str(self.binary), str(source), str(target), digest, str(ram)],
                                      capture_output=True, text=True, timeout=15)
                 self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
                 published = True
@@ -71,12 +75,12 @@ class LinuxFileOverlayTests(unittest.TestCase):
                 with self.assertRaises(OSError) as error:
                     os.open(target, os.O_WRONLY)
                 self.assertEqual(error.exception.errno, errno.EROFS)
-                before = sorted(p.name for p in root.iterdir())
-                bad = subprocess.run([str(self.binary), str(source), str(target), '00'*32, str(root)],
+                before = sorted(p.name for p in ram.iterdir())
+                bad = subprocess.run([str(self.binary), str(source), str(target), '00'*32, str(ram)],
                                      capture_output=True, text=True, timeout=15)
                 self.assertNotEqual(bad.returncode, 0)
                 self.assertEqual(target.read_bytes(), replacement)
-                self.assertEqual(sorted(p.name for p in root.iterdir()), before)
+                self.assertEqual(sorted(p.name for p in ram.iterdir()), before)
                 subprocess.run(['umount', str(target)], check=True)
                 published = False
                 self.assertEqual(target.read_bytes(), original)
@@ -85,3 +89,4 @@ class LinuxFileOverlayTests(unittest.TestCase):
                 if published:
                     subprocess.run(['umount', '-l', str(target)], check=True)
                 subprocess.run(['umount', '-l', str(lower)], check=True)
+                subprocess.run(['umount', '-l', str(ram)], check=True)

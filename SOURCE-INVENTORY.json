@@ -3793,8 +3793,8 @@
     },
     {
       "path": "tests/test_linux_file_overlay.py",
-      "bytes": 4263,
-      "sha256": "df2ea65a78c3d405e858965447264c95fa7444df2c4809375d7c730718e6ec46",
+      "bytes": 4559,
+      "sha256": "b42c8f10693777a0db66dd5539699167409c35f94dd7d01cc3fbe8c08bd76e40",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
