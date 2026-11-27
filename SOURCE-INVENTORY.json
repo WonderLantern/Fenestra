@@ -3733,8 +3733,8 @@
     },
     {
       "path": "tests/overlay_ranges_fixture.c",
-      "bytes": 3050,
-      "sha256": "1c91b885cbc29c5d44afa663251a3988542b98a57d0ad7004bfbdb352aa8c3e0",
+      "bytes": 3082,
+      "sha256": "c8ab43ba12eb2aa4babb08ebaab2700c2d28e72fb16de07542c42342aeca0615",
       "origin": "authored-for-public-distribution",
       "snapshot_sha256": null,
       "transformed": false,
