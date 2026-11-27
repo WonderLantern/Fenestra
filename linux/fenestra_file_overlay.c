@@ -96,18 +96,18 @@ static int copy_verified(int source,int destination,const uint8_t expected[32],u
 }
 
 int main(int argc,char **argv) {
-    if(argc!=6 && argc!=7) {
+    if(argc!=5 && argc!=6) {
         fputs("Usage: fenestra-file-overlay SOURCE TARGET SHA256 RAM_DIRECTORY [MAX_BYTES]\n",stderr);
         return 2;
     }
     uint8_t expected[32];
     uint64_t limit=UINT64_C(67108864);
     if(parse_digest(argv[3],expected)){errno=EINVAL;return fail("replacement SHA-256");}
-    if(argc==7) {
+    if(argc==6) {
         char *end;
         errno=0;
-        unsigned long long value=strtoull(argv[6],&end,10);
-        if(errno || !*argv[6] || argv[6][0]=='-' || *end || !value) {
+        unsigned long long value=strtoull(argv[5],&end,10);
+        if(errno || !*argv[5] || argv[5][0]=='-' || *end || !value) {
             errno=EINVAL;
             return fail("MAX_BYTES");
         }
