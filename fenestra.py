@@ -12,6 +12,9 @@ def main():
     make = commands.add_parser('make-patch', help='decode, build, verify, re-encode and produce ciphertext replacements')
     loader = commands.add_parser('card-loader', help='build an experimental payload-independent card loader')
     payload = commands.add_parser('card-payload', help='wrap a flat AArch64 image for the card loader')
+    ranges = commands.add_parser('range-substitution', help='pack multi-version read-only range replacements')
+    ranges.add_argument('--manifest', type=Path, required=True)
+    ranges.add_argument('--output', type=Path, required=True)
     core = commands.add_parser('card-core', help='build one shared Fenestra BOOT.BIN without firmware inputs')
     port = commands.add_parser('card-port', help='build a camera Port for a shared card Core')
     for c in (build, make, loader, port):
@@ -33,6 +36,10 @@ def main():
     port.add_argument('--core', type=Path, required=True)
     port.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
+    if args.command == 'range-substitution':
+        from range_substitution import write
+        print(json.dumps(write(args.manifest, args.output), indent=2))
+        return
     if args.command == 'card-loader':
         from build_card_loader import build
         print(json.dumps(build(args.target,args.firmware,args.output,emit_main=args.emit_main),indent=2))

@@ -5,7 +5,9 @@
 
 /* Additive SDK operations. These bits are NOT in FX_SDK_CAPS: the current
  * C1.10 backend has no qualified native ROM/file interception or XM6 driver. */
-#define FX_SDK_SUBSTITUTION (1u<<22)
+/* Bit 22 is SIMD in the public module ABI. */
+#define FX_SDK_SUBSTITUTION (1u<<24)
+_Static_assert(!(FX_SDK_SUBSTITUTION&FX_SDK_CAPS),"Overlay and base capabilities must be distinct");
 #define FX_SDK_ACCELERATOR (1u<<23)
 enum { FX_S_SUBSTITUTION=17u,FX_S_ACCELERATOR,FX_S_FILE_OPEN,FX_S_FILE_CHUNK,FX_S_FILE_CLOSE };
 /* Card streams use the existing FILES grant and module-prefixed filenames.

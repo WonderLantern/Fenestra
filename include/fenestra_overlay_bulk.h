@@ -17,8 +17,9 @@ typedef struct {
 /* A trusted background preparer reads directly into private staging RAM in
  * at most64KiB steps; the768B SDK channel remains the control path. BUSY means
  * progress/pending and requires yielding, not an unsuccessful transaction.
- * EOF, source close and SHA256 must pass before READY. Never publishes a model.
- * Panic retains the snapshot/source; no implicit close/release or retry. */
+ * EOF, source close and SHA256 must pass before READY. Publication is separate.
+ * A rejected input is discarded after a successful close. Panic retains the
+ * snapshot/source when the native result or ownership is uncertain. */
 FxResult fx_overlay_bulk_init(FxOverlayBulk *,FxOverlay *,FxOverlayActor,uint64_t,FxOverlaySource);
 FxResult fx_overlay_bulk_step(FxOverlayBulk *);
 FxResult fx_overlay_bulk_cancel(FxOverlayBulk *);

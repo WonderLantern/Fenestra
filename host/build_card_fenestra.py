@@ -30,7 +30,8 @@ SHARED = tuple('src/'+name for name in '''
     native_ptp.c native_resources.c native_rtos.c native_rtos_monitor.c native_scene.c
     native_tasks.c native_text.c native_title.c native_ui.c native_ui_callbacks.c
     native_ui_dispatch.c native_ui_editor.c native_ui_pager.c native_ui_reader.c
-    native_ui_routes.c native_vg_call.S native_visibility.c panic.c platform.c ptp.c
+    native_ui_routes.c native_vg_call.S native_visibility.c overlay.c
+    overlay_bulk.c overlay_file.c overlay_ranges.c overlay_service.c panic.c platform.c ptp.c
     ptp_device_info.c records.c runtime.c scene.c services.c sha256.c slot_pool.c
     startup.c startup_files.c tasks.c text_fit.c text_page.c text_regions.c
     transfers.c ui_dispatch.c ui_document.c video_configuration.c worker_wait.c
