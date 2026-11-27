@@ -34,7 +34,7 @@ void fx_overlay_init(FxOverlay *s,uint32_t generation,uint64_t budget,FxOverlayM
 }
 FxResult fx_overlay_register(FxOverlay *s,const FxOverlayTargetSpec *spec) {
     if(!s || !spec || !s->generation || !spec->id || !spec->publisher ||
-       !spec->original || !spec->original_bytes || spec->original_bytes>FX_OVERLAY_OBJECT_LIMIT ||
+       !spec->original || spec->original_bytes>FX_OVERLAY_OBJECT_LIMIT ||
        !spec->max_bytes || spec->max_bytes>FX_OVERLAY_OBJECT_LIMIT ||
        (spec->flags&~3u) || (uintptr_t)spec->original>UINTPTR_MAX-spec->original_bytes)return FX_ARGUMENT;
     if(overlaps(spec->original,spec->original_bytes,s,sizeof(*s)))return FX_ARGUMENT;
@@ -99,13 +99,13 @@ FxResult fx_overlay_begin(FxOverlay *s,FxOverlayActor a,uint32_t id,uint32_t rev
     if(s->phase!=FX_OVERLAY_ACTIVE)return FX_STATE;
     if(revision!=t->revision)return FX_STALE;
     if(memcmp(original_sha,t->spec.original_sha256,32u))return FX_INTEGRITY;
-    if(!bytes || bytes>t->spec.max_bytes || ((t->spec.flags&FX_OVERLAY_SAME_SIZE) && bytes!=t->spec.original_bytes))return FX_BOUNDS;
+    if(bytes>t->spec.max_bytes || ((t->spec.flags&FX_OVERLAY_SAME_SIZE) && bytes!=t->spec.original_bytes))return FX_BOUNDS;
     if(s->retained>s->budget || bytes>s->budget-s->retained)return FX_BUDGET;
     if(s->next_id==UINT64_MAX)return FX_BUDGET;
     FxOverlayVersion *v=0;
     for(uint32_t i=0;i<FX_OVERLAY_VERSIONS;++i)if(!s->versions[i].state){v=&s->versions[i];break;}
     if(!v)return FX_BUDGET;
-    FxOverlayAllocation allocation={0};r=s->memory.reserve(s->memory.context,bytes,&allocation);
+    FxOverlayAllocation allocation={0};r=s->memory.reserve(s->memory.context,bytes?bytes:1u,&allocation);
     if(r!=FX_OK) {
         if(allocation.data || allocation.token || allocation.capacity) {
             *v=(FxOverlayVersion){.id=s->next_id++,.target=id,.owner=a.owner,.state=FX_OVERLAY_RETIRED,

@@ -64,7 +64,8 @@ FxResult fx_overlay_bulk_step(FxOverlayBulk *job) {
 }
 FxResult fx_overlay_bulk_cancel(FxOverlayBulk *job) {
     if(!job || !job->store)return FX_ARGUMENT;
-    if(job->store->phase!=FX_OVERLAY_ACTIVE || job->phase==FX_OVERLAY_BULK_CANCELLED)return FX_STATE;
+    if(job->store->phase!=FX_OVERLAY_ACTIVE || job->phase==FX_OVERLAY_BULK_CANCELLED ||
+       job->phase==FX_OVERLAY_BULK_FAILED)return FX_STATE;
     if(!job->closed) {
         FxResult r=close_source(job);if(r!=FX_OK)return r;
     }

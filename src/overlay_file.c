@@ -55,7 +55,7 @@ FxResult fx_overlay_card_begin(FxOverlayCardLoad *job,FxOverlay *store,FxOverlay
     const FxOverlayCardSource *source,const char *name,const FxOverlayCardImage *image) {
     if(!job || !store || !actor.owner || !source || !image || !source->files.open ||
        !source->files.read || !source->files.close)return FX_ARGUMENT;
-    if(job->open || job->bulk.phase==FX_OVERLAY_BULK_READY)return FX_BUSY;
+    if(job->open || job->bulk.store)return FX_BUSY;
     if(store->phase!=FX_OVERLAY_ACTIVE)return FX_STATE;
     if(actor.generation!=store->generation)return FX_STALE;
 
@@ -82,4 +82,21 @@ FxResult fx_overlay_card_begin(FxOverlayCardLoad *job,FxOverlay *store,FxOverlay
         if(cleanup!=FX_OK)return cleanup;
     }
     return result;
+}
+
+FxResult fx_overlay_card_reset(FxOverlayCardLoad *job) {
+    if(!job)return FX_ARGUMENT;
+    if(job->open)return FX_BUSY;
+    if(job->bulk.store) {
+        FxOverlay *store=job->bulk.store;
+        if(store->phase==FX_OVERLAY_FAULT)return FX_STATE;
+        for(uint32_t i=0u;i<FX_OVERLAY_VERSIONS;++i) {
+            const FxOverlayVersion *version=&store->versions[i];
+            if(version->id==job->bulk.stage &&
+               (version->state==FX_OVERLAY_WRITING || version->state==FX_OVERLAY_READY))
+                return FX_BUSY;
+        }
+    }
+    *job=(FxOverlayCardLoad){0};
+    return FX_OK;
 }

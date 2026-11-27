@@ -105,9 +105,11 @@ int main(void) {
 
     assert(fx_overlay_card_begin(&job,&store,publisher,&source,"build.prop",&image)==FX_OK);
     assert(load(&job)==FX_OK && fixture.closes==1u);
+    assert(fx_overlay_card_reset(&job)==FX_BUSY);
     assert(fx_overlay_file_open(&store,consumer,binding,&handle,&bytes)==FX_EMPTY);
     assert(fx_overlay_publish(&store,publisher,job.bulk.stage,1u,41u)==FX_CAPABILITY);
     assert(fx_overlay_publish(&store,publisher,job.bulk.stage,1u,42u)==FX_OK);
+    assert(fx_overlay_card_reset(&job)==FX_OK);
     assert(fx_overlay_file_open(&store,consumer,"/system/build.prop.bak",&handle,&bytes)==FX_EMPTY);
     assert(fx_overlay_file_open(&store,consumer,binding,&handle,&bytes)==FX_OK);
     assert(bytes==sizeof(replacement));
@@ -131,5 +133,13 @@ int main(void) {
     assert(bytes==sizeof(replacement)-5u && !memcmp(buffer,replacement+5u,bytes));
     assert(fx_overlay_close(&store,consumer,handle)==FX_OK && fixture.frees==2u);
     assert(!memcmp(original,"mode=original\n",sizeof(original)));
+    assert(fx_overlay_card_reset(&corrupt)==FX_OK);
+    uint64_t empty=0u;
+    uint8_t empty_sha[32];
+    fx_sha256("",0u,empty_sha);
+    assert(fx_overlay_begin(&store,publisher,1u,3u,0u,spec.original_sha256,empty_sha,&empty)==FX_OK);
+    assert(fx_overlay_seal(&store,publisher,empty)==FX_OK);
+    assert(fx_overlay_abort(&store,publisher,empty)==FX_OK);
+    assert(!store.retained);
     return 0;
 }

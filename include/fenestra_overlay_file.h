@@ -35,5 +35,8 @@ typedef struct {
  * Then publish the stage with the consumer lease or cancel it. */
 FxResult fx_overlay_card_begin(FxOverlayCardLoad *,FxOverlay *,FxOverlayActor,
     const FxOverlayCardSource *,const char *basename,const FxOverlayCardImage *);
+/* Reset after publish/cancel/rejection. A live staged version returns BUSY.
+ * An uncertain file close keeps the job retained. */
+FxResult fx_overlay_card_reset(FxOverlayCardLoad *);
 
 #endif
